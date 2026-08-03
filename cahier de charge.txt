@@ -1,0 +1,8 @@
+theme de stage:
+Getion inscription, Gestion catalogues, Gestion chat/forum(partage de support de cours)
+le evaluation est obligatoire et se fait dans la salles, puis enregistrer par le formateur sur la plateforme, enregistre l'assiduité de chaque etudiants et sort la liste de ceux qui ont passé le test...
+un systeme de scan de presence..genre le formateur scan le qrcode du profil de chaque apprenant.
+la validite de chaque compte est genre limité, par exemple le compte d'un stagiaires est valide que pour 3 mois de stage et donc le qrcode est plus valide.
+si des gens veulent etudier dans la salle de l'ODC, il doit s'inscrire dans la salle pour pouvoir obtenir un qrCode et pouvoir entré......
+
+
