@@ -1,0 +1,109 @@
+MODULE D'INSCRIPTION au formation
+====== Côté candidat =====
+* un cadidat peut postuler pour plusieurs formations.
+* la date de postulation à une formation est limité.
+* le candidat doit fournir les informations suivants:
+	son email bien sur
+	Nom et prenom obligatoire
+	age obligatoire
+	genre obligatoire
+	contacte telephonique 032 ou 037 obligatoire
+	plus haut niveau d'etude atteint
+	situation professionnelle:
+		etudiant
+		en recherche d'emploi
+		salarié en CDD ou CDI
+		independant ou freelancer
+		entrepreneur
+		fonctionnaire
+		autre....
+	si etudiant:
+		nom etablissement
+		filiere
+	objectif et attente envers la formation/ motivation
+	ce qu'il souhaite apprendre ou accomplir grace a ce formation
+	ces projets apres ce formation
+	comment il a connu cette formation:
+		page facebook
+		autre reseau sociaux
+		site web ODC ou orange
+		recommandation d'un pote
+		etablissement scolaire ou universitaire
+		evenement ou conference
+		autre...
+	si il a deja suivi  une formation a l'ODC oui ou non, si oui laquelle ? si il a des retours ou suggestions sur cette formation.
+	il doit accepter les conditions de l'ODC , genre OUI, J'accepte
+
+====== côté responsable =====
+le responsable filtre les candidat en fonction de ce qu'il juge etre acceptable ou non.
+le responsable dresse ensuite la liste des admis genre il voi le profil de chaque candidat un a un et choisi entre pris ou pas, jusqu'à ce que la limite de candidat pour cette formation soit atteint.
+Si le responsable a deja fini de passer a la crible tout les candidats et que nombre de personne pour la formation n'est pas encore atteint donc le responsable a la possibilité de revoir les profils des candidats qu'il a recalé.
+
+apres que le nombre d'apprenant ait été atteint, un emai automatique est directement envoyer a tous les candidats recus, avec leurs identifiant et leur onfroamtion sur la plateforme car leur compte est créée automatiquement apres la liste des recus sortie.
+
+===== Côté Admin ====
+c'est lui qui gere les formations, ajout, suppression, modif.
+c'est lui qui fixe le nombre max d'apprenant pour une formation.
+c'est lui qui regle la calendrier des formations.
+c'est lui qui fixe la date limite des inscriptions pour chaque formation.
+c'est lui qui attribue le formateur pour chaque formation( mais bon là c'est aussi dans le gestion des utilisateurs)
+
+====== côté Formateur =====
+pour le module inscription le formateur n'a pas de truc faire
+
+MODULE DE GESTION DES SEANCES
+==== côté admin ====
+l'admin comme dit précédemment, gere le calendrier des formation, ajout, uppression et modification d'un seance de formation.
+et comme il n'y a que une formation a la foi genre une par semaine, il a moins de contrainte a respecter vis a vi des formateurs, des salles, des horraire de formation.
+
+=== côté formateur ===
+il ne peut que consulter le calandrier de seance de ca formation.
+il ne peut ni modifier ni ajouter une seance
+
+=== côté apprenant ====
+ils ne peuvent que consulter leurs planing et pas autre chose, uniquement celle de la formation a laquelle ils sont inscrits
+
+MODULE DE GESTION UTILISATEUR
+ici seul l'admin a les rênes pour gérer le utilisateurs, les formateurs eux par contre peut consulter le profil de leur apprenants et pas d'autre, les apprenant peut consulter le profil de leurs cammarade de formation uniquement.
+un qr code est attribué automatiquement a chaque utilisateur des la creation du compte terminé ( genre son id dans le qr code), et chauqe profil n'et pas forcement permanent, par exemple un profil apprenant est limité a sa formation, après le compte est désactivé. Pour un compte de stagiaire aussi c'est limité. En d'autre terme pour les comptes autre que l'administrateur et les responsable, la desactivation est automatique mais l'admin a toujours le choix de desactiver ou activer un compte, et donc son qr code.
+
+MODULE DE EVALUATION
+ici c'est au formateur que repose le principe, comme l'evaluation ne se passe pas via la plate-forme, c'est plus un genre de gestion de note d'evaluation, chaque formateur enregistre les notes d'evaluation de leurs apprenants un a un après l'evaluation.
+et c'est aussi ici qu'entre en jeu le MODULE DE PRESENCE par QR code, comme la presence est un facteur non negligeable pour la certification plus tard, les données de presence de chaque apprenant sont aussi visible pour l'admin et pour son formateur, meme si la présence est automatique et que les notes sont ajouter manuellement.
+
+MODULE DE PRESENCE
+a chaque debut de séance, le formateur scan le QR code de chacun de ses apprenants avec un systeme de scan de presence sur la plateforme, le QR code est attribué a chque profil dès sa création( on pourrait faire en sorte que le QR code cache l'id du profil.
+le systeme se charge ensuite d'enregistrer l'absence ou a presence d'un apprenant.
+
+MODULE DE CERTIFICATION
+ici on sort la liste des apprenants qui vont etre certifié, c'est le responsable qui se charge de selectionner les apprenant eligible a etre certifié, il fiat ses choix grace au donné de presence et de note d'evaluation.
+avec notification des certifiés.
+
+MODULE DE DISCUSSION /CHATBOX
+dès la creation d'une formation, un genre de forum dédié a ce formation est créer automatique et seul les membre de cette formation( Admin, formateur, apprenant) peuvent interagir dedans, seul le formateur peut y publier des support de cours de tout types, et les apprenant ne peuvent que telecharger.
+chaque forum de discussion est privé donc chaque formation a la sienne.
+
+======== UTILISATEUR/ACTEUR CLES =======
+amdinnistrateur:
+id
+email
+mdp
+nom
+prenom
+tel (032 ou 037)
+age
+username
+pdp(optionel)
+qrcode(ici je sais pas trop)
+
+formateur:
+id
+email
+mdp
+nom
+prenom
+tel
+age
+uername
+pdp
+
