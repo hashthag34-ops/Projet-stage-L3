@@ -3,6 +3,36 @@ const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+//Pour la creation auto du profil apprenant apres validation de la candidature
+exports.setupAccount = async (req, res) => {
+  const { email, username, mot_de_passe, photo_profil } = req.body;
+
+  if (!email || !mot_de_passe || !username) {
+    return res.status(400).json({ message: "Champs obligatoires manquants." });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+
+    const result = await db.query(
+      `UPDATE utilisateur 
+       SET username = $1, mot_de_passe = $2, photo_profil = $3
+       WHERE email = $4
+       RETURNING id_utilisateur, email, nom, prenom, username`,
+      [username, hashedPassword, photo_profil || null, email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    res.json({ message: "Compte configuré avec succès ! Vous pouvez maintenant vous connecter.", user: result.rows[0] });
+  } catch (err) {
+    console.error("Erreur configuration compte :", err);
+    res.status(500).json({ message: "Erreur lors de la configuration du compte." });
+  }
+};
+
 // 1. Connexion (Login)
 exports.login = async (req, res) => {
   const { email, mot_de_passe } = req.body;
@@ -46,7 +76,8 @@ exports.login = async (req, res) => {
     `;
     const roleRes = await db.query(roleQuery, [user.id_utilisateur]);
     const role = roleRes.rows[0]?.role || 'UTILISATEUR';
-
+    
+    console.log(role);
     // Mettre à jour la date de dernière connexion
     await db.query('UPDATE utilisateur SET date_derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1', [user.id_utilisateur]);
 

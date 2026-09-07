@@ -1,6 +1,6 @@
 // frontend/src/pages/GsUsers.jsx
 import { useEffect, useState } from 'react';
-import API from '../../serivces/api';
+import API from '../../services/api';
 
 export default function GsUsers() {
   const [users, setUsers] = useState([]);

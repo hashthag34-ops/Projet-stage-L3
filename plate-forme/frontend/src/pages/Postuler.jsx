@@ -1,7 +1,7 @@
 // frontend/src/pages/Postuler.jsx
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import API from '../serivces/api';
+import API from '../services/api';
 
 export default function Postuler() {
   const { id_formation } = useParams();

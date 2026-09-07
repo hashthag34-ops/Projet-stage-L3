@@ -1,6 +1,6 @@
 // frontend/src/components/FormateurAssignModal.jsx
 import { useEffect, useState } from 'react';
-import API from '../serivces/api';
+import API from '../services/api';
 
 export default function FormateurAssignModal({ formation, onClose }) {
   const [assignedFormateurs, setAssignedFormateurs] = useState([]);
@@ -8,17 +8,17 @@ export default function FormateurAssignModal({ formation, onClose }) {
   const [selectedFormateur, setSelectedFormateur] = useState('');
   const [role, setRole] = useState('Formateur Principal');
 
-  // Charger les données
   const loadData = async () => {
+    if (!formation?.id_formation) return;
     try {
       const [resAssigned, resAll] = await Promise.all([
         API.get(`/formations/${formation.id_formation}/formateurs`),
         API.get('/formations/formateurs/all')
       ]);
-      setAssignedFormateurs(resAssigned.data);
-      setAllFormateurs(resAll.data);
+      setAssignedFormateurs(Array.isArray(resAssigned.data) ? resAssigned.data : []);
+      setAllFormateurs(Array.isArray(resAll.data) ? resAll.data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Erreur de chargement des formateurs :", err);
     }
   };
 
@@ -26,7 +26,6 @@ export default function FormateurAssignModal({ formation, onClose }) {
     loadData();
   }, [formation]);
 
-  // Ajouter un formateur
   const handleAssign = async (e) => {
     e.preventDefault();
     if (!selectedFormateur) return;
@@ -37,13 +36,12 @@ export default function FormateurAssignModal({ formation, onClose }) {
         role_formateur: role
       });
       setSelectedFormateur('');
-      loadData(); // Recharger la liste
+      loadData();
     } catch (err) {
       alert("Erreur lors de l'affectation");
     }
   };
 
-  // Retirer un formateur
   const handleRemove = async (idFormateur) => {
     try {
       await API.delete(`/formations/${formation.id_formation}/formateurs/${idFormateur}`);
@@ -58,12 +56,11 @@ export default function FormateurAssignModal({ formation, onClose }) {
       <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-6">
         <div className="flex justify-between items-center border-b pb-3">
           <h2 className="text-lg font-bold text-gray-800">
-            Formateurs : <span className="text-blue-600">{formation.titre}</span>
+            Formateurs : <span className="text-blue-600">{formation?.titre}</span>
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
         </div>
 
-        {/* Formateurs déjà assignés */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Formateurs affectés :</h3>
           {assignedFormateurs.length === 0 ? (
@@ -88,7 +85,6 @@ export default function FormateurAssignModal({ formation, onClose }) {
           )}
         </div>
 
-        {/* Formulaire d'ajout */}
         <form onSubmit={handleAssign} className="border-t pt-4 space-y-3">
           <h3 className="text-sm font-semibold text-gray-700">Affecter un nouveau formateur :</h3>
           
@@ -96,7 +92,7 @@ export default function FormateurAssignModal({ formation, onClose }) {
             <select 
               value={selectedFormateur} 
               onChange={(e) => setSelectedFormateur(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full border rounded-lg p-2 text-sm bg-white"
               required
             >
               <option value="">-- Sélectionner un formateur --</option>

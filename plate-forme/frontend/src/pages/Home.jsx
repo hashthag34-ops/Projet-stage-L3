@@ -1,6 +1,7 @@
 // frontend/src/pages/Home.jsx
-import { useEffect, useState, Link } from 'react';
-import API from '../serivces/api';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import API from '../services/api'; // Correction du chemin serivces -> services
 
 export default function Home() {
   const [formations, setFormations] = useState([]);
@@ -27,6 +28,11 @@ export default function Home() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <hi>
+        <Link to="/login">
+          Se connecter
+        </Link>
+      </hi>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Catalogue des Formations 📚</h1>
       <p className="text-gray-600 mb-8">Découvrez nos programmes disponibles et déposez votre candidature en ligne.</p>
 
@@ -51,9 +57,12 @@ export default function Home() {
                   <p>👥 <strong>Capacité :</strong> {f.capacite_max} places</p>
                 </div>
 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition" onClick={() => window.location.href = `/postuler/${f.id_formation}`}>
-                  postuler
-                </button>
+                <Link 
+                  to={`/postuler/${f.id_formation}`} 
+                  className="block text-center w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+                >
+                  Postuler
+                </Link>
               </div>
             </div>
           ))}

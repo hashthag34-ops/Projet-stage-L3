@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       const res = await API.post('/auth/login', { email, mot_de_passe: motDePasse });
-      
+
       // Stockage de la session
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -28,11 +28,12 @@ export default function Login() {
       if (role === 'APPRENANT') {
         navigate('/apprenant/catalogue');
       } else if (role === 'RESPONSABLE') {
-        navigate('/responsable/dashboard');
+        navigate('/Responsable/GsFormation'); //pour le moment on va pas mettre dashboard pour es test des autre pages mon reuf
+        console.log("Redirection fait");
       } else if (role === 'FORMATEUR') {
         navigate('/formateur/dashboard');
       } else if (role === 'ADMINISTRATEUR') {
-        navigate('/admin/dashboard');
+        navigate('/Admin/dashboard');
       } else {
         navigate('/');
       }
