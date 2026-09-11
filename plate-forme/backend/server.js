@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const path = require('path');
 
 const app = express();
 
@@ -20,6 +21,9 @@ app.get('/', (req, res) => {
   res.json({ message: "API Plateforme de Formations opérationnelle " });
 });
 
+// Rendre le dossier 'uploads' accessible en HTTP
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Import des routes
 const formationRoutes = require('./routes/formationRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -29,12 +33,11 @@ const authRoutes = require('./routes/authRoutes');
 const apprenantRoutes = require('./routes/apprenantRoutes');
 const responsableRoutes = require('./routes/responsableRoutes');
 
-const verifyToken = require('./middlewares/authMiddleware');
+const verifyToken = require('./middleware/authMiddleware');
 const authController = require('./controllers/authController');
 
-
-//routes visiteurs
-app.use('/api/users', userRoutes);
+// Routes visiteurs / utilisateurs
+app.use('/api/users', userRoutes); // Traite /api/users, /api/users/profile, etc.
 app.use('/api/formations', formationRoutes);
 app.use('/api/candidats', candidatRoutes);
 app.use('/api/inscriptions', inscriptionRoutes);
@@ -42,8 +45,7 @@ app.use('/api/inscriptions', inscriptionRoutes);
 // Routes Responsable
 app.use('/api/responsable', responsableRoutes);
 
-// Routes Auth & Profil
-app.put('/api/users/profile', verifyToken, authController.updateProfile);
+// Routes Auth
 app.use('/api/auth', authRoutes);
 
 // Routes Apprenant

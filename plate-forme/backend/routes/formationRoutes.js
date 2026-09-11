@@ -1,10 +1,13 @@
 // backend/routes/formationRoutes.js
 const express = require('express');
 const router = express.Router();
+const authOptional = require('../middleware/authOptional');
 const formationController = require('../controllers/formationController');
+
 
 // Routes publiques
 router.get('/publiques', formationController.getFormationsPubliques);
+router.get('/catalogue', authOptional.authOptional, formationController.getCatalogue);
 
 // Liste globale des formateurs (pour les déroulants de sélection)
 router.get('/formateurs/all', formationController.getAllFormateursList);

@@ -1,163 +1,52 @@
-// frontend/src/pages/GsUsers.jsx
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
+import { BriefcaseBusiness, ChevronLeft, ChevronRight, GraduationCap, Info, Mail, Phone, Search, ShieldCheck, Trash2, UserPlus, X } from 'lucide-react';
 import API from '../../services/api';
+
+const BACKEND_URL = 'http://localhost:5000';
+const inputClass = 'w-full rounded-xl border border-black/15 bg-transparent p-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20';
+const getAvatarSrc = (user) => {
+  const avatar = user.photo_profil || user.photo;
+  if (!avatar) return null;
+  if (avatar.startsWith('http') || avatar.startsWith('data:') || avatar.startsWith('blob:')) return avatar;
+  return `${BACKEND_URL}/uploads/avatars/${avatar}`;
+};
+
+function UserAvatar({ user, large = false }) {
+  const avatar = getAvatarSrc(user);
+  const size = large ? 'h-20 w-20 rounded-2xl text-2xl' : 'h-10 w-10 rounded-xl text-sm';
+  return avatar ? <img src={avatar} alt={`Profil de ${user.prenom} ${user.nom}`} className={`${large ? 'h-20 w-20 rounded-2xl' : 'h-10 w-10 rounded-xl'} object-cover ring-2 ring-orange-500`} /> : <div className={`flex items-center justify-center bg-black font-bold text-orange-500 dark:bg-zinc-900 ${size}`}>{user.prenom?.[0]}{user.nom?.[0]}</div>;
+}
 
 export default function GsUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-
-  const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    mot_de_passe: '',
-    role: 'FORMATEUR',
-    specialite: '',
-    fonction: ''
-  });
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('recent');
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [formData, setFormData] = useState({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'FORMATEUR', specialite: '', fonction: '' });
 
   const fetchUsers = async () => {
-    try {
-      const res = await API.get('/users');
-      setUsers(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await API.get('/admin/users'); setUsers(Array.isArray(res.data) ? res.data : []); }
+    catch (err) { console.error(err); } finally { setLoading(false); }
   };
+  useEffect(() => { fetchUsers(); }, []);
+  const handleChange = (e) => setFormData((current) => ({ ...current, [e.target.name]: e.target.value }));
+  const handleSubmit = async (e) => { e.preventDefault(); try { await API.post('/admin/users', formData); setShowCreate(false); setFormData({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'FORMATEUR', specialite: '', fonction: '' }); fetchUsers(); } catch (err) { alert(err.response?.data?.message || 'Erreur lors de la crÃ©ation'); } };
+  const handleStatusChange = async (id, statut_compte) => { try { await API.patch(`/admin/users/${id}/status`, { statut_compte }); fetchUsers(); } catch (err) { alert('Erreur lors de la mise Ã  jour du statut'); } };
+  const filteredUsers = users.filter((user) => `${user.nom} ${user.prenom} ${user.email} ${user.role}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === 'name' ? `${a.nom}${a.prenom}`.localeCompare(`${b.nom}${b.prenom}`) : sort === 'role' ? a.role.localeCompare(b.role) : b.id_utilisateur - a.id_utilisateur);
+  const currentUser = filteredUsers[mobileIndex];
+  const roleClass = (role) => role === 'APPRENANT' ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400' : role === 'ADMINISTRATEUR' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-black/5 text-black/65 dark:bg-white/10 dark:text-white/70';
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await API.post('/users', formData);
-      setShowModal(false);
-      setFormData({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'FORMATEUR', specialite: '', fonction: '' });
-      fetchUsers();
-    } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de la création");
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Supprimer cet utilisateur ?")) {
-      try {
-        await API.delete(`/users/${id}`);
-        fetchUsers();
-      } catch (err) {
-        alert("Erreur lors de la suppression");
-      }
-    }
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Gestion des Utilisateurs 🛠️</h1>
-          <p className="text-gray-500 text-sm">Gestion des accès (Gs, Responsable, Formateur, Apprenant)</p>
-        </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-lg transition"
-        >
-          + Nouvel Utilisateur
-        </button>
-      </div>
-
-      {loading ? (
-        <p>Chargement...</p>
-      ) : (
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-gray-600 text-sm font-semibold border-b">
-                <th className="p-4">Nom & Prénom</th>
-                <th className="p-4">Email</th>
-                <th className="p-4">Rôle</th>
-                <th className="p-4">Détails</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {users.map((u) => (
-                <tr key={u.id_utilisateur} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-800">{u.nom} {u.prenom}</td>
-                  <td className="p-4 text-gray-600">{u.email}</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      u.role === 'ADMINISTRATEUR' ? 'bg-red-100 text-red-700' :
-                      u.role === 'RESPONSABLE' ? 'bg-blue-100 text-blue-700' :
-                      u.role === 'FORMATEUR' ? 'bg-purple-100 text-purple-700' :
-                      u.role === 'APPRENANT' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-500 text-xs">
-                    {u.specialite && `Spécialité: ${u.specialite}`}
-                    {u.fonction && `Fonction: ${u.fonction}`}
-                  </td>
-                  <td className="p-4 text-right">
-                    <button 
-                      onClick={() => handleDelete(u.id_utilisateur)}
-                      className="text-red-600 hover:underline font-medium"
-                    >
-                      Supprimer
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Modal Création */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
-            <h2 className="text-xl font-bold text-gray-800">Ajouter un Utilisateur</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" name="nom" placeholder="Nom" required value={formData.nom} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-                <input type="text" name="prenom" placeholder="Prénom" required value={formData.prenom} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-              </div>
-              <input type="email" name="email" placeholder="Email" required value={formData.email} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-              <input type="password" name="mot_de_passe" placeholder="Mot de passe" required value={formData.mot_de_passe} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-              
-              <select name="role" value={formData.role} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full">
-                <option value="FORMATEUR">FORMATEUR</option>
-                <option value="RESPONSABLE">RESPONSABLE</option>
-                <option value="APPRENANT">APPRENANT</option>
-              </select>
-
-              {formData.role === 'FORMATEUR' && (
-                <input type="text" name="specialite" placeholder="Spécialité (ex: Web, Data...)" value={formData.specialite} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-              )}
-
-              {formData.role === 'RESPONSABLE' && (
-                <input type="text" name="fonction" placeholder="Fonction (ex: Chef de projet)" value={formData.fonction} onChange={handleChange} className="border p-2 rounded-lg text-sm w-full" />
-              )}
-
-              <div className="flex justify-end space-x-2 pt-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm">Annuler</button>
-                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm">Créer</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="space-y-7">
+    <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-6 dark:border-white/10 sm:flex-row sm:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Administration</p><h1 className="text-3xl font-black tracking-tight">Gestion des comptes</h1><p className="mt-2 text-sm text-black/55 dark:text-white/55">Recherchez, triez et consultez les profils de la plateforme.</p></div><button onClick={() => setShowCreate(true)} className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition hover:bg-orange-400"><UserPlus size={17} /> Nouveau compte</button></div>
+    <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search size={17} className="absolute left-3 top-3.5 text-black/40 dark:text-white/40" /><input value={search} onChange={(e) => { setSearch(e.target.value); setMobileIndex(0); }} placeholder="Rechercher un nom, email ou rÃ´le..." className={`${inputClass} pl-10`} /></div><select value={sort} onChange={(e) => setSort(e.target.value)} className={`${inputClass} sm:w-52`}><option value="recent">Plus rÃ©cents</option><option value="name">Nom A-Z</option><option value="role">Par rÃ´le</option></select></div>
+    {loading ? <div className="py-16 text-center text-black/50 dark:text-white/50">Chargement des comptes...</div> : filteredUsers.length === 0 ? <div className="rounded-2xl border border-dashed border-black/15 p-12 text-center text-black/55 dark:border-white/15 dark:text-white/55">Aucun compte ne correspond Ã  votre recherche.</div> : <>
+      <div className="hidden overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_12px_35px_rgba(0,0,0,0.07)] dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_12px_35px_rgba(0,0,0,0.35)] md:block"><table className="w-full text-left text-sm"><thead className="border-b border-black/10 bg-black/[0.03] text-xs uppercase tracking-wider text-black/50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/50"><tr><th className="p-4">Utilisateur</th><th className="p-4">Email</th><th className="p-4">RÃ´le</th><th className="p-4">Statut</th><th className="p-4 text-center">Info</th><th className="p-4 text-right">Action</th></tr></thead><tbody className="divide-y divide-black/10 dark:divide-white/10">{filteredUsers.map((user) => <tr key={user.id_utilisateur} className="transition hover:bg-orange-500/[0.04]"><td className="flex items-center gap-3 p-4"><UserAvatar user={user} /><span className="font-bold">{user.prenom} {user.nom}</span></td><td className="p-4 text-black/60 dark:text-white/60">{user.email}</td><td className="p-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${roleClass(user.role)}`}>{user.role}</span></td><td className="p-4"><select value={user.statut_compte} onChange={(e) => handleStatusChange(user.id_utilisateur, e.target.value)} className="rounded-lg border border-black/10 bg-transparent px-2 py-1 text-xs font-semibold dark:border-white/20"><option>ACTIF</option><option>DESACTIVE</option><option>SUSPENDU</option></select></td><td className="p-4 text-center"><button onClick={() => setSelectedUser(user)} title="Voir le profil" className="rounded-xl p-2 text-orange-600 transition hover:bg-orange-500/10 dark:text-orange-400"><Info size={19} /></button></td><td className="p-4 text-right"><button onClick={() => handleStatusChange(user.id_utilisateur, 'DESACTIVE')} title="DÃ©sactiver le compte" className="rounded-xl p-2 text-black/40 transition hover:bg-orange-500/10 hover:text-orange-600 dark:text-white/40 dark:hover:text-orange-400"><Trash2 size={17} /></button></td></tr>)}</tbody></table></div>
+      <div className="md:hidden"><div className="rounded-2xl border border-black/10 bg-white p-5 shadow-[0_12px_35px_rgba(0,0,0,0.07)] dark:border-white/10 dark:bg-zinc-950"><div className="mb-5 flex items-center justify-between"><button onClick={() => setMobileIndex((index) => Math.max(0, index - 1))} disabled={mobileIndex === 0} className="rounded-xl border border-black/15 p-2.5 disabled:opacity-30 dark:border-white/20"><ChevronLeft size={19} /></button><span className="text-xs font-bold uppercase tracking-wider text-black/50 dark:text-white/50">Profil {mobileIndex + 1} / {filteredUsers.length}</span><button onClick={() => setMobileIndex((index) => Math.min(filteredUsers.length - 1, index + 1))} disabled={mobileIndex === filteredUsers.length - 1} className="rounded-xl border border-black/15 p-2.5 disabled:opacity-30 dark:border-white/20"><ChevronRight size={19} /></button></div><div className="flex flex-col items-center text-center"><UserAvatar user={currentUser} large /><h2 className="mt-4 text-xl font-black">{currentUser.prenom} {currentUser.nom}</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">{currentUser.email}</p><span className={`mt-3 rounded-full px-3 py-1 text-xs font-bold ${roleClass(currentUser.role)}`}>{currentUser.role}</span></div><div className="mt-6 grid grid-cols-2 gap-3 text-xs"><div className="rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]"><span className="block text-black/45 dark:text-white/45">TÃ©lÃ©phone</span><strong>{currentUser.telephone || 'Non renseignÃ©'}</strong></div><div className="rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]"><span className="block text-black/45 dark:text-white/45">Statut</span><strong>{currentUser.statut_compte}</strong></div></div><div className="mt-5 flex gap-3"><button onClick={() => setSelectedUser(currentUser)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-black"><Info size={17} /> Voir le profil</button><select value={currentUser.statut_compte} onChange={(e) => handleStatusChange(currentUser.id_utilisateur, e.target.value)} className="w-32 rounded-xl border border-black/15 bg-transparent px-2 text-xs font-semibold dark:border-white/20"><option>ACTIF</option><option>DESACTIVE</option><option>SUSPENDU</option></select></div></div></div>
+    </>}
+    {showCreate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"><div className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-zinc-950"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black">CrÃ©er un compte</h2><button onClick={() => setShowCreate(false)}><X /></button></div><form onSubmit={handleSubmit} className="space-y-3"><div className="grid grid-cols-2 gap-3"><input name="nom" placeholder="Nom" required value={formData.nom} onChange={handleChange} className={inputClass} /><input name="prenom" placeholder="PrÃ©nom" required value={formData.prenom} onChange={handleChange} className={inputClass} /></div><input type="email" name="email" placeholder="Email" required value={formData.email} onChange={handleChange} className={inputClass} /><input type="password" name="mot_de_passe" placeholder="Mot de passe" required value={formData.mot_de_passe} onChange={handleChange} className={inputClass} /><select name="role" value={formData.role} onChange={handleChange} className={inputClass}><option value="FORMATEUR">Formateur</option><option value="RESPONSABLE">Responsable</option><option value="ADMINISTRATEUR">Administrateur</option></select>{formData.role === 'FORMATEUR' && <input name="specialite" placeholder="SpÃ©cialitÃ©" value={formData.specialite} onChange={handleChange} className={inputClass} />}{formData.role === 'RESPONSABLE' && <input name="fonction" placeholder="Fonction" value={formData.fonction} onChange={handleChange} className={inputClass} />}<button className="w-full rounded-xl bg-orange-500 py-3 text-sm font-bold text-black transition hover:bg-orange-400">CrÃ©er le compte</button></form></div></div>}
+    {selectedUser && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-zinc-950 sm:p-8"><div className="flex items-start justify-between border-b border-black/10 pb-5 dark:border-white/10"><div className="flex items-center gap-4"><UserAvatar user={selectedUser} large /><div><h2 className="text-2xl font-black">{selectedUser.prenom} {selectedUser.nom}</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">{selectedUser.email}</p><span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${roleClass(selectedUser.role)}`}>{selectedUser.role}</span></div></div><button onClick={() => setSelectedUser(null)} className="rounded-xl p-2 hover:bg-orange-500/10"><X size={19} /></button></div><div className="mt-6 grid gap-6 sm:grid-cols-2"><div><h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Informations gÃ©nÃ©rales</h3><div className="space-y-3 text-sm text-black/70 dark:text-white/70"><p className="flex gap-2"><Phone size={16} className="text-orange-500" />{selectedUser.telephone || 'TÃ©lÃ©phone non renseignÃ©'}</p><p className="flex gap-2"><Mail size={16} className="text-orange-500" />{selectedUser.email}</p>{selectedUser.specialite && <p className="flex gap-2"><BriefcaseBusiness size={16} className="text-orange-500" />SpÃ©cialitÃ© : {selectedUser.specialite}</p>}{selectedUser.fonction && <p className="flex gap-2"><ShieldCheck size={16} className="text-orange-500" />Fonction : {selectedUser.fonction}</p>}</div></div>{selectedUser.role === 'APPRENANT' && <div><h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">DerniÃ¨re candidature</h3><div className="space-y-4 text-sm text-black/70 dark:text-white/70"><p className="font-bold">{selectedUser.formation_titre || 'Formation non renseignÃ©e'}</p><p><strong>Motivation :</strong><br />{selectedUser.motivation || 'Non renseignÃ©e'}</p><p><strong>Objectif :</strong><br />{selectedUser.objectif || 'Non renseignÃ©'}</p><p><strong>Projet :</strong><br />{selectedUser.projet_apres_formation || 'Non renseignÃ©'}</p><p className="flex gap-2"><GraduationCap size={16} className="text-orange-500" />{selectedUser.niveau_etude || 'Niveau non renseignÃ©'}{selectedUser.filiere ? ` Â· ${selectedUser.filiere}` : ''}</p></div></div>}</div></div></div>}
+  </div>;
 }

@@ -1,6 +1,70 @@
 // backend/controllers/formationController.js
 const db = require('../config/db');
 
+exports.getCatalogue = async (req, res) => {
+  try {
+    const userId = req.user ? req.user.id_utilisateur : null;
+
+    const query = `
+      SELECT 
+        f.id_formation,
+        f.titre,
+        f.description,
+        f.statut,
+        f.date_debut,
+        f.date_fin,
+        f.date_limite_inscription,
+        f.capacite_max,
+        f.image_url,
+
+        COUNT(i.id_inscription) FILTER (WHERE i.statut = 'ACCEPTEE')::INTEGER AS inscrits_count,
+        CASE 
+          WHEN f.capacite_max IS NOT NULL AND COUNT(i.id_inscription) FILTER (WHERE i.statut = 'ACCEPTEE') >= f.capacite_max 
+          THEN TRUE 
+          ELSE FALSE 
+        END AS est_complete,
+        c_user.statut_candidature,
+        COALESCE(c_user.est_apprenant, FALSE) AS est_apprenant 
+      FROM formation f 
+      LEFT JOIN (
+        SELECT 
+          i.id_formation,
+          i.statut AS statut_candidature,
+          CASE 
+            WHEN a.id_apprenant IS NOT NULL AND i.statut = 'ACCEPTEE' THEN TRUE 
+            ELSE FALSE 
+          END AS est_apprenant
+        FROM inscription i
+        JOIN candidat c ON i.id_candidat = c.id_candidat
+        LEFT JOIN utilisateur u ON c.email = u.email
+        LEFT JOIN apprenant a ON u.id_utilisateur = a.id_utilisateur AND a.id_candidat = c.id_candidat
+        WHERE u.id_utilisateur = $1
+      ) c_user ON f.id_formation = c_user.id_formation
+
+      LEFT JOIN inscription i ON f.id_formation = i.id_formation
+
+      WHERE f.statut NOT IN ('BROUILLON', 'ARCHIVEE')
+
+      GROUP BY 
+        f.id_formation, 
+        c_user.statut_candidature, 
+        c_user.est_apprenant
+
+      ORDER BY f.date_debut DESC;
+    `;
+
+    const { rows } = await db.query(query, [userId]);
+
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du catalogue :', error);
+    return res.status(500).json({
+      message: 'Une erreur serveur est survenue lors du chargement du catalogue.',
+      error: error.message
+    });
+  }
+};
+
 // 1. Obtenir toutes les formations publiques (Statut = OUVERTE)
 exports.getFormationsPubliques = async (req, res) => {
   try {

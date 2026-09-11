@@ -3,17 +3,20 @@ const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-//Pour la creation auto du profil apprenant apres validation de la candidature
 exports.setupAccount = async (req, res) => {
-  const { email, username, mot_de_passe, photo_profil } = req.body;
+  const { email, username, mot_de_passe } = req.body;
+  const photo_profil = req.file ? req.file.filename : null;
 
   if (!email || !mot_de_passe || !username) {
-    return res.status(400).json({ message: "Champs obligatoires manquants." });
+    return res.status(400).json({ message: "Veuillez remplir tous les champs obligatoires." });
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+    // 1. Hacher le mot de passe
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(mot_de_passe, saltRounds);
 
+    // 2. Mettre à jour l'utilisateur dans la base de données
     const result = await db.query(
       `UPDATE utilisateur 
        SET username = $1, mot_de_passe = $2, photo_profil = $3
@@ -23,13 +26,22 @@ exports.setupAccount = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Utilisateur non trouvé." });
+      return res.status(404).json({ message: "Aucun compte associé à cet email." });
     }
 
-    res.json({ message: "Compte configuré avec succès ! Vous pouvez maintenant vous connecter.", user: result.rows[0] });
+    res.json({
+      message: "Compte configuré avec succès ! Vous pouvez maintenant vous connecter.",
+      user: result.rows[0]
+    });
   } catch (err) {
-    console.error("Erreur configuration compte :", err);
-    res.status(500).json({ message: "Erreur lors de la configuration du compte." });
+    console.error("Erreur lors de la configuration du compte :", err);
+    
+    // Gérer l'erreur d'unicité (ex: username déjà pris)
+    if (err.code === '23505') {
+      return res.status(400).json({ message: "Ce nom d'utilisateur est déjà utilisé." });
+    }
+
+    res.status(500).json({ message: "Erreur serveur lors de la configuration du compte." });
   }
 };
 
@@ -108,7 +120,15 @@ exports.getMe = async (req, res) => {
 
     const query = `
       SELECT 
-        u.id_utilisateur, u.nom, u.prenom, u.email, u.telephone, u.age, u.photo_profil, u.statut_compte,
+        u.id_utilisateur, 
+        u.nom, 
+        u.prenom, 
+        u.email, 
+        u.telephone, 
+        u.age, 
+        u.photo_profil, 
+        u.statut_compte, 
+        u.qr_code, 
         CASE 
           WHEN a.id_administrateur IS NOT NULL THEN 'ADMINISTRATEUR'
           WHEN r.id_responsable IS NOT NULL THEN 'RESPONSABLE'

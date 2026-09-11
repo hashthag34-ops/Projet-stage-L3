@@ -7,7 +7,19 @@ exports.getUsers = async (req, res) => {
   try {
     const query = `
       SELECT 
-        u.id_utilisateur, u.email, u.nom, u.prenom, u.telephone, u.statut_compte, u.date_creation,
+        u.id_utilisateur, u.email, u.nom, u.prenom, u.telephone, u.age, u.photo_profil, u.statut_compte, u.date_creation,
+        f.specialite,
+        r.fonction,
+        ap.id_apprenant,
+        latest_candidature.formation_titre,
+        latest_candidature.motivation,
+        latest_candidature.objectif,
+        latest_candidature.projet_apres_formation,
+        latest_candidature.niveau_etude,
+        latest_candidature.situation_professionnelle,
+        latest_candidature.etablissement,
+        latest_candidature.filiere,
+        latest_candidature.statut AS candidature_statut,
         CASE 
           WHEN a.id_administrateur IS NOT NULL THEN 'ADMINISTRATEUR'
           WHEN r.id_responsable IS NOT NULL THEN 'RESPONSABLE'
@@ -20,6 +32,18 @@ exports.getUsers = async (req, res) => {
       LEFT JOIN responsable r ON u.id_utilisateur = r.id_utilisateur
       LEFT JOIN formateur f ON u.id_utilisateur = f.id_utilisateur
       LEFT JOIN apprenant ap ON u.id_utilisateur = ap.id_utilisateur
+      LEFT JOIN responsable r ON u.id_utilisateur = r.id_utilisateur
+      LEFT JOIN LATERAL (
+        SELECT f.titre AS formation_titre, i.motivation, i.objectif, i.projet_apres_formation,
+               c.niveau_etude, c.situation_professionnelle, c.etablissement, c.filiere,
+               i.statut
+        FROM inscription i
+        JOIN candidat c ON c.id_candidat = i.id_candidat
+        JOIN formation f ON f.id_formation = i.id_formation
+        WHERE c.email = u.email
+        ORDER BY i.date_inscription DESC
+        LIMIT 1
+      ) latest_candidature ON TRUE
       ORDER BY u.id_utilisateur DESC;
     `;
     const { rows } = await db.query(query);

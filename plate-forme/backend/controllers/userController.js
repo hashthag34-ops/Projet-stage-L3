@@ -109,18 +109,62 @@ exports.deleteUser = async (req, res) => {
 };
 
 //4. MODIFICATION D'UN UTILISATEUR
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { nom, prenom, telephone, age } = req.body || {};
+    const userId = req.user.id_utilisateur || req.user.id; // Déduit du token via verifyToken
+    const photo_profil = req.file ? req.file.filename : null;
+
+    await db.query('BEGIN');
+
+    if (photo_profil) {
+      await db.query(
+        `UPDATE utilisateur 
+         SET nom = $1, prenom = $2, telephone = $3, age = $4, photo_profil = $5 
+         WHERE id_utilisateur = $6`,
+        [nom, prenom, telephone, age, photo_profil, userId]
+      );
+    } else {
+      await db.query(
+        `UPDATE utilisateur 
+         SET nom = $1, prenom = $2, telephone = $3, age = $4 
+         WHERE id_utilisateur = $5`,
+        [nom, prenom, telephone, age, userId]
+      );
+    }
+
+    await db.query('COMMIT'); // <-- ESSENTIEL pour valider la transaction SQL !
+
+    res.status(200).json({
+      message: "Profil mis à jour avec succès !",
+      photo_profil: photo_profil,
+      user: { nom, prenom, telephone, age }
+    });
+
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error("Erreur updateUserProfile :", error);
+    res.status(500).json({ message: "Erreur lors de la modification du profil" });
+  }
+};
+
+// 2. Modification d'un utilisateur par un Admin (via :id)
 exports.updateUser = async (req, res) => {
-    const { id } = req.params;
-    const { nom, prenom, email, mot_de_passe, specialite, fonction } = req.body;
-    try {
-        await db.query('BEGIN');
-        await db.query(`
-            UPDATE utilisateur set nom = $1, prenom = $2, email = $3, mot_de_passe = $4 WHERE id_utilisateur = $5
-        `, [nom, prenom, email, mot_de_passe, id]);
-    }
-    catch (error) {
-        await db.query('ROLLBACK');
-        console.error("Erreur updateUser :", error);
-        res.status(500).json({ message: "Erreur lors de la modification de l'utilisateur" });
-    }
+  const { id } = req.params;
+  const { nom, prenom, email } = req.body || {};
+
+  try {
+    await db.query('BEGIN');
+    await db.query(
+      `UPDATE utilisateur SET nom = $1, prenom = $2, email = $3 WHERE id_utilisateur = $4`,
+      [nom, prenom, email, id]
+    );
+    await db.query('COMMIT');
+
+    res.status(200).json({ message: "Utilisateur mis à jour avec succès !" });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error("Erreur updateUser :", error);
+    res.status(500).json({ message: "Erreur lors de la modification de l'utilisateur" });
+  }
 };

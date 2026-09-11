@@ -1,3 +1,44 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Indique à Tailwind v4 d'utiliser la classe .dark sur <html> au lieu du mode système par défaut */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --color-primary: #f97316; /* Orange 500 */
+    --color-primary-hover: #ea580c; /* Orange 600 */
+  }
+
+  body {
+    margin: 0;
+    background: #ffffff;
+    color: #09090b;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+
+  html.dark body {
+    background: #000000;
+    color: #ffffff;
+  }
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a1a1aa;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}

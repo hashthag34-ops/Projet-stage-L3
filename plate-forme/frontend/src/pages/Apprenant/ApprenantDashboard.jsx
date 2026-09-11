@@ -1,6 +1,7 @@
 // frontend/src/pages/Apprenant/ApprenantDashboard.jsx
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, BookOpen, CalendarDays, Clock3, MapPin, Star, Target, TrendingUp } from 'lucide-react';
 import API from '../../services/api';
 
 export default function ApprenantDashboard() {
@@ -18,9 +19,13 @@ export default function ApprenantDashboard() {
 
         setFormations(resFormations.data || []);
         
-        // Trouver la prochaine séance à venir
-        if (resSeances.data && resSeances.data.length > 0) {
-          setNextSeance(resSeances.data[0]); // Supposant trié par date
+        // Les séances sont triées par l'API, mais on vérifie la date pour ignorer l'historique.
+        const upcoming = (resSeances.data || []).find((seance) => {
+          const sessionDate = new Date(`${seance.date_seance}T${seance.heure_fin || '23:59'}`);
+          return sessionDate >= new Date();
+        });
+        if (upcoming) {
+          setNextSeance(upcoming);
         }
       } catch (err) {
         console.error("Erreur de chargement du dashboard :", err);
@@ -32,85 +37,84 @@ export default function ApprenantDashboard() {
     fetchDashboardData();
   }, []);
 
-  if (loading) return <div className="p-6 text-gray-500">Chargement de ton espace...</div>;
+  const attendance = seances.filter((seance) => ['PRESENT', 'RETARD', 'ABSENT'].includes(seance.statut_presence));
+  const presentCount = seances.filter((seance) => seance.statut_presence === 'PRESENT').length;
+  const lateCount = seances.filter((seance) => seance.statut_presence === 'RETARD').length;
+  const absentCount = seances.filter((seance) => seance.statut_presence === 'ABSENT').length;
+  const attendanceRate = attendance.length ? Math.round(((presentCount + lateCount) / attendance.length) * 100) : 0;
+  const completedSessions = seances.filter((seance) => seance.statut_presence).length;
+
+  if (loading) return <div className="p-6 text-black/50 dark:text-white/50">Chargement de ton espace...</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Mot de bienvenue */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-        <h1 className="text-2xl font-bold">Ravi de te revoir ! 👋</h1>
-        <p className="text-blue-100 text-sm mt-1">
-          Poursuis ton apprentissage et consulte ton emploi du temps de la semaine.
-        </p>
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-6 shadow-sm dark:bg-orange-500/15">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-400">Tableau de bord</p>
+        <h1 className="text-3xl font-black tracking-tight">Ravi de te revoir</h1>
+        <p className="mt-2 text-sm text-black/60 dark:text-white/60">Suis ton parcours, tes présences et tes prochaines échéances depuis un seul espace.</p>
       </div>
 
-      {/* Cartes KPI / Métriques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase">Formations suivies</p>
-            <p className="text-2xl font-bold text-gray-800">{formations.length}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Formations suivies</p>
+            <p className="mt-1 text-3xl font-black">{formations.length}</p>
           </div>
-          <span className="text-3xl">📖</span>
+          <BookOpen className="text-orange-500" size={27} />
         </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase">Prochaine séance</p>
-            <p className="text-sm font-bold text-gray-800">
-              {nextSeance ? nextSeance.titre : "Aucune séance"}
-            </p>
+            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Séances réalisées</p>
+            <p className="mt-1 text-3xl font-black">{completedSessions}</p>
           </div>
-          <span className="text-3xl">⏳</span>
+          <CalendarDays className="text-orange-500" size={27} />
         </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase">Assiduité</p>
-            <p className="text-2xl font-bold text-green-600">95 %</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Assiduité</p>
+            <p className="mt-1 text-3xl font-black text-orange-600 dark:text-orange-400">{attendanceRate} %</p>
           </div>
-          <span className="text-3xl">🎯</span>
+          <Target className="text-orange-500" size={27} />
+        </div>
+        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Évaluations</p>
+            <p className="mt-1 text-sm font-bold">Aucune note</p>
+          </div>
+          <Star className="text-orange-500" size={27} />
         </div>
       </div>
 
-      {/* Section Principale : Formations + Prochain cours */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Liste des formations inscrites */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b pb-3">
-            <h2 className="font-bold text-gray-800 text-lg">Mes Formations en cours</h2>
-            <Link to="/apprenant/catalogue" className="text-xs text-blue-600 hover:underline font-medium">
-              Voir le catalogue →
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <section className="space-y-5 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+          <div className="flex items-center justify-between border-b border-black/10 pb-4 dark:border-white/10">
+            <div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Historique</p><h2 className="mt-1 text-xl font-black">Mes formations</h2></div>
+            <Link to="/apprenant/catalogue" className="flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-500 dark:text-orange-400">Catalogue <ArrowRight size={14} />
             </Link>
           </div>
 
           {formations.length === 0 ? (
-            <p className="text-sm text-gray-500 italic py-4">Tu n'es inscrit à aucune formation pour le moment.</p>
+            <p className="py-4 text-sm italic text-black/50 dark:text-white/50">Tu n'es inscrit à aucune formation pour le moment.</p>
           ) : (
             <div className="space-y-4">
               {formations.map((f) => (
-                <div key={f.id_formation} className="p-4 rounded-xl border bg-gray-50 hover:bg-white hover:shadow-md transition space-y-2">
-                  <div className="flex justify-between items-start">
+                <div key={f.id_formation} className="space-y-3 rounded-xl border border-black/10 bg-black/[0.03] p-4 transition hover:border-orange-500/40 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-bold text-gray-800">{f.titre}</h3>
-                      <p className="text-xs text-gray-500 line-clamp-1">{f.description}</p>
+                      <h3 className="font-bold">{f.titre}</h3>
+                      <p className="line-clamp-1 text-xs text-black/50 dark:text-white/50">{f.description}</p>
                     </div>
-                    <span className="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-1 rounded-full">
+                    <span className="whitespace-nowrap rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">
                       {f.statut || 'EN_COURS'}
                     </span>
                   </div>
 
-                  {/* Barre de progression illustrative */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-500 font-medium">
-                      <span>Progression</span>
-                      <span>{f.progression || 40}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-semibold text-black/50 dark:text-white/50"><span>Progression</span><span>{f.progression || 0}%</span></div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
                       <div 
-                        className="bg-blue-600 h-full transition-all duration-300"
-                        style={{ width: `${f.progression || 40}%` }}
+                        className="h-full bg-orange-500 transition-all duration-300"
+                        style={{ width: `${f.progression || 0}%` }}
                       ></div>
                     </div>
                   </div>
@@ -118,37 +122,34 @@ export default function ApprenantDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Prochaine séance détaillée */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b pb-3">
-            <h2 className="font-bold text-gray-800 text-lg">Prochain Cours</h2>
-            <Link to="/apprenant/planning" className="text-xs text-blue-600 hover:underline font-medium">
-              Planning complet
+        <section className="space-y-5 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+          <div className="flex items-center justify-between border-b border-black/10 pb-4 dark:border-white/10"><div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">À venir</p><h2 className="mt-1 text-xl font-black">Prochaine séance</h2></div><Link to="/apprenant/planning" className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400">Tout voir <ArrowRight size={14} />
             </Link>
           </div>
 
           {nextSeance ? (
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl space-y-3">
-              <span className="text-xs bg-blue-200 text-blue-800 font-semibold px-2 py-0.5 rounded">
+            <div className="space-y-4 rounded-xl border border-orange-500/25 bg-orange-500/[0.06] p-4 dark:bg-orange-500/10">
+              <span className="inline-block rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-black">
                 {nextSeance.type_seance || 'Cours Pratique'}
               </span>
-              <h3 className="font-bold text-gray-800 text-base">{nextSeance.titre}</h3>
-              <p className="text-xs text-gray-600">{nextSeance.description}</p>
+              <h3 className="text-base font-black">{nextSeance.titre}</h3>
+              <p className="text-xs leading-5 text-black/60 dark:text-white/60">{nextSeance.description}</p>
               
-              <div className="space-y-1 text-xs text-gray-700 pt-2 border-t border-blue-100">
-                <p>📆 <strong>Date :</strong> {new Date(nextSeance.date_seance).toLocaleDateString('fr-FR')}</p>
-                <p>⏰ <strong>Horaire :</strong> {nextSeance.heure_debut} - {nextSeance.heure_fin}</p>
-                <p>📍 <strong>Lieu :</strong> {nextSeance.salle || 'En ligne'}</p>
+              <div className="space-y-2 border-t border-orange-500/20 pt-3 text-xs text-black/70 dark:text-white/70">
+                <p className="flex items-center gap-2"><CalendarDays size={15} className="text-orange-500" /><strong>Date :</strong> {new Date(nextSeance.date_seance).toLocaleDateString('fr-FR')}</p>
+                <p className="flex items-center gap-2"><Clock3 size={15} className="text-orange-500" /><strong>Horaire :</strong> {nextSeance.heure_debut} - {nextSeance.heure_fin}</p>
+                <p className="flex items-center gap-2"><MapPin size={15} className="text-orange-500" /><strong>Lieu :</strong> {nextSeance.salle || 'En ligne'}</p>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic py-4">Aucun cours prévu prochainement.</p>
+            <p className="py-4 text-sm italic text-black/50 dark:text-white/50">Aucun cours prévu prochainement.</p>
           )}
-        </div>
+        </section>
 
       </div>
+      <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950"><div className="mb-5 flex items-center gap-2"><TrendingUp size={19} className="text-orange-500" /><div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Suivi présence</p><h2 className="mt-1 text-xl font-black">Ton assiduité</h2></div></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><div className="rounded-xl bg-orange-500/10 p-4"><p className="text-xs font-semibold text-black/50 dark:text-white/50">Présences</p><p className="mt-1 text-2xl font-black text-orange-600 dark:text-orange-400">{presentCount}</p></div><div className="rounded-xl bg-black/5 p-4 dark:bg-white/10"><p className="text-xs font-semibold text-black/50 dark:text-white/50">Retards</p><p className="mt-1 text-2xl font-black">{lateCount}</p></div><div className="rounded-xl bg-black p-4 text-white dark:bg-white dark:text-black"><p className="text-xs font-semibold opacity-60">Absences</p><p className="mt-1 text-2xl font-black">{absentCount}</p></div></div></section>
     </div>
   );
 }
