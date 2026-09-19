@@ -1,0 +1,933 @@
+Bien sûr mon pote. Je vais te faire une **vue d'ensemble fonctionnelle**, en séparant clairement les grands modules de la plateforme. Je me base sur ta base actuelle et sur le module d'évaluation qu'on vient d'ajouter, sans mélanger les responsabilités.
+
+L'idée est que tu puisses ensuite reprendre ce résumé directement pour ton **analyse fonctionnelle, UML, cahier des charges ou rapport de stage**.
+
+---
+
+# 🏫 Vue globale de la plateforme
+
+Ta plateforme peut être organisée autour de plusieurs grands modules :
+
+```text
+                         PLATEFORME DE FORMATION
+                                  │
+       ┌──────────────────────────┼──────────────────────────┐
+       │                          │                          │
+       ▼                          ▼                          ▼
+ MODULE INSCRIPTION         MODULE FORMATION           MODULE UTILISATEURS
+       │                          │                          │
+       │                          ├── Séances               ├── Apprenant
+       │                          ├── Présences             ├── Formateur
+       │                          ├── Supports              ├── Responsable
+       │                          └── Évaluations           └── Administrateur
+       │
+       ├─────────────────────────────────────────────────────────────┐
+       │                                                             │
+       ▼                                                             ▼
+ MODULE FORUM / MESSAGERIE                              MODULE CERTIFICATION
+       │                                                             │
+       └────────────────────── MODULE ÉVALUATION ───────────────────┘
+```
+
+Mais pour ton analyse, je te conseille de présenter **6 grands modules fonctionnels** :
+
+1. **Module Gestion des inscriptions**
+2. **Module Gestion des formations et des formateurs**
+3. **Module Séances et présences**
+4. **Module Forum / messagerie**
+5. **Module Évaluation en ligne**
+6. **Module Certification**
+
+Le module utilisateurs est transversal : il intervient dans pratiquement tous les autres modules.
+
+---
+
+# 1. 📝 MODULE D'INSCRIPTION ET DE CANDIDATURE
+
+C'est le module qui gère tout le parcours d'une personne depuis sa candidature jusqu'à son admission comme apprenant.
+
+Ta table `inscription` contient déjà notamment le candidat, la formation, la date d'inscription, le statut, la motivation, l'objectif, le projet après formation et les informations de décision. 
+
+## 🎯 Objectif
+
+Permettre à un visiteur de :
+
+* consulter les formations disponibles ;
+* choisir une formation ;
+* remplir une candidature ;
+* envoyer sa candidature ;
+* suivre son statut ;
+* recevoir une décision.
+
+Le responsable peut ensuite gérer les candidatures.
+
+---
+
+## 👤 Côté candidat
+
+Le candidat peut :
+
+```text
+Consulter catalogue
+       ↓
+Choisir une formation
+       ↓
+Remplir formulaire
+       ↓
+Envoyer candidature
+       ↓
+Candidature EN ATTENTE
+       ↓
+Attendre décision
+```
+
+Les informations peuvent comprendre :
+
+* identité ;
+* email ;
+* téléphone ;
+* âge ;
+* niveau d'étude ;
+* établissement ;
+* filière ;
+* situation professionnelle ;
+* motivation ;
+* objectif ;
+* projet après formation ;
+* source d'information ;
+* expérience d'une formation précédente ;
+* acceptation des conditions.
+
+---
+
+## 🔎 Vérification d'un compte existant
+
+Comme on l'avait prévu dans ton analyse précédente :
+
+```text
+Email saisi
+     ↓
+Existe déjà ?
+   /       \
+ OUI       NON
+  ↓         ↓
+Compte      Nouvelle
+existant    candidature
+```
+
+Cela permet d'éviter qu'une même personne crée plusieurs candidatures avec la même adresse.
+
+---
+
+## 👨‍💼 Côté responsable
+
+Le responsable dispose d'une interface du type :
+
+```text
+Candidatures
+────────────────────────────
+
+Jean Dupont
+Formation : Développement Web
+Statut : EN ATTENTE
+
+[Voir] [Accepter] [Refuser]
+```
+
+Il peut :
+
+* consulter les candidatures ;
+* voir les informations du candidat ;
+* examiner sa motivation ;
+* accepter ;
+* refuser ;
+* renseigner un motif ;
+* suivre les candidatures par formation.
+
+---
+
+## 🔄 Cycle de vie
+
+Une candidature peut passer par :
+
+```text
+EN_ATTENTE
+     │
+     ├──→ ACCEPTEE
+     │
+     ├──→ REFUSEE
+     │
+     └──→ ANNULEE
+```
+
+---
+
+## 👨‍🎓 Transformation en apprenant
+
+Lorsqu'un candidat est accepté :
+
+```text
+CANDIDAT
+   ↓
+Candidature acceptée
+   ↓
+Création/activation du compte
+   ↓
+APPRENANT
+   ↓
+Accès à son espace personnel
+```
+
+L'apprenant conserve son historique de formation.
+
+---
+
+# 2. 📚 MODULE DE GESTION DES FORMATIONS ET FORMATEURS
+
+Ce module constitue le cœur pédagogique de la plateforme.
+
+Ta table `formation` contient déjà le titre, la description, l'image, les dates, la capacité et le statut. 
+
+---
+
+## 🎯 Objectif
+
+Permettre de gérer :
+
+* les formations ;
+* leur contenu général ;
+* leur période ;
+* leur capacité ;
+* leur état ;
+* les formateurs affectés.
+
+---
+
+## 📖 Une formation
+
+Une formation possède notamment :
+
+```text
+Formation
+├── titre
+├── description
+├── image
+├── date début
+├── date fin
+├── date limite inscription
+├── capacité maximale
+└── statut
+```
+
+Les statuts actuels sont :
+
+```text
+BROUILLON
+OUVERTE
+EN_COURS
+TERMINEE
+ARCHIVEE
+```
+
+---
+
+## 👨‍🏫 Affectation des formateurs
+
+Ta table `formation_formateur` permet déjà d'avoir plusieurs formateurs pour une formation. 
+
+Donc :
+
+```text
+Formation
+   │
+   ├── Formateur A
+   ├── Formateur B
+   └── Formateur C
+```
+
+Un formateur peut également être affecté à plusieurs formations.
+
+---
+
+## 👨‍🏫 Responsabilités du formateur
+
+Selon les modules, le formateur peut :
+
+* gérer ses supports ;
+* participer à la gestion des séances ;
+* gérer les évaluations ;
+* consulter les résultats de ses évaluations ;
+* éventuellement participer au forum de sa formation.
+
+---
+
+# 3. 📅 MODULE SÉANCES + PRÉSENCES
+
+Je suis d'accord avec toi : **ces deux fonctionnalités doivent être présentées ensemble**, parce que la présence est directement liée aux séances.
+
+Ta base contient justement cette relation :
+
+```text
+FORMATION
+    ↓
+SEANCE
+    ↓
+PRESENCE
+```
+
+Ta table `seance` contient notamment la date, l'heure, le type et la salle. 
+
+---
+
+# 📅 Partie A — Gestion des séances
+
+## 🎯 Objectif
+
+Organiser le calendrier pédagogique de la formation.
+
+Une séance peut contenir :
+
+* titre ;
+* description ;
+* date ;
+* heure de début ;
+* heure de fin ;
+* type ;
+* salle ;
+* formation concernée.
+
+---
+
+## Exemple
+
+```text
+Formation : Développement Web
+
+Séance 1
+Java
+10 septembre
+08:00 → 12:00
+Salle A
+
+Séance 2
+Spring Boot
+12 septembre
+08:00 → 12:00
+Salle A
+
+Séance 3
+Projet pratique
+15 septembre
+08:00 → 16:00
+Salle B
+```
+
+---
+
+# 👥 Partie B — Présence
+
+Chaque présence associe :
+
+```text
+APPRENANT
+     +
+SÉANCE
+     ↓
+PRESENCE
+```
+
+Ta table `presence` utilise actuellement :
+
+* apprenant ;
+* séance ;
+* date de scan ;
+* statut ;
+* commentaire. 
+
+---
+
+## Statuts
+
+```text
+PRESENT
+ABSENT
+RETARD
+```
+
+---
+
+## Exemple
+
+```text
+Séance : Spring Boot
+
+Jean       → PRESENT
+Marie      → PRESENT
+Paul       → RETARD
+Sarah      → ABSENT
+```
+
+---
+
+## 🔗 Pourquoi les regrouper ?
+
+Parce que :
+
+```text
+Formation
+    ↓
+Séances
+    ↓
+Présences des apprenants
+```
+
+Une séance n'a de sens ici que dans le contexte d'une formation et les présences sont enregistrées par rapport à cette séance.
+
+Donc dans ton analyse :
+
+> **Module de gestion des séances et des présences**
+
+est beaucoup plus logique que deux modules complètement séparés.
+
+---
+
+# 💬 4. MODULE FORUM / MESSAGERIE
+
+Ici aussi, on regroupe tout ce qui concerne les échanges entre utilisateurs autour d'une formation.
+
+Ta base possède actuellement :
+
+```text
+FORMATION
+    ↓
+FORUM
+    ↓
+MESSAGE
+```
+
+Le forum est actuellement associé à une formation unique grâce à `UNIQUE(id_formation)`. 
+
+---
+
+# 🗣️ Forum
+
+Chaque formation possède son espace de discussion :
+
+```text
+Formation
+   ↓
+Forum
+   ├── Discussion 1
+   ├── Discussion 2
+   └── Discussion 3
+```
+
+Les utilisateurs peuvent publier des messages.
+
+---
+
+## 👤 Qui peut participer ?
+
+Selon les règles fonctionnelles de ton projet, cela peut concerner :
+
+* apprenants ;
+* formateurs ;
+* responsables.
+
+Les messages sont liés à un utilisateur grâce à `id_utilisateur`. 
+
+---
+
+# 💬 Réponse à un message
+
+Ta structure prévoit déjà :
+
+```text
+message_parent
+```
+
+Donc tu peux avoir :
+
+```text
+Jean :
+"Quelqu'un peut expliquer cette partie ?"
+       │
+       ├── Marie :
+       │   "Oui, voici comment..."
+       │
+       └── Formateur :
+           "La notion signifie..."
+```
+
+Cela permet d'avoir une conversation structurée.
+
+---
+
+# ✏️ Modification
+
+Un utilisateur peut également modifier son message grâce à :
+
+```text
+date_modification
+```
+
+Donc :
+
+```text
+Publier
+   ↓
+Modifier éventuellement
+   ↓
+Conserver la date de modification
+```
+
+---
+
+# 📚 5. MODULE D'ÉVALUATION EN LIGNE
+
+C'est le nouveau gros module qu'on vient d'ajouter.
+
+Il est beaucoup plus riche que l'ancienne table `evaluation`, qui ne stockait auparavant essentiellement que la note, le type d'évaluation, l'apprenant, la formation et le formateur. 
+
+---
+
+# 🎯 Objectif
+
+Permettre au formateur de créer des évaluations en ligne et aux apprenants de les passer directement sur la plateforme.
+
+---
+
+# 👨‍🏫 Création d'une évaluation
+
+Le formateur commence par créer :
+
+```text
+Évaluation
+├── titre
+├── description
+├── formation
+├── durée éventuelle
+├── obligatoire
+└── statut
+```
+
+---
+
+# 📝 Création des questions
+
+Ensuite :
+
+```text
+Évaluation
+    ↓
+Question 1
+Question 2
+Question 3
+...
+```
+
+Chaque question possède :
+
+* un énoncé ;
+* un numéro ;
+* un nombre de points.
+
+---
+
+# 🔘 Choix de réponses
+
+Chaque question peut avoir plusieurs choix :
+
+```text
+Question :
+
+Quelle technologie utilise Spring Boot ?
+
+A. Java
+B. Python
+C. PHP
+D. C++
+
+Bonne réponse : A
+Points : 4
+```
+
+Une seule réponse est correcte dans le modèle actuel.
+
+---
+
+# 💯 Système de notation sur 20
+
+C'est une règle centrale du module :
+
+```text
+Question 1 → 4 points
+Question 2 → 5 points
+Question 3 → 3 points
+Question 4 → 8 points
+──────────────────────
+TOTAL      → 20/20
+```
+
+Une fois arrivé à :
+
+> **20/20**
+
+le formateur ne peut plus ajouter de question.
+
+---
+
+# 🔒 Publication
+
+Le cycle est :
+
+```text
+BROUILLON
+    ↓
+Création questions
+    ↓
+Création choix
+    ↓
+Total = 20
+    ↓
+PUBLICATION
+    ↓
+Disponible aux apprenants
+```
+
+Une évaluation incomplète ne doit donc pas être publiée.
+
+---
+
+# 👨‍🎓 Passage de l'évaluation
+
+L'apprenant voit :
+
+```text
+Mes évaluations
+
+Développement Web
+────────────────────────
+
+Évaluation Java
+OBLIGATOIRE
+15 questions
+20 points
+
+[Commencer]
+```
+
+Il répond aux questions.
+
+---
+
+# 📊 Calcul de la note
+
+Exemple :
+
+```text
+Q1 → correcte → 4
+Q2 → incorrecte → 0
+Q3 → correcte → 3
+Q4 → correcte → 8
+
+Résultat = 15/20
+```
+
+---
+
+# 🔁 Plusieurs évaluations pour une formation
+
+C'est une règle importante de ton nouveau système.
+
+Une formation peut avoir :
+
+```text
+Formation Web
+│
+├── Évaluation HTML → 16/20
+├── Évaluation CSS → 14/20
+├── Évaluation JavaScript → 18/20
+└── Évaluation finale → 15/20
+```
+
+Donc un apprenant peut avoir **plusieurs notes pour une seule formation**.
+
+---
+
+# ⭐ Évaluation obligatoire
+
+Chaque sujet possède :
+
+```text
+obligatoire = TRUE / FALSE
+```
+
+Donc tu peux avoir :
+
+```text
+Évaluation 1 → obligatoire
+Évaluation 2 → obligatoire
+Évaluation 3 → facultative
+```
+
+Cela permet également d'afficher clairement à l'apprenant ce qu'il doit terminer.
+
+---
+
+# 🧾 Historique
+
+Une tentative conserve :
+
+* apprenant ;
+* évaluation ;
+* date de début ;
+* date de fin ;
+* note ;
+* statut.
+
+Et les réponses détaillées permettent de savoir :
+
+```text
+Question
+   ↓
+Choix sélectionné
+   ↓
+Points obtenus
+```
+
+Donc le système peut garder l'historique du passage.
+
+---
+
+# 🏆 6. MODULE DE CERTIFICATION
+
+Le module de certification intervient **à la fin du parcours de formation**.
+
+Ta base contient déjà une table `certification` avec :
+
+* apprenant ;
+* formation ;
+* date de certification ;
+* statut ;
+* fichier ;
+* numéro de certification ;
+* commentaire. 
+
+---
+
+# 🎯 Objectif
+
+Permettre au responsable de gérer la certification des apprenants ayant terminé leur formation.
+
+---
+
+# 🔄 Parcours global
+
+On peut voir le parcours comme :
+
+```text
+CANDIDATURE
+    ↓
+ACCEPTATION
+    ↓
+APPRENANT
+    ↓
+FORMATION
+    ↓
+SÉANCES
+    ↓
+PRÉSENCES
+    ↓
+ÉVALUATIONS
+    ↓
+FIN DE FORMATION
+    ↓
+CERTIFICATION
+```
+
+---
+
+# 📋 Suivi du parcours
+
+Le responsable peut avoir une vue du genre :
+
+```text
+Formation : Développement Web
+
+Apprenant       Présence    Évaluations    Certification
+
+Jean             90%         16 / 18 / 15     EN_ATTENTE
+Marie            95%         18 / 17 / 19     CERTIFIE
+Paul             70%         12 / 10          EN_ATTENTE
+```
+
+Attention : ce tableau est une **vue fonctionnelle possible** ; ta base actuelle ne définit pas de règle automatique disant qu'un certain taux de présence ou une certaine moyenne entraîne automatiquement la certification.
+
+---
+
+# 📜 Statut de certification
+
+Ta base prévoit :
+
+```text
+EN_ATTENTE
+CERTIFIE
+NON_CERTIFIE
+```
+
+Donc :
+
+```text
+Formation terminée
+       ↓
+Responsable examine le dossier
+       ↓
+┌───────────────┬────────────────┐
+│               │                │
+▼               ▼                ▼
+CERTIFIE    NON_CERTIFIE     EN_ATTENTE
+```
+
+---
+
+# 📄 Certificat
+
+Lorsqu'une certification est accordée, on peut conserver :
+
+```text
+date_certification
+numero_certification
+fichier_certification
+commentaire
+```
+
+Le fichier peut correspondre au certificat PDF généré ou stocké.
+
+---
+
+# 🧑‍💻 7. MODULE UTILISATEURS — TRANSVERSAL
+
+Même si tu ne veux pas forcément le présenter comme l'un de tes modules principaux, il faut le garder dans l'architecture.
+
+Tu as :
+
+```text
+UTILISATEUR
+   │
+   ├── Candidat
+   ├── Apprenant
+   ├── Formateur
+   ├── Responsable
+   └── Administrateur
+```
+
+Ta table `utilisateur` contient les informations communes comme email, nom, prénom, téléphone, photo, QR code et statut du compte. 
+
+---
+
+# 🔗 Comment les modules communiquent
+
+Voici le plus intéressant pour ton UML global :
+
+```text
+                         UTILISATEUR
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+           APPRENANT      FORMATEUR      RESPONSABLE
+              │               │               │
+              │               │               │
+              ▼               ▼               ▼
+        ┌────────────┐  ┌──────────────┐  ┌─────────────┐
+        │INSCRIPTION │  │  FORMATION   │  │ CANDIDATURE │
+        └─────┬──────┘  └──────┬───────┘  └─────────────┘
+              │                 │
+              │                 ├──────────────┐
+              │                 │              │
+              │                 ▼              ▼
+              │             SÉANCES       ÉVALUATIONS
+              │                 │              │
+              │                 ▼              ▼
+              │             PRÉSENCES      RÉSULTATS
+              │                                │
+              │                                │
+              └────────────────────────────────┘
+                              │
+                              ▼
+                       CERTIFICATION
+```
+
+---
+
+# 🧩 Résumé des 6 modules principaux
+
+| Module                     | Fonction principale                      | Acteurs principaux                |
+| -------------------------- | ---------------------------------------- | --------------------------------- |
+| 📝 **Inscription**         | Candidature, décision, admission         | Candidat, Responsable             |
+| 📚 **Formation**           | Gestion des formations et formateurs     | Responsable, Formateur            |
+| 📅 **Séances & Présences** | Planning et suivi de présence            | Formateur, Apprenant              |
+| 💬 **Forum / Messagerie**  | Communication autour des formations      | Apprenant, Formateur, Responsable |
+| 📝 **Évaluation**          | Création de QCM, passage et notation /20 | Formateur, Apprenant              |
+| 🏆 **Certification**       | Gestion de la certification finale       | Responsable, Apprenant            |
+
+---
+
+# 🔥 Et surtout : le parcours complet d'un apprenant
+
+Si tu veux expliquer **toute l'application en une seule histoire**, tu peux la présenter comme ça :
+
+```text
+                         VISITEUR
+                            │
+                            ▼
+                    Catalogue formations
+                            │
+                            ▼
+                       Candidature
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │   Responsable │
+                    │   examine     │
+                    └───────┬───────┘
+                            │
+                  ┌─────────┴─────────┐
+                  │                   │
+              REFUSÉE              ACCEPTÉE
+                                      │
+                                      ▼
+                                  APPRENANT
+                                      │
+                 ┌────────────────────┼────────────────────┐
+                 │                    │                    │
+                 ▼                    ▼                    ▼
+              Séances             Supports             Forum
+                 │                    │                    │
+                 ▼                    │                    │
+             Présences                │                    │
+                 │                    │                    │
+                 └────────────────────┼────────────────────┘
+                                      │
+                                      ▼
+                                ÉVALUATIONS
+                                      │
+                          ┌───────────┼───────────┐
+                          ▼           ▼           ▼
+                       Eval 1      Eval 2      Eval 3
+                         /20         /20         /20
+                          │           │           │
+                          └───────────┼───────────┘
+                                      │
+                                      ▼
+                              FIN DE FORMATION
+                                      │
+                                      ▼
+                              CERTIFICATION
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+                     CERTIFIÉ                 NON CERTIFIÉ
+```
+
+Ça donne une **architecture fonctionnelle très cohérente** : l'inscription gère l'entrée dans la formation, les séances et présences suivent le déroulement, le forum accompagne les échanges, les évaluations mesurent les acquis, et la certification clôt le parcours.

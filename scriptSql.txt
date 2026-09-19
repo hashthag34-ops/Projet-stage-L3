@@ -1,0 +1,1246 @@
+```sql
+-- ============================================================
+-- BASE DE DONNÉES : PLATEFORME DE GESTION DES FORMATIONS
+-- PostgreSQL
+--
+-- VERSION AVEC MODULE D'ÉVALUATION EN LIGNE
+--
+-- Fonctionnalités ajoutées :
+--   - Plusieurs évaluations par formation
+--   - Évaluation obligatoire ou facultative
+--   - Création d'un sujet par un formateur
+--   - Questions avec nombre de points
+--   - Plusieurs choix de réponses par question
+--   - Une seule bonne réponse par question
+--   - Total maximum de 20 points par évaluation
+--   - Blocage automatique si le total dépasse 20
+--   - Tentatives des apprenants
+--   - Réponses des apprenants
+--   - Calcul de la note sur 20
+--   - Historique des différentes tentatives
+--
+-- ============================================================
+
+
+-- ============================================================
+-- 1. NETTOYAGE OPTIONNEL
+-- ============================================================
+
+DROP TABLE IF EXISTS evaluation_reponse CASCADE;
+DROP TABLE IF EXISTS evaluation_tentative CASCADE;
+DROP TABLE IF EXISTS evaluation_choix CASCADE;
+DROP TABLE IF EXISTS evaluation_question CASCADE;
+DROP TABLE IF EXISTS evaluation_sujet CASCADE;
+
+DROP TABLE IF EXISTS message CASCADE;
+DROP TABLE IF EXISTS forum CASCADE;
+DROP TABLE IF EXISTS support_cours CASCADE;
+DROP TABLE IF EXISTS certification CASCADE;
+DROP TABLE IF EXISTS evaluation CASCADE;
+DROP TABLE IF EXISTS presence CASCADE;
+DROP TABLE IF EXISTS seance CASCADE;
+DROP TABLE IF EXISTS inscription CASCADE;
+DROP TABLE IF EXISTS formation_formateur CASCADE;
+DROP TABLE IF EXISTS formation CASCADE;
+
+DROP TABLE IF EXISTS administrateur CASCADE;
+DROP TABLE IF EXISTS responsable CASCADE;
+DROP TABLE IF EXISTS formateur CASCADE;
+DROP TABLE IF EXISTS apprenant CASCADE;
+DROP TABLE IF EXISTS candidat CASCADE;
+DROP TABLE IF EXISTS utilisateur CASCADE;
+
+
+-- ============================================================
+-- 2. TYPES ENUM
+-- ============================================================
+
+CREATE TYPE statut_compte AS ENUM (
+    'ACTIF',
+    'DESACTIVE',
+    'SUSPENDU'
+);
+
+
+CREATE TYPE statut_inscription AS ENUM (
+    'EN_ATTENTE',
+    'ACCEPTEE',
+    'REFUSEE',
+    'ANNULEE'
+);
+
+
+CREATE TYPE statut_formation AS ENUM (
+    'BROUILLON',
+    'OUVERTE',
+    'EN_COURS',
+    'TERMINEE',
+    'ARCHIVEE'
+);
+
+
+CREATE TYPE statut_presence AS ENUM (
+    'PRESENT',
+    'ABSENT',
+    'RETARD'
+);
+
+
+CREATE TYPE statut_certification AS ENUM (
+    'EN_ATTENTE',
+    'CERTIFIE',
+    'NON_CERTIFIE'
+);
+
+
+-- ============================================================
+-- STATUTS DU MODULE D'ÉVALUATION
+-- ============================================================
+
+CREATE TYPE statut_evaluation AS ENUM (
+    'BROUILLON',
+    'PUBLIEE',
+    'FERMEE',
+    'ARCHIVEE'
+);
+
+
+CREATE TYPE statut_tentative AS ENUM (
+    'EN_COURS',
+    'TERMINEE',
+    'ABANDONNEE'
+);
+
+
+-- ============================================================
+-- 3. UTILISATEUR
+-- ============================================================
+
+CREATE TABLE utilisateur (
+    id_utilisateur SERIAL PRIMARY KEY,
+
+    email VARCHAR(255) NOT NULL UNIQUE,
+
+    mot_de_passe VARCHAR(255),
+
+    username VARCHAR(100) UNIQUE,
+
+    nom VARCHAR(100) NOT NULL,
+    prenom VARCHAR(100) NOT NULL,
+
+    telephone VARCHAR(30),
+
+    age INTEGER CHECK (age >= 0),
+
+    photo_profil VARCHAR(500),
+
+    qr_code VARCHAR(255) UNIQUE,
+
+    statut_compte statut_compte NOT NULL DEFAULT 'ACTIF',
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_derniere_connexion TIMESTAMP
+);
+
+
+-- ============================================================
+-- 4. CANDIDAT
+-- ============================================================
+
+CREATE TABLE candidat (
+    id_candidat SERIAL PRIMARY KEY,
+
+    email VARCHAR(255) NOT NULL UNIQUE,
+
+    nom VARCHAR(100) NOT NULL,
+    prenom VARCHAR(100) NOT NULL,
+
+    age INTEGER CHECK (age >= 0),
+
+    genre VARCHAR(50),
+
+    telephone VARCHAR(30),
+
+    niveau_etude VARCHAR(150),
+
+    situation_professionnelle VARCHAR(150),
+
+    etablissement VARCHAR(255),
+
+    filiere VARCHAR(150),
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- ============================================================
+-- 5. APPRENANT
+-- ============================================================
+
+CREATE TABLE apprenant (
+    id_apprenant SERIAL PRIMARY KEY,
+
+    id_utilisateur INTEGER NOT NULL UNIQUE,
+
+    id_candidat INTEGER NOT NULL UNIQUE,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    statut VARCHAR(50) NOT NULL DEFAULT 'ACTIF',
+
+    CONSTRAINT fk_apprenant_utilisateur
+        FOREIGN KEY (id_utilisateur)
+        REFERENCES utilisateur(id_utilisateur)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_apprenant_candidat
+        FOREIGN KEY (id_candidat)
+        REFERENCES candidat(id_candidat)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 6. FORMATEUR
+-- ============================================================
+
+CREATE TABLE formateur (
+    id_formateur SERIAL PRIMARY KEY,
+
+    id_utilisateur INTEGER NOT NULL UNIQUE,
+
+    specialite VARCHAR(255),
+
+    biographie TEXT,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_formateur_utilisateur
+        FOREIGN KEY (id_utilisateur)
+        REFERENCES utilisateur(id_utilisateur)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 7. RESPONSABLE
+-- ============================================================
+
+CREATE TABLE responsable (
+    id_responsable SERIAL PRIMARY KEY,
+
+    id_utilisateur INTEGER NOT NULL UNIQUE,
+
+    fonction VARCHAR(150),
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_responsable_utilisateur
+        FOREIGN KEY (id_utilisateur)
+        REFERENCES utilisateur(id_utilisateur)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 8. ADMINISTRATEUR
+-- ============================================================
+
+CREATE TABLE administrateur (
+    id_administrateur SERIAL PRIMARY KEY,
+
+    id_utilisateur INTEGER NOT NULL UNIQUE,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_administrateur_utilisateur
+        FOREIGN KEY (id_utilisateur)
+        REFERENCES utilisateur(id_utilisateur)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 9. FORMATION
+-- ============================================================
+
+CREATE TABLE formation (
+    id_formation SERIAL PRIMARY KEY,
+
+    titre VARCHAR(255) NOT NULL,
+
+    description TEXT NOT NULL,
+
+    image_url VARCHAR(500),
+
+    date_debut DATE NOT NULL,
+
+    date_fin DATE NOT NULL,
+
+    date_limite_inscription DATE NOT NULL,
+
+    capacite_max INTEGER NOT NULL CHECK (capacite_max > 0),
+
+    statut statut_formation NOT NULL DEFAULT 'BROUILLON',
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_modification TIMESTAMP,
+
+    CONSTRAINT chk_dates_formation
+        CHECK (date_fin >= date_debut),
+
+    CONSTRAINT chk_date_limite
+        CHECK (date_limite_inscription <= date_debut)
+);
+
+
+-- ============================================================
+-- 10. FORMATEURS AFFECTÉS AUX FORMATIONS
+-- ============================================================
+
+CREATE TABLE formation_formateur (
+    id_formation INTEGER NOT NULL,
+
+    id_formateur INTEGER NOT NULL,
+
+    date_affectation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    role_formateur VARCHAR(100),
+
+    PRIMARY KEY (id_formation, id_formateur),
+
+    CONSTRAINT fk_ff_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_ff_formateur
+        FOREIGN KEY (id_formateur)
+        REFERENCES formateur(id_formateur)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 11. INSCRIPTION / CANDIDATURE
+-- ============================================================
+
+CREATE TABLE inscription (
+    id_inscription SERIAL PRIMARY KEY,
+
+    id_candidat INTEGER NOT NULL,
+
+    id_formation INTEGER NOT NULL,
+
+    date_inscription TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    statut statut_inscription NOT NULL DEFAULT 'EN_ATTENTE',
+
+    motivation TEXT,
+
+    objectif TEXT,
+
+    projet_apres_formation TEXT,
+
+    source_information VARCHAR(255),
+
+    a_deja_suivi_formation BOOLEAN,
+
+    formation_precedente VARCHAR(255),
+
+    retour_suggestion TEXT,
+
+    conditions_acceptees BOOLEAN NOT NULL DEFAULT FALSE,
+
+    date_decision TIMESTAMP,
+
+    motif_decision TEXT,
+
+    date_modification TIMESTAMP,
+
+    CONSTRAINT fk_inscription_candidat
+        FOREIGN KEY (id_candidat)
+        REFERENCES candidat(id_candidat)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_inscription_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT uq_candidat_formation
+        UNIQUE (id_candidat, id_formation)
+);
+
+
+-- ============================================================
+-- 12. SÉANCES
+-- ============================================================
+
+CREATE TABLE seance (
+    id_seance SERIAL PRIMARY KEY,
+
+    id_formation INTEGER NOT NULL,
+
+    titre VARCHAR(255),
+
+    description TEXT,
+
+    date_seance DATE NOT NULL,
+
+    heure_debut TIME NOT NULL,
+
+    heure_fin TIME NOT NULL,
+
+    type_seance VARCHAR(100),
+
+    salle VARCHAR(150),
+
+    CONSTRAINT fk_seance_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_heure_seance
+        CHECK (heure_fin > heure_debut)
+);
+
+
+-- ============================================================
+-- 13. PRÉSENCES
+-- ============================================================
+
+CREATE TABLE presence (
+    id_presence SERIAL PRIMARY KEY,
+
+    id_apprenant INTEGER NOT NULL,
+
+    id_seance INTEGER NOT NULL,
+
+    date_scan TIMESTAMP,
+
+    statut statut_presence NOT NULL,
+
+    commentaire TEXT,
+
+    CONSTRAINT fk_presence_apprenant
+        FOREIGN KEY (id_apprenant)
+        REFERENCES apprenant(id_apprenant)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_presence_seance
+        FOREIGN KEY (id_seance)
+        REFERENCES seance(id_seance)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_presence_apprenant_seance
+        UNIQUE (id_apprenant, id_seance)
+);
+
+
+-- ============================================================
+-- 14. ÉVALUATION — RÉSULTAT / HISTORIQUE
+--
+-- Cette table existait déjà dans la version précédente.
+--
+-- Elle représente maintenant le résultat global d'une
+-- évaluation pour un apprenant.
+--
+-- Le nouveau système détaillé se trouve dans :
+--   evaluation_sujet
+--   evaluation_question
+--   evaluation_choix
+--   evaluation_tentative
+--   evaluation_reponse
+--
+-- ============================================================
+
+CREATE TABLE evaluation (
+    id_evaluation SERIAL PRIMARY KEY,
+
+    id_apprenant INTEGER NOT NULL,
+
+    id_formation INTEGER NOT NULL,
+
+    id_formateur INTEGER NOT NULL,
+
+    id_evaluation_sujet INTEGER,
+
+    type_evaluation VARCHAR(150) NOT NULL,
+
+    note NUMERIC(5,2),
+
+    date_evaluation DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    commentaire TEXT,
+
+    CONSTRAINT fk_evaluation_apprenant
+        FOREIGN KEY (id_apprenant)
+        REFERENCES apprenant(id_apprenant)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_evaluation_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_evaluation_formateur
+        FOREIGN KEY (id_formateur)
+        REFERENCES formateur(id_formateur)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_note
+        CHECK (
+            note IS NULL
+            OR (note >= 0 AND note <= 20)
+        )
+);
+
+
+-- ============================================================
+-- 15. SUJET D'ÉVALUATION
+--
+-- Une formation peut avoir plusieurs sujets d'évaluation.
+--
+-- Exemple :
+--
+-- Formation Java
+--   ├── Évaluation Java fondamentaux
+--   ├── Évaluation Spring Boot
+--   └── Évaluation finale
+--
+-- ============================================================
+
+CREATE TABLE evaluation_sujet (
+    id_evaluation_sujet SERIAL PRIMARY KEY,
+
+    id_formation INTEGER NOT NULL,
+
+    id_formateur INTEGER NOT NULL,
+
+    titre VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    duree_minutes INTEGER,
+
+    obligatoire BOOLEAN NOT NULL DEFAULT TRUE,
+
+    statut statut_evaluation NOT NULL DEFAULT 'BROUILLON',
+
+    total_points NUMERIC(5,2) NOT NULL DEFAULT 0,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_modification TIMESTAMP,
+
+    date_publication TIMESTAMP,
+
+    CONSTRAINT fk_sujet_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_sujet_formateur
+        FOREIGN KEY (id_formateur)
+        REFERENCES formateur(id_formateur)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_sujet_total_points
+        CHECK (
+            total_points >= 0
+            AND total_points <= 20
+        ),
+
+    CONSTRAINT chk_sujet_duree
+        CHECK (
+            duree_minutes IS NULL
+            OR duree_minutes > 0
+        )
+);
+
+
+-- ============================================================
+-- 16. QUESTIONS D'ÉVALUATION
+-- ============================================================
+
+CREATE TABLE evaluation_question (
+    id_question SERIAL PRIMARY KEY,
+
+    id_evaluation_sujet INTEGER NOT NULL,
+
+    numero_question INTEGER NOT NULL,
+
+    enonce TEXT NOT NULL,
+
+    points NUMERIC(5,2) NOT NULL,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_question_sujet
+        FOREIGN KEY (id_evaluation_sujet)
+        REFERENCES evaluation_sujet(id_evaluation_sujet)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_question_points
+        CHECK (
+            points > 0
+            AND points <= 20
+        ),
+
+    CONSTRAINT chk_question_numero
+        CHECK (numero_question > 0),
+
+    CONSTRAINT uq_question_numero
+        UNIQUE (
+            id_evaluation_sujet,
+            numero_question
+        )
+);
+
+
+-- ============================================================
+-- 17. CHOIX DE RÉPONSE
+-- ============================================================
+
+CREATE TABLE evaluation_choix (
+    id_choix SERIAL PRIMARY KEY,
+
+    id_question INTEGER NOT NULL,
+
+    libelle TEXT NOT NULL,
+
+    est_correct BOOLEAN NOT NULL DEFAULT FALSE,
+
+    ordre INTEGER NOT NULL DEFAULT 1,
+
+    CONSTRAINT fk_choix_question
+        FOREIGN KEY (id_question)
+        REFERENCES evaluation_question(id_question)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_ordre_choix
+        CHECK (ordre > 0)
+);
+
+
+-- ============================================================
+-- INDEX UNIQUE :
+-- UNE SEULE BONNE RÉPONSE PAR QUESTION
+-- ============================================================
+
+CREATE UNIQUE INDEX uq_une_seule_bonne_reponse
+ON evaluation_choix(id_question)
+WHERE est_correct = TRUE;
+
+
+-- ============================================================
+-- 18. TENTATIVES D'ÉVALUATION
+--
+-- Une tentative représente le passage d'une évaluation
+-- par un apprenant.
+--
+-- Un même apprenant peut donc avoir plusieurs résultats
+-- pour plusieurs évaluations d'une même formation.
+--
+-- ============================================================
+
+CREATE TABLE evaluation_tentative (
+    id_tentative SERIAL PRIMARY KEY,
+
+    id_evaluation_sujet INTEGER NOT NULL,
+
+    id_apprenant INTEGER NOT NULL,
+
+    date_debut TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_fin TIMESTAMP,
+
+    note NUMERIC(5,2),
+
+    statut statut_tentative NOT NULL DEFAULT 'EN_COURS',
+
+    CONSTRAINT fk_tentative_sujet
+        FOREIGN KEY (id_evaluation_sujet)
+        REFERENCES evaluation_sujet(id_evaluation_sujet)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_tentative_apprenant
+        FOREIGN KEY (id_apprenant)
+        REFERENCES apprenant(id_apprenant)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_note_tentative
+        CHECK (
+            note IS NULL
+            OR (note >= 0 AND note <= 20)
+        ),
+
+    CONSTRAINT chk_date_tentative
+        CHECK (
+            date_fin IS NULL
+            OR date_fin >= date_debut
+        )
+);
+
+
+-- ============================================================
+-- 19. RÉPONSES DES APPRENANTS
+-- ============================================================
+
+CREATE TABLE evaluation_reponse (
+    id_reponse SERIAL PRIMARY KEY,
+
+    id_tentative INTEGER NOT NULL,
+
+    id_question INTEGER NOT NULL,
+
+    id_choix INTEGER NOT NULL,
+
+    points_obtenus NUMERIC(5,2) NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_reponse_tentative
+        FOREIGN KEY (id_tentative)
+        REFERENCES evaluation_tentative(id_tentative)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_reponse_question
+        FOREIGN KEY (id_question)
+        REFERENCES evaluation_question(id_question)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_reponse_choix
+        FOREIGN KEY (id_choix)
+        REFERENCES evaluation_choix(id_choix)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_points_obtenus
+        CHECK (
+            points_obtenus >= 0
+            AND points_obtenus <= 20
+        ),
+
+    CONSTRAINT uq_reponse_question
+        UNIQUE (
+            id_tentative,
+            id_question
+        )
+);
+
+
+-- ============================================================
+-- 20. CONTRAINTE COMPLÉMENTAIRE :
+-- LE CHOIX DOIT APPARTENIR À LA QUESTION
+-- ============================================================
+
+ALTER TABLE evaluation_choix
+ADD CONSTRAINT uq_choix_question
+UNIQUE (
+    id_question,
+    id_choix
+);
+
+
+ALTER TABLE evaluation_reponse
+ADD CONSTRAINT fk_reponse_question_choix
+FOREIGN KEY (
+    id_question,
+    id_choix
+)
+REFERENCES evaluation_choix (
+    id_question,
+    id_choix
+);
+
+
+-- ============================================================
+-- 21. CERTIFICATION
+-- ============================================================
+
+CREATE TABLE certification (
+    id_certification SERIAL PRIMARY KEY,
+
+    id_apprenant INTEGER NOT NULL,
+
+    id_formation INTEGER NOT NULL,
+
+    date_certification DATE,
+
+    statut statut_certification NOT NULL DEFAULT 'EN_ATTENTE',
+
+    fichier_certification VARCHAR(500),
+
+    numero_certification VARCHAR(100) UNIQUE,
+
+    commentaire TEXT,
+
+    CONSTRAINT fk_certification_apprenant
+        FOREIGN KEY (id_apprenant)
+        REFERENCES apprenant(id_apprenant)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_certification_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_certification_apprenant_formation
+        UNIQUE (
+            id_apprenant,
+            id_formation
+        )
+);
+
+
+-- ============================================================
+-- 22. SUPPORTS DE COURS
+-- ============================================================
+
+CREATE TABLE support_cours (
+    id_support SERIAL PRIMARY KEY,
+
+    id_formation INTEGER NOT NULL,
+
+    id_formateur INTEGER NOT NULL,
+
+    nom_fichier VARCHAR(255) NOT NULL,
+
+    type_fichier VARCHAR(100),
+
+    chemin_fichier VARCHAR(500) NOT NULL,
+
+    date_publication TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    description TEXT,
+
+    CONSTRAINT fk_support_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_support_formateur
+        FOREIGN KEY (id_formateur)
+        REFERENCES formateur(id_formateur)
+        ON DELETE RESTRICT
+);
+
+
+-- ============================================================
+-- 23. FORUM
+-- ============================================================
+
+CREATE TABLE forum (
+    id_forum SERIAL PRIMARY KEY,
+
+    id_formation INTEGER NOT NULL UNIQUE,
+
+    nom VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_forum_formation
+        FOREIGN KEY (id_formation)
+        REFERENCES formation(id_formation)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================================
+-- 24. MESSAGES DU FORUM
+-- ============================================================
+
+CREATE TABLE message (
+    id_message SERIAL PRIMARY KEY,
+
+    id_forum INTEGER NOT NULL,
+
+    id_utilisateur INTEGER NOT NULL,
+
+    contenu TEXT NOT NULL,
+
+    date_envoi TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_modification TIMESTAMP,
+
+    message_parent INTEGER,
+
+    CONSTRAINT fk_message_forum
+        FOREIGN KEY (id_forum)
+        REFERENCES forum(id_forum)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_message_utilisateur
+        FOREIGN KEY (id_utilisateur)
+        REFERENCES utilisateur(id_utilisateur)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_message_parent
+        FOREIGN KEY (message_parent)
+        REFERENCES message(id_message)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================================
+-- 25. FONCTION :
+-- VÉRIFICATION DU TOTAL DES POINTS
+--
+-- Une évaluation ne peut jamais dépasser 20 points.
+--
+-- Exemple :
+--
+-- Question 1 = 5
+-- Question 2 = 5
+-- Question 3 = 10
+--
+-- Total = 20
+--
+-- Une nouvelle question est alors refusée.
+--
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION verifier_total_points_evaluation()
+RETURNS TRIGGER AS $$
+DECLARE
+    total_points NUMERIC(5,2);
+BEGIN
+
+    SELECT COALESCE(SUM(points), 0)
+    INTO total_points
+    FROM evaluation_question
+    WHERE id_evaluation_sujet = NEW.id_evaluation_sujet;
+
+    IF total_points > 20 THEN
+
+        RAISE EXCEPTION
+            'Impossible d''ajouter ou de modifier cette question : le total de l''évaluation dépasserait 20 points.';
+
+    END IF;
+
+    RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- 26. TRIGGER :
+-- CONTRÔLE DES 20 POINTS
+-- ============================================================
+
+CREATE TRIGGER trg_verifier_total_points
+BEFORE INSERT OR UPDATE OF points
+ON evaluation_question
+FOR EACH ROW
+EXECUTE FUNCTION verifier_total_points_evaluation();
+
+
+-- ============================================================
+-- 27. FONCTION :
+-- MISE À JOUR AUTOMATIQUE DU TOTAL
+-- DE L'ÉVALUATION
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION mettre_a_jour_total_evaluation()
+RETURNS TRIGGER AS $$
+DECLARE
+    sujet_id INTEGER;
+BEGIN
+
+    IF TG_OP = 'DELETE' THEN
+        sujet_id := OLD.id_evaluation_sujet;
+    ELSE
+        sujet_id := NEW.id_evaluation_sujet;
+    END IF;
+
+    UPDATE evaluation_sujet
+    SET
+        total_points = (
+            SELECT COALESCE(SUM(points), 0)
+            FROM evaluation_question
+            WHERE id_evaluation_sujet = sujet_id
+        ),
+        date_modification = CURRENT_TIMESTAMP
+    WHERE id_evaluation_sujet = sujet_id;
+
+    RETURN COALESCE(NEW, OLD);
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- 28. TRIGGER :
+-- SYNCHRONISATION DU TOTAL DES POINTS
+-- ============================================================
+
+CREATE TRIGGER trg_maj_total_evaluation
+AFTER INSERT OR UPDATE OR DELETE
+ON evaluation_question
+FOR EACH ROW
+EXECUTE FUNCTION mettre_a_jour_total_evaluation();
+
+
+-- ============================================================
+-- 29. FONCTION :
+-- VÉRIFICATION DU SUJET AVANT PUBLICATION
+--
+-- Un sujet ne peut être publié que si :
+--   - il possède au moins une question
+--   - son total est exactement égal à 20
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION verifier_publication_evaluation()
+RETURNS TRIGGER AS $$
+DECLARE
+    nombre_questions INTEGER;
+    total_points NUMERIC(5,2);
+BEGIN
+
+    IF NEW.statut = 'PUBLIEE' THEN
+
+        SELECT
+            COUNT(*),
+            COALESCE(SUM(points), 0)
+        INTO
+            nombre_questions,
+            total_points
+        FROM evaluation_question
+        WHERE id_evaluation_sujet = NEW.id_evaluation_sujet;
+
+        IF nombre_questions = 0 THEN
+
+            RAISE EXCEPTION
+                'Impossible de publier l''évaluation : elle ne contient aucune question.';
+
+        END IF;
+
+        IF total_points <> 20 THEN
+
+            RAISE EXCEPTION
+                'Impossible de publier l''évaluation : le total doit être exactement de 20 points. Total actuel : %.',
+                total_points;
+
+        END IF;
+
+        NEW.date_publication = CURRENT_TIMESTAMP;
+
+    END IF;
+
+    RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- 30. TRIGGER :
+-- CONTRÔLE DE PUBLICATION
+-- ============================================================
+
+CREATE TRIGGER trg_verifier_publication_evaluation
+BEFORE UPDATE OF statut
+ON evaluation_sujet
+FOR EACH ROW
+EXECUTE FUNCTION verifier_publication_evaluation();
+
+
+-- ============================================================
+-- 31. FONCTION :
+-- MISE À JOUR AUTOMATIQUE DE LA DATE DE MODIFICATION
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION update_date_modification()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    NEW.date_modification = CURRENT_TIMESTAMP;
+
+    RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- 32. TRIGGER FORMATION
+-- ============================================================
+
+CREATE TRIGGER trg_formation_modification
+BEFORE UPDATE ON formation
+FOR EACH ROW
+EXECUTE FUNCTION update_date_modification();
+
+
+-- ============================================================
+-- 33. TRIGGER INSCRIPTION
+-- ============================================================
+
+CREATE TRIGGER trg_inscription_modification
+BEFORE UPDATE ON inscription
+FOR EACH ROW
+EXECUTE FUNCTION update_date_modification();
+
+
+-- ============================================================
+-- 34. TRIGGER SUJET D'ÉVALUATION
+-- ============================================================
+
+CREATE TRIGGER trg_evaluation_sujet_modification
+BEFORE UPDATE ON evaluation_sujet
+FOR EACH ROW
+EXECUTE FUNCTION update_date_modification();
+
+
+-- ============================================================
+-- 35. INDEX — UTILISATEURS
+-- ============================================================
+
+CREATE INDEX idx_candidat_email
+    ON candidat(email);
+
+
+CREATE INDEX idx_utilisateur_email
+    ON utilisateur(email);
+
+
+-- ============================================================
+-- 36. INDEX — FORMATIONS
+-- ============================================================
+
+CREATE INDEX idx_formation_statut
+    ON formation(statut);
+
+
+-- ============================================================
+-- 37. INDEX — INSCRIPTIONS
+-- ============================================================
+
+CREATE INDEX idx_inscription_candidat
+    ON inscription(id_candidat);
+
+
+CREATE INDEX idx_inscription_formation
+    ON inscription(id_formation);
+
+
+CREATE INDEX idx_inscription_statut
+    ON inscription(statut);
+
+
+-- ============================================================
+-- 38. INDEX — SÉANCES
+-- ============================================================
+
+CREATE INDEX idx_seance_formation
+    ON seance(id_formation);
+
+
+-- ============================================================
+-- 39. INDEX — PRÉSENCES
+-- ============================================================
+
+CREATE INDEX idx_presence_apprenant
+    ON presence(id_apprenant);
+
+
+-- ============================================================
+-- 40. INDEX — ANCIEN SYSTÈME D'ÉVALUATION
+-- ============================================================
+
+CREATE INDEX idx_evaluation_apprenant
+    ON evaluation(id_apprenant);
+
+
+CREATE INDEX idx_evaluation_formation
+    ON evaluation(id_formation);
+
+
+CREATE INDEX idx_evaluation_formateur
+    ON evaluation(id_formateur);
+
+
+CREATE INDEX idx_evaluation_sujet
+    ON evaluation(id_evaluation_sujet);
+
+
+-- ============================================================
+-- 41. INDEX — SUJETS D'ÉVALUATION
+-- ============================================================
+
+CREATE INDEX idx_sujet_formation
+    ON evaluation_sujet(id_formation);
+
+
+CREATE INDEX idx_sujet_formateur
+    ON evaluation_sujet(id_formateur);
+
+
+CREATE INDEX idx_sujet_statut
+    ON evaluation_sujet(statut);
+
+
+CREATE INDEX idx_sujet_obligatoire
+    ON evaluation_sujet(obligatoire);
+
+
+-- ============================================================
+-- 42. INDEX — QUESTIONS
+-- ============================================================
+
+CREATE INDEX idx_question_sujet
+    ON evaluation_question(id_evaluation_sujet);
+
+
+-- ============================================================
+-- 43. INDEX — CHOIX
+-- ============================================================
+
+CREATE INDEX idx_choix_question
+    ON evaluation_choix(id_question);
+
+
+-- ============================================================
+-- 44. INDEX — TENTATIVES
+-- ============================================================
+
+CREATE INDEX idx_tentative_apprenant
+    ON evaluation_tentative(id_apprenant);
+
+
+CREATE INDEX idx_tentative_sujet
+    ON evaluation_tentative(id_evaluation_sujet);
+
+
+CREATE INDEX idx_tentative_statut
+    ON evaluation_tentative(statut);
+
+
+-- ============================================================
+-- 45. INDEX — RÉPONSES
+-- ============================================================
+
+CREATE INDEX idx_reponse_tentative
+    ON evaluation_reponse(id_tentative);
+
+
+CREATE INDEX idx_reponse_question
+    ON evaluation_reponse(id_question);
+
+
+-- ============================================================
+-- 46. INDEX — MESSAGES
+-- ============================================================
+
+CREATE INDEX idx_message_forum
+    ON message(id_forum);
+
+
+-- ============================================================
+-- 47. FIN DU SCRIPT
+-- ============================================================
+```
