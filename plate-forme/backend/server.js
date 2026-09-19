@@ -10,7 +10,7 @@ const app = express();
 // 2. Configuration CORS
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'], // Ton URL Vite/React
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
@@ -32,6 +32,9 @@ const inscriptionRoutes = require('./routes/inscriptionRoutes');
 const authRoutes = require('./routes/authRoutes');
 const apprenantRoutes = require('./routes/apprenantRoutes');
 const responsableRoutes = require('./routes/responsableRoutes');
+const scanRoutes = require('./routes/scanRoutes');
+const formateurRoutes = require('./routes/formateurRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const verifyToken = require('./middleware/authMiddleware');
 const authController = require('./controllers/authController');
@@ -50,6 +53,9 @@ app.use('/api/auth', authRoutes);
 
 // Routes Apprenant
 app.use('/api/apprenant', apprenantRoutes);
+app.use('/api/presences', scanRoutes);
+app.use('/api/formateur', formateurRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: "API Plateforme de Formations opérationnelle " });

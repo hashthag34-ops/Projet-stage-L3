@@ -215,32 +215,6 @@ exports.deleteFormation = async (req, res) => {
   }
 };
 
-// Récupérer le catalogue des formations publiques
-exports.getFormationsPubliques = async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        id_formation, 
-        titre, 
-        description, 
-        image_url, 
-        date_debut, 
-        date_fin, 
-        date_limite_inscription, 
-        capacite_max,
-        statut
-      FROM formation 
-      WHERE statut = 'OUVERTE' 
-      ORDER BY date_debut ASC;
-    `;
-    const { rows } = await db.query(query);
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error("Erreur getFormationsPubliques :", error);
-    res.status(500).json({ message: "Erreur serveur lors de la récupération des formations" });
-  }
-};
-
                                            // METHODE POUR LES RESPONSABLE POUR L'AFFECTATION DES FORMATEUR A LEUR FORMATION
 // Obtenir la liste des formateurs affectés à une formation
 exports.getFormateursByFormation = async (req, res) => {

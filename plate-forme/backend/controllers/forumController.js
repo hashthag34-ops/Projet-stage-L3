@@ -7,14 +7,15 @@ exports.getMessagesByForum = async (req, res) => {
 
   try {
     const query = `
-      SELECT m.id_message, m.contenu, m.created_at, m.id_utilisateur, u.nom as nom_expediteur, u.prenom
-      FROM messages m
-      JOIN utilisateurs u ON m.id_utilisateur = u.id_utilisateur
-      WHERE m.id_forum = ?
-      ORDER BY m.created_at ASC
+      SELECT m.id_message, m.contenu, m.date_envoi AS created_at, m.id_utilisateur,
+             u.nom AS nom_expediteur, u.prenom
+      FROM message m
+      JOIN utilisateur u ON m.id_utilisateur = u.id_utilisateur
+      WHERE m.id_forum = $1
+      ORDER BY m.date_envoi ASC
     `;
-    const [messages] = await db.query(query, [id_forum]);
-    res.json(messages);
+    const { rows } = await db.query(query, [id_forum]);
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur lors de la récupération des messages" });
@@ -33,21 +34,27 @@ exports.createMessage = async (req, res) => {
 
   try {
     const query = `
-      INSERT INTO messages (id_forum, id_utilisateur, contenu, created_at)
-      VALUES (?, ?, ?, NOW())
+      INSERT INTO message (id_forum, id_utilisateur, contenu)
+      VALUES ($1, $2, $3)
+      RETURNING id_message, date_envoi AS created_at
     `;
-    const [result] = await db.query(query, [id_forum, id_utilisateur, contenu]);
+    const { rows: messageRows } = await db.query(query, [id_forum, id_utilisateur, contenu]);
 
     // Retourner le message créé avec le nom de l'expéditeur
-    const [user] = await db.query('SELECT nom, prenom FROM utilisateurs WHERE id_utilisateur = ?', [id_utilisateur]);
+    const { rows: userRows } = await db.query(
+      'SELECT nom, prenom FROM utilisateur WHERE id_utilisateur = $1',
+      [id_utilisateur]
+    );
+    const message = messageRows[0];
+    const user = userRows[0];
 
     res.status(201).json({
-      id_message: result.insertId,
+      id_message: message.id_message,
       id_forum,
       id_utilisateur,
       contenu,
-      created_at: new Date(),
-      nom_expediteur: `${user[0].nom} ${user[0].prenom}`
+      created_at: message.created_at,
+      nom_expediteur: `${user.nom} ${user.prenom}`
     });
   } catch (err) {
     console.error(err);

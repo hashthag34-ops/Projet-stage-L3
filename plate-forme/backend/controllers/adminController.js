@@ -32,7 +32,6 @@ exports.getUsers = async (req, res) => {
       LEFT JOIN responsable r ON u.id_utilisateur = r.id_utilisateur
       LEFT JOIN formateur f ON u.id_utilisateur = f.id_utilisateur
       LEFT JOIN apprenant ap ON u.id_utilisateur = ap.id_utilisateur
-      LEFT JOIN responsable r ON u.id_utilisateur = r.id_utilisateur
       LEFT JOIN LATERAL (
         SELECT f.titre AS formation_titre, i.motivation, i.objectif, i.projet_apres_formation,
                c.niveau_etude, c.situation_professionnelle, c.etablissement, c.filiere,
@@ -58,7 +57,7 @@ exports.getUsers = async (req, res) => {
 exports.createUser = async (req, res) => {
   const { email, mot_de_passe, nom, prenom, telephone, age, role, specialite, fonction } = req.body;
 
-  const client = await db.getClient();
+  const client = await db.connect();
 
   try {
     await client.query('BEGIN');

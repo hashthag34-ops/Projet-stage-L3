@@ -353,14 +353,25 @@ exports.validerPromotion = async (req, res) => {
 exports.togglePreselection = async (req, res) => {
   const { id_inscription } = req.params;
   const { statut } = req.body;
+  const statutsAutorises = ['PRESELECTIONNEE', 'REFUSEE'];
+
+  if (!statutsAutorises.includes(statut)) {
+    return res.status(400).json({ message: "Statut de candidature invalide." });
+  }
 
   try {
-    await db.query(
+    const result = await db.query(
       `UPDATE inscription SET statut = $1 WHERE id_inscription = $2`,
       [statut, id_inscription]
     );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Candidature introuvable." });
+    }
+
     res.json({ message: "Statut de pré-sélection mis à jour." });
   } catch (err) {
+    console.error("Erreur lors du changement de statut de la candidature :", err);
     res.status(500).json({ message: "Erreur lors du changement de statut." });
   }
 };

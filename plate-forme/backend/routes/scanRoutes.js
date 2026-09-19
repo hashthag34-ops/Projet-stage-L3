@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // Votre client pg / Pool
+const db = require('../config/db');
+const verifyToken = require('../middleware/authMiddleware');
+
+router.use(verifyToken);
 
 // Vérifier les droits du responsable (middleware d'authentification requis)
 router.post('/scan', async (req, res) => {

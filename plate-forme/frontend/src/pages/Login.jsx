@@ -31,7 +31,7 @@ export default function Login() {
         navigate('/Responsable/GsFormation'); //pour le moment on va pas mettre dashboard pour es test des autre pages mon reuf
         console.log("Redirection fait");
       } else if (role === 'FORMATEUR') {
-        navigate('/formateur/dashboard');
+        navigate('/Formateur');
       } else if (role === 'ADMINISTRATEUR') {
         navigate('/Admin/dashboard');
       } else {

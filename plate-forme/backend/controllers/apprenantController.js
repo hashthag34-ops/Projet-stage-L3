@@ -7,13 +7,14 @@ exports.getMesFormations = async (req, res) => {
 
   try {
     const query = `
-      SELECT f.id_formation, f.titre, f.description, f.statut, c.statut as statut_candidature
-      FROM candidatures c
-      JOIN formations f ON c.id_formation = f.id_formation
-      WHERE c.id_utilisateur = ? AND c.statut = 'ACCEPTEE'
+      SELECT f.id_formation, f.titre, f.description, f.statut, i.statut AS statut_candidature
+      FROM apprenant a
+      JOIN inscription i ON a.id_candidat = i.id_candidat
+      JOIN formation f ON i.id_formation = f.id_formation
+      WHERE a.id_utilisateur = $1 AND i.statut = 'ACCEPTEE'
     `;
-    const [formations] = await db.query(query, [id_utilisateur]);
-    res.json(formations);
+    const { rows } = await db.query(query, [id_utilisateur]);
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur lors de la récupération des formations" });
@@ -71,14 +72,15 @@ exports.getMesForums = async (req, res) => {
 
   try {
     const query = `
-      SELECT forum.id_forum, forum.nom, forum.description, f.titre as titre_formation
-      FROM forums forum
-      JOIN formations f ON forum.id_formation = f.id_formation
-      JOIN candidatures c ON f.id_formation = c.id_formation
-      WHERE c.id_utilisateur = ? AND c.statut = 'ACCEPTEE'
+      SELECT fo.id_forum, fo.nom, fo.description, f.titre AS titre_formation
+      FROM apprenant a
+      JOIN inscription i ON a.id_candidat = i.id_candidat
+      JOIN formation f ON i.id_formation = f.id_formation
+      JOIN forum fo ON fo.id_formation = f.id_formation
+      WHERE a.id_utilisateur = $1 AND i.statut = 'ACCEPTEE'
     `;
-    const [forums] = await db.query(query, [id_utilisateur]);
-    res.json(forums);
+    const { rows } = await db.query(query, [id_utilisateur]);
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur lors de la récupération des forums" });

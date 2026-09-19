@@ -22,10 +22,16 @@ import AdminLayout from './components/AdminLayout';
 
 //Import pour les responsables
 import ResponsableLayout from './components/ResponsableLayout';
+import FormateurLayout from './components/FormateurLayout';
 import Candidatures from './pages/Responsable/Candidature';
 import ResponsableFormations from './pages/Responsable/ResponsableFormations';
 import Planning from './pages/Responsable/Planning';
 import Scan from './pages/Responsable/Scan';
+import FormateurDashboard from './pages/Formateur/dashboard';
+import FormateurPlanning from './pages/Formateur/Planning';
+import FormateurForum from './pages/Formateur/Forum';
+import FormateurApprenants from './pages/Formateur/Apprenants';
+import GsEvaluation from './pages/Formateur/GsEvaluation';
 
 
 
@@ -52,6 +58,7 @@ export default function App() {
       <Route path="/Admin" element={<AdminLayout />}>
         <Route index element={<GsUsers />} />
         <Route path="dashboard" element={<GsUsers />} />
+        <Route path="Profil" element={<Profil />} />
       </Route>
 
       {/* 5. Routes pour les responsables */}
@@ -61,6 +68,17 @@ export default function App() {
         <Route path="Planning" element={<Planning />} />
         <Route path="Profil" element={<Profil />} />
         <Route path="Scan" element={<Scan />} />
+        <Route path="Catalogue" element={<Catalogue />} />
+      </Route>
+
+      {/* 6. Espace Formateur */}
+      <Route path="/Formateur" element={<FormateurLayout />}>
+        <Route index element={<FormateurDashboard />} />
+        <Route path="Planning" element={<FormateurPlanning />} />
+        <Route path="Apprenants" element={<FormateurApprenants />} />
+        <Route path="Evaluations" element={<GsEvaluation />} />
+        <Route path="Forum" element={<FormateurForum />} />
+        <Route path="Profil" element={<Profil />} />
         <Route path="Catalogue" element={<Catalogue />} />
       </Route>
 

@@ -1,0 +1,3 @@
+ALTER TABLE utilisateur
+ALTER COLUMN qr_code TYPE TEXT
+USING qr_code::TEXT;
