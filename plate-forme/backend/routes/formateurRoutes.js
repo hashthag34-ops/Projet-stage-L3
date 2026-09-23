@@ -8,6 +8,9 @@ router.use(verifyToken);
 
 router.get('/formations', formateurController.getFormations);
 router.get('/planning', formateurController.getPlanning);
+router.post('/planning', formateurController.createSeance);
+router.patch('/planning/:id_seance', formateurController.updateSeance);
+router.delete('/planning/:id_seance', formateurController.deleteSeance);
 router.get('/apprenants', formateurController.getStudents);
 router.get('/forums', formateurController.getForums);
 router.get('/forums/:id_forum/messages', forumController.getMessagesByForum);

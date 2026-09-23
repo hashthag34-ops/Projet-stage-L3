@@ -1,7 +1,7 @@
 // frontend/src/pages/Apprenant/ApprenantForum.jsx
 import { useEffect, useState } from 'react';
+import { ArrowLeft, BookOpen, MessageCircle, Send } from 'lucide-react';
 import API from '../../services/api';
-import { getAuthUser } from '../../services/authService';
 
 export default function ApprenantForum() {
   const [forums, setForums] = useState([]);
@@ -9,8 +9,9 @@ export default function ApprenantForum() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const currentUser = getAuthUser();
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
   // 1. Charger les forums restreints aux formations de l'apprenant
   useEffect(() => {
@@ -18,18 +19,22 @@ export default function ApprenantForum() {
       .then((res) => {
         setForums(Array.isArray(res.data) ? res.data : []);
       })
-      .catch((err) => console.error("Erreur forums:", err))
+      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger les forums.'))
       .finally(() => setLoading(false));
   }, []);
 
   // 2. Charger les messages du forum sélectionné
   const handleOpenForum = async (forum) => {
     setSelectedForum(forum);
+    setMessagesLoading(true);
+    setError('');
     try {
-      const res = await API.get(`/forums/${forum.id_forum}/messages`);
+      const res = await API.get(`/apprenant/forums/${forum.id_forum}/messages`);
       setMessages(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Erreur chargement messages:", err);
+      setError(err.response?.data?.message || 'Impossible de charger les messages.');
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -38,56 +43,59 @@ export default function ApprenantForum() {
     e.preventDefault();
     if (!newMessage.trim() || !selectedForum) return;
 
+    setSending(true);
+    setError('');
     try {
-      const res = await API.post(`/forums/${selectedForum.id_forum}/messages`, {
-        contenu: newMessage,
-        id_utilisateur: currentUser?.id_utilisateur
-      });
-
-      // Ajouter le message à la liste
-      setMessages([...messages, res.data]);
+      await API.post(`/apprenant/forums/${selectedForum.id_forum}/messages`, { contenu: newMessage.trim() });
+      const res = await API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`);
+      setMessages(Array.isArray(res.data) ? res.data : []);
       setNewMessage('');
     } catch (err) {
-      alert("Erreur lors de l'envoi du message");
+      setError(err.response?.data?.message || "Erreur lors de l'envoi du message.");
+    } finally {
+      setSending(false);
     }
   };
 
   if (loading) return <div className="p-6 text-gray-500">Chargement des forums...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-7">
+      <div className="border-b border-black/10 pb-6 dark:border-white/10">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Forums de Discussion 💬</h1>
-          <p className="text-sm text-gray-500">
-            Échangez avec vos formateurs et camarades de promo.
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
+          <h1 className="mt-2 text-3xl font-black">Forum de discussion</h1>
+          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Échangez avec vos formateurs et camarades de formation.</p>
         </div>
       </div>
+
+      {error && <p className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-3 text-sm text-orange-700 dark:text-orange-400">{error}</p>}
 
       {!selectedForum ? (
         /* VUE 1 : Liste des forums autorisés */
         <div className="grid gap-4 md:grid-cols-2">
           {forums.length === 0 ? (
-            <div className="col-span-2 bg-white p-8 text-center rounded-xl border border-gray-100 text-gray-500">
-              Aucun forum disponible. Tu dois être inscrit à une formation active.
+            <div className="col-span-2 rounded-2xl border border-dashed border-black/15 bg-black/[0.03] p-12 text-center text-sm text-black/50 dark:border-white/15 dark:bg-white/[0.04] dark:text-white/50">
+              <MessageCircle size={32} className="mx-auto mb-3 text-orange-500" />
+              Aucun forum disponible pour tes formations.
             </div>
           ) : (
             forums.map((f) => (
-              <div key={f.id_forum} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-300 transition flex flex-col justify-between">
+              <div key={f.id_forum} className="flex flex-col justify-between rounded-2xl border border-black/10 bg-white p-6 shadow-sm transition hover:border-orange-500 dark:border-white/10 dark:bg-zinc-950">
                 <div>
-                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">
+                    <BookOpen size={13} />
                     {f.titre_formation || 'Formation'}
                   </span>
-                  <h2 className="text-lg font-bold text-gray-800 mt-2">{f.nom}</h2>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{f.description}</p>
+                  <h2 className="mt-3 text-lg font-black">{f.nom}</h2>
+                  <p className="mt-1 line-clamp-2 text-sm text-black/55 dark:text-white/55">{f.description || 'Espace de discussion de la formation.'}</p>
                 </div>
                 
                 <button 
                   onClick={() => handleOpenForum(f)}
-                  className="mt-6 w-full bg-blue-600 text-white text-xs px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-black transition hover:bg-orange-400"
                 >
-                  Accéder aux discussions →
+                  <MessageCircle size={15} /> Accéder aux discussions
                 </button>
               </div>
             ))
@@ -95,40 +103,33 @@ export default function ApprenantForum() {
         </div>
       ) : (
         /* VUE 2 : Discussion dans le forum sélectionné */
-        <div className="bg-white rounded-xl border shadow-sm flex flex-col h-[600px]">
+        <div className="flex h-[600px] flex-col rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
           {/* Header du Chat */}
-          <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+          <div className="flex items-center justify-between border-b border-black/10 p-5 dark:border-white/10">
             <div>
-              <h2 className="font-bold text-gray-800 text-base">{selectedForum.nom}</h2>
-              <p className="text-xs text-gray-500">{selectedForum.titre_formation}</p>
+              <h2 className="font-black">{selectedForum.nom}</h2>
+              <p className="mt-1 text-xs text-black/50 dark:text-white/50">{selectedForum.titre_formation}</p>
             </div>
             <button 
               onClick={() => setSelectedForum(null)}
-              className="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-medium transition"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-black/60 transition hover:bg-orange-500/10 hover:text-orange-600 dark:text-white/60 dark:hover:text-orange-400"
             >
-              ← Retour aux forums
+              <ArrowLeft size={15} /> Retour
             </button>
           </div>
 
           {/* Zone des messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 ? (
-              <p className="text-center text-xs text-gray-400 py-10 italic">Soyez le premier à poser une question !</p>
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            {messagesLoading ? <p className="py-10 text-center text-sm text-black/50 dark:text-white/50">Chargement des messages...</p> : messages.length === 0 ? (
+              <p className="py-10 text-center text-sm italic text-black/40 dark:text-white/40">Soyez le premier à poser une question.</p>
             ) : (
-              messages.map((msg, index) => {
-                const isMe = msg.id_utilisateur === currentUser?.id_utilisateur;
+              messages.map((msg) => {
                 return (
-                  <div key={msg.id_message || index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    <span className="text-[10px] text-gray-400 mb-0.5 px-1">
-                      {msg.nom_expediteur || 'Utilisateur'} • {new Date(msg.created_at || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  <div key={msg.id_message} className="rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
+                    <span className="text-[11px] font-bold text-orange-600 dark:text-orange-400">
+                      {msg.prenom} {msg.nom_expediteur} · {new Date(msg.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
-                    <div className={`max-w-md px-4 py-2.5 rounded-2xl text-sm ${
-                      isMe 
-                        ? 'bg-blue-600 text-white rounded-br-none' 
-                        : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                    }`}>
-                      {msg.contenu}
-                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm">{msg.contenu}</p>
                   </div>
                 );
               })
@@ -136,19 +137,20 @@ export default function ApprenantForum() {
           </div>
 
           {/* Saisie du message */}
-          <form onSubmit={handleSendMessage} className="p-3 border-t flex gap-2">
+          <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-black/10 p-4 dark:border-white/10">
             <input 
               type="text"
               placeholder="Écrivez votre message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 rounded-xl border border-black/15 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-orange-500 dark:border-white/20"
             />
             <button 
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition"
+              disabled={sending}
+              className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:opacity-50"
             >
-              Envoyer
+              <Send size={16} /> {sending ? 'Envoi...' : 'Envoyer'}
             </button>
           </form>
         </div>

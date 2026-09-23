@@ -1,13 +1,35 @@
+// frontend/src/pages/Profil.jsx
 import { useEffect, useState } from 'react';
-import { Pencil } from 'lucide-react';
-import API from '../services/api'; // Ajuste selon le port de ton backend
-const BACKEND_URL = 'http://localhost:5000'; // URL du backend
+import { 
+  Pencil, 
+  QrCode, 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  ShieldCheck, 
+  Save, 
+  LoaderCircle, 
+  CheckCircle2, 
+  AlertCircle, 
+  X, 
+  Download 
+} from 'lucide-react';
+import API from '../services/api';
+
+const BACKEND_URL = 'http://localhost:5000';
 
 const getImageUrl = (value) => {
   if (!value) return null;
   if (value.startsWith('http') || value.startsWith('data:') || value.startsWith('blob:')) return value;
   return `${BACKEND_URL}/uploads/avatars/${value}`;
 };
+
+const inputClass = 'w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-orange-500 dark:focus:bg-zinc-900 dark:focus:ring-orange-500/15';
+
+const disabledInputClass = 'w-full cursor-not-allowed rounded-xl border border-zinc-200/60 bg-zinc-100/70 py-3 pl-10 pr-4 text-sm text-zinc-500 dark:border-zinc-800/60 dark:bg-zinc-900/30 dark:text-zinc-500';
+
+const labelClass = 'block mb-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300';
 
 export default function Profil() {
   const [profile, setProfile] = useState({
@@ -17,19 +39,15 @@ export default function Profil() {
     telephone: '',
     age: '',
     photo_profil: '',
-    qr_code: '', // Contient la DataURL envoyée par le backend
+    qr_code: '',
     role: ''
   });
   
-  // État pour stocker le fichier image sélectionné
   const [selectedFile, setSelectedFile] = useState(null);
-  // État pour la prévisualisation instantanée de l'image
   const [preview, setPreview] = useState(null);
-
-  // État pour la gestion du Modal QR Code
   const [showQrModal, setShowQrModal] = useState(false);
-
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -49,21 +67,20 @@ export default function Profil() {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  // Gestion de la sélection du fichier image
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setPreview(URL.createObjectURL(file)); // Prévisualisation locale avant envoi
+      setPreview(URL.createObjectURL(file));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
+    setSaving(true);
 
     try {
-      // Utilisation de FormData pour envoyer du texte + un fichier binaire
       const formData = new FormData();
       formData.append('nom', profile.nom || '');
       formData.append('prenom', profile.prenom || '');
@@ -71,17 +88,13 @@ export default function Profil() {
       formData.append('age', profile.age || '');
 
       if (selectedFile) {
-        formData.append('avatar', selectedFile); // Nom du champ attendu par Multer
+        formData.append('avatar', selectedFile);
       }
 
-      // Envoi vers le backend
       const res = await API.put('/users/profile', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // Mettre à jour l'état du profil avec le nouveau nom d'image renvoyé par le backend
       const updatedProfile = { 
         ...profile, 
         ...res.data.user,
@@ -89,191 +102,276 @@ export default function Profil() {
       };
       
       setProfile(updatedProfile);
-      setPreview(null); // Réinitialiser la prévisualisation
+      setPreview(null);
 
-      // Mettre à jour le LocalStorage
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       localStorage.setItem('user', JSON.stringify({ ...storedUser, ...updatedProfile }));
 
-      setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
+      setMessage({ type: 'success', text: 'Votre profil a été mis à jour avec succès !' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Erreur de mise à jour' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Erreur lors de la mise à jour' });
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Construction de l'URL absolue pour afficher l'avatar
   const getAvatarSrc = () => {
-    if (preview) return preview; // En cours de sélection
+    if (preview) return preview;
     if (profile.photo_profil) return getImageUrl(profile.photo_profil);
     return null;
   };
 
-  if (loading) return <div className="p-8 text-center text-black/50 dark:text-white/50">Chargement de votre profil...</div>;
+  const initials = `${profile.prenom?.[0] || ''}${profile.nom?.[0] || ''}`.toUpperCase() || 'U';
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-semibold text-zinc-500">
+          <LoaderCircle size={22} className="animate-spin text-orange-500" />
+          <span>Chargement de votre profil...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-3xl py-6">
-      <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-[0_12px_35px_rgba(0,0,0,0.07)] dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:p-8">
-        
-        {/* En-tête avec Avatar et Bouton QR Code */}
-        <div className="mb-6 flex items-center justify-between border-b border-black/10 pb-6 dark:border-white/10">
-          <div className="flex items-center space-x-4">
-            <div className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-2 border-orange-500 bg-orange-500/10 text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {getAvatarSrc() ? (
-                <img src={getAvatarSrc()} alt="Profil" className="w-full h-full object-cover" />
-              ) : (
-                `${profile.prenom?.[0] || ''}${profile.nom?.[0] || ''}`
-              )}
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      
+      {/* Toast Notification */}
+      {message.text && (
+        <div className="fixed top-6 right-6 z-50 max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className={`flex items-start gap-3 rounded-2xl border p-4 shadow-xl backdrop-blur-md ${
+            message.type === 'success'
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200'
+              : 'border-rose-500/20 bg-rose-500/10 text-rose-900 dark:bg-rose-950/80 dark:text-rose-200'
+          }`}>
+            {message.type === 'success' ? (
+              <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <AlertCircle size={20} className="mt-0.5 shrink-0 text-rose-600 dark:text-rose-400" />
+            )}
+            <div className="flex-1 text-sm font-medium leading-relaxed">{message.text}</div>
+            <button 
+              onClick={() => setMessage({ type: '', text: '' })} 
+              className="rounded-lg p-1 transition hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Carte d'en-tête de profil */}
+      <div className="relative overflow-hidden rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800/80 dark:bg-zinc-950 dark:shadow-none sm:p-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          
+          <div className="flex items-center gap-5">
+            {/* Avatar & Édition */}
+            <div className="relative shrink-0">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-orange-500/30 bg-orange-500/10 text-2xl font-black text-orange-600 ring-4 ring-orange-500/10 dark:text-orange-400">
+                {getAvatarSrc() ? (
+                  <img src={getAvatarSrc()} alt="Profil" className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
               <label
                 htmlFor="profile-photo"
-                title="Modifier la photo de profil"
-                className="absolute bottom-1 right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-orange-500 text-black shadow-lg ring-2 ring-white transition hover:bg-orange-400 dark:ring-black"
+                title="Modifier la photo"
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-orange-500 text-black shadow-md transition-transform hover:scale-105 active:scale-95"
               >
-                <Pencil size={13} strokeWidth={2.5} />
+                <Pencil size={14} />
                 <input id="profile-photo" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
               </label>
             </div>
 
+            {/* Informations principales */}
             <div>
-              <h1 className="text-2xl font-black tracking-tight">{profile.prenom} {profile.nom}</h1>
-              <span className="mt-1 inline-block rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
-                {profile.role || 'UTILISATEUR'}
-              </span>
+              <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+                {profile.prenom} {profile.nom}
+              </h1>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{profile.email}</p>
+              
+              <div className="mt-2.5 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-0.5 text-xs font-bold text-orange-600 dark:text-orange-400">
+                  <ShieldCheck size={13} />
+                  {(profile.role || 'UTILISATEUR').toUpperCase()}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Bouton d'affichage du Badge QR Code (Affiché seulement si le QR code existe) */}
+          {/* Bouton QR Code */}
           {profile.qr_code && (
             <button
               type="button"
               onClick={() => setShowQrModal(true)}
-              className="flex items-center space-x-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-black shadow-md transition hover:bg-orange-400"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-orange-500 dark:text-black dark:hover:bg-orange-400"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-              <span>Mon Badge QR Code</span>
+              <QrCode size={16} />
+              <span>Mon Badge QR</span>
             </button>
           )}
+
         </div>
+      </div>
 
-        {message.text && (
-          <div className={`mb-6 rounded-xl border p-4 text-sm ${
-            message.type === 'success' ? 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400' : 'border-black/20 bg-black/5 text-black/70 dark:border-white/20 dark:bg-white/5 dark:text-white/70'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Formulaire d'édition */}
+      <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+        <div className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800/80 dark:bg-zinc-950 dark:shadow-none sm:p-8">
           
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="mb-6 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+            Informations personnelles
+          </h2>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            
+            {/* Prénom */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-black/60 dark:text-white/60">Nom</label>
-              <input
-                type="text"
-                name="nom"
-                value={profile.nom || ''}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-black/15 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20"
-              />
+              <label className={labelClass}>Prénom</label>
+              <div className="relative">
+                <User size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  name="prenom"
+                  value={profile.prenom || ''}
+                  onChange={handleChange}
+                  placeholder="Jean"
+                  className={inputClass}
+                />
+              </div>
             </div>
+
+            {/* Nom */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-black/60 dark:text-white/60">Prénom</label>
-              <input
-                type="text"
-                name="prenom"
-                value={profile.prenom || ''}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-black/15 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20"
-              />
+              <label className={labelClass}>Nom</label>
+              <div className="relative">
+                <User size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  name="nom"
+                  value={profile.nom || ''}
+                  onChange={handleChange}
+                  placeholder="Dupont"
+                  className={inputClass}
+                />
+              </div>
             </div>
+
+            {/* Email (Lecture seule) */}
+            <div>
+              <label className={labelClass}>Adresse Email (non modifiable)</label>
+              <div className="relative">
+                <Mail size={17} className="absolute left-3.5 top-3.5 text-zinc-400 dark:text-zinc-600" />
+                <input
+                  type="email"
+                  disabled
+                  value={profile.email || ''}
+                  className={disabledInputClass}
+                />
+              </div>
+            </div>
+
+            {/* Téléphone */}
+            <div>
+              <label className={labelClass}>Téléphone</label>
+              <div className="relative">
+                <Phone size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  name="telephone"
+                  value={profile.telephone || ''}
+                  onChange={handleChange}
+                  placeholder="+33 6 12 34 56 78"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* Âge */}
+            <div>
+              <label className={labelClass}>Âge</label>
+              <div className="relative">
+                <Calendar size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <input
+                  type="number"
+                  name="age"
+                  value={profile.age || ''}
+                  onChange={handleChange}
+                  placeholder="25"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-black/60 dark:text-white/60">Email (Non modifiable)</label>
-              <input
-                type="email"
-                disabled
-                value={profile.email || ''}
-                className="w-full cursor-not-allowed rounded-xl border border-black/10 bg-black/5 p-2.5 text-sm text-black/40 dark:border-white/10 dark:bg-white/5 dark:text-white/40"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-black/60 dark:text-white/60">Téléphone</label>
-              <input
-                type="text"
-                name="telephone"
-                value={profile.telephone || ''}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-black/15 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-black/60 dark:text-white/60">Âge</label>
-              <input
-                type="number"
-                name="age"
-                value={profile.age || ''}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-black/15 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20"
-              />
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end">
+          {/* Bouton de soumission */}
+          <div className="mt-8 flex justify-end border-t border-zinc-100 pt-6 dark:border-zinc-800/80">
             <button
               type="submit"
-              className="rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition hover:bg-orange-400"
+              disabled={saving}
+              className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 active:scale-[0.99] disabled:opacity-60"
             >
-              Enregistrer les modifications
+              {saving ? <LoaderCircle size={18} className="animate-spin" /> : <Save size={18} />}
+              <span>{saving ? 'Enregistrement...' : 'Enregistrer les modifications'}</span>
             </button>
           </div>
-        </form>
-      </div>
+
+        </div>
+      </form>
 
       {/* MODAL BADGE QR CODE */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-sm rounded-2xl border border-black/10 bg-white p-6 text-center shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-200/80 bg-white p-6 text-center shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
             
-            {/* Bouton de fermeture */}
             <button 
               onClick={() => setShowQrModal(false)}
-              className="absolute right-4 top-4 rounded-full p-1 text-black/40 transition hover:bg-black/5 hover:text-orange-600 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-orange-400"
+              className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              <X size={18} />
             </button>
 
-            {/* Titre & Description */}
-            <h2 className="mb-1 text-xl font-bold">Badge de Présence</h2>
-            <p className="mb-4 text-xs text-black/50 dark:text-white/50">Présentez ce QR Code au responsable de séance pour émarger.</p>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+              <QrCode size={24} />
+            </div>
 
-            {/* Affichage de la DataURL directement comme image */}
-            <div className="mb-4 inline-block rounded-xl border border-black/10 bg-black/[0.03] p-4 dark:border-white/10 dark:bg-white/[0.04]">
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Badge d'Accès</h3>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Présentez ce QR code pour confirmer votre présence.
+            </p>
+
+            <div className="my-6 inline-block rounded-2xl border border-zinc-200/80 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
               <img 
                 src={profile.qr_code} 
                 alt="Badge QR Code" 
-                className="w-48 h-48 mx-auto"
+                className="h-48 w-48 mx-auto rounded-lg object-contain"
               />
             </div>
 
-            {/* Informations sous le QR Code */}
-            <p className="text-sm font-semibold">{profile.prenom} {profile.nom}</p>
-            <p className="text-xs text-black/40 dark:text-white/40">{profile.email}</p>
+            <div className="mb-6">
+              <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{profile.prenom} {profile.nom}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">{profile.email}</p>
+            </div>
 
-            {/* Bouton Fermer */}
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="mt-6 w-full rounded-xl bg-orange-500 py-2 text-sm font-bold text-black transition hover:bg-orange-400"
-            >
-              Fermer
-            </button>
+            <div className="flex gap-2">
+              <a
+                href={profile.qr_code}
+                download={`QR_Badge_${profile.prenom}_${profile.nom}.png`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                <Download size={15} /> Télécharger
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="flex-1 rounded-xl bg-orange-500 py-2.5 text-xs font-bold text-black transition hover:bg-orange-400"
+              >
+                Fermer
+              </button>
+            </div>
+
           </div>
         </div>
       )}

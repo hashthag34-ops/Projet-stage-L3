@@ -66,6 +66,130 @@ exports.getPlanning = async (req, res) => {
   }
 };
 
+const getSeancePayload = (body) => ({
+  id_formation: body.id_formation,
+  titre: body.titre,
+  description: body.description || null,
+  date_seance: body.date_seance,
+  heure_debut: body.heure_debut,
+  heure_fin: body.heure_fin,
+  type_seance: body.type_seance || 'Cours Magistral',
+  salle: body.salle || null
+});
+
+const validateSeance = ({ date_seance, heure_debut, heure_fin }) => {
+  if (!date_seance || !heure_debut || !heure_fin) return 'La date et les horaires sont obligatoires.';
+  if (heure_debut >= heure_fin) return "L'heure de début doit être antérieure à l'heure de fin.";
+  return null;
+};
+
+const ensureFormateurSeanceAccess = async (formateurId, formationId) => {
+  const result = await db.query(
+    `SELECT f.date_debut, f.date_fin
+     FROM formation f
+     JOIN formation_formateur ff ON ff.id_formation = f.id_formation
+     WHERE ff.id_formateur = $1 AND f.id_formation = $2`,
+    [formateurId, formationId]
+  );
+  return result.rows[0] || null;
+};
+
+const validateSeancePeriod = (formation, dateSeance) => {
+  if (!formation) return 'Formation non affectée à ce formateur.';
+  if (dateSeance < String(formation.date_debut).slice(0, 10) || dateSeance > String(formation.date_fin).slice(0, 10)) {
+    return `La date doit être comprise entre le ${new Date(formation.date_debut).toLocaleDateString('fr-FR')} et le ${new Date(formation.date_fin).toLocaleDateString('fr-FR')}.`;
+  }
+  return null;
+};
+
+const checkRoomOverlap = async (payload, excludedId = null) => {
+  const params = [payload.date_seance, payload.salle.trim(), payload.heure_fin, payload.heure_debut];
+  let query = `SELECT id_seance FROM seance
+    WHERE date_seance = $1 AND LOWER(salle) = LOWER($2)
+      AND (heure_debut < $3 AND heure_fin > $4)`;
+  if (excludedId) {
+    params.push(excludedId);
+    query += ' AND id_seance <> $5';
+  }
+  const result = await db.query(query, params);
+  return result.rows.length > 0;
+};
+
+exports.createSeance = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const payload = getSeancePayload(req.body);
+    const validationError = validateSeance(payload);
+    if (validationError) return res.status(400).json({ message: validationError });
+
+    const formation = await ensureFormateurSeanceAccess(formateurId, payload.id_formation);
+    const periodError = validateSeancePeriod(formation, payload.date_seance);
+    if (periodError) return res.status(403).json({ message: periodError });
+    if (payload.salle && await checkRoomOverlap(payload)) {
+      return res.status(409).json({ message: `La salle "${payload.salle}" est déjà occupée sur ce créneau.` });
+    }
+
+    const { rows } = await db.query(
+      `INSERT INTO seance (id_formation, titre, description, date_seance, heure_debut, heure_fin, type_seance, salle)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      Object.values(payload)
+    );
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Erreur création séance formateur :', error);
+    res.status(500).json({ message: 'Erreur lors de la création de la séance.' });
+  }
+};
+
+exports.updateSeance = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const payload = getSeancePayload(req.body);
+    const validationError = validateSeance(payload);
+    if (validationError) return res.status(400).json({ message: validationError });
+
+    const formation = await ensureFormateurSeanceAccess(formateurId, payload.id_formation);
+    const periodError = validateSeancePeriod(formation, payload.date_seance);
+    if (periodError) return res.status(403).json({ message: periodError });
+    const ownedSeance = await db.query(
+      `SELECT s.id_seance FROM seance s JOIN formation_formateur ff ON ff.id_formation = s.id_formation
+       WHERE s.id_seance = $1 AND ff.id_formateur = $2`,
+      [req.params.id_seance, formateurId]
+    );
+    if (!ownedSeance.rows[0]) return res.status(404).json({ message: 'Séance introuvable.' });
+    if (payload.salle && await checkRoomOverlap(payload, req.params.id_seance)) {
+      return res.status(409).json({ message: `La salle "${payload.salle}" est déjà occupée sur ce créneau.` });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE seance SET id_formation = $1, titre = $2, description = $3, date_seance = $4,
+       heure_debut = $5, heure_fin = $6, type_seance = $7, salle = $8
+       WHERE id_seance = $9 RETURNING *`,
+      [...Object.values(payload), req.params.id_seance]
+    );
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Erreur modification séance formateur :', error);
+    res.status(500).json({ message: 'Erreur lors de la modification de la séance.' });
+  }
+};
+
+exports.deleteSeance = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const result = await db.query(
+      `DELETE FROM seance s USING formation_formateur ff
+       WHERE s.id_seance = $1 AND ff.id_formation = s.id_formation AND ff.id_formateur = $2`,
+      [req.params.id_seance, formateurId]
+    );
+    if (!result.rowCount) return res.status(404).json({ message: 'Séance introuvable.' });
+    res.json({ message: 'Séance supprimée avec succès.' });
+  } catch (error) {
+    console.error('Erreur suppression séance formateur :', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression de la séance.' });
+  }
+};
+
 exports.getStudents = async (req, res) => {
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);

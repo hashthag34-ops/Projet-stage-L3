@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Trash2, X, Clock, MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Trash2, X, Clock, MapPin, ChevronLeft, ChevronRight, AlertCircle, Plus } from 'lucide-react';
 import API from '../../services/api';
 
 export default function Planning() {
@@ -26,6 +26,16 @@ export default function Planning() {
 
   const [formData, setFormData] = useState(initialFormState);
 
+  // Helper pour formater la date au format YYYY-MM-DD en temps local
+  const formatDateLocal = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     fetchFormations();
   }, []);
@@ -36,6 +46,7 @@ export default function Planning() {
     if (selectedFormation) {
       const formFound = formations.find(f => String(f.id_formation) === String(selectedFormation));
       if (formFound && formFound.date_debut) {
+        // Aligne directement le calendrier sur la date exacte du début de la formation
         setCurrentDate(new Date(formFound.date_debut));
       }
     }
@@ -44,7 +55,7 @@ export default function Planning() {
   const fetchFormations = async () => {
     try {
       const res = await API.get('/responsable/formations');
-      setFormations(res.data);
+      setFormations(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Erreur chargement formations :", err);
     }
@@ -57,7 +68,7 @@ export default function Planning() {
         ? `/responsable/seances?id_formation=${selectedFormation}`
         : '/responsable/seances';
       const res = await API.get(url);
-      setSeances(res.data);
+      setSeances(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Erreur chargement séances :", err);
     } finally {
@@ -65,17 +76,8 @@ export default function Planning() {
     }
   };
 
-  // Helper pour formater la date au format YYYY-MM-DD en temps local
-  const formatDateLocal = (date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const activeModalFormation = formations.find(
-    f => String(f.id_formation) === String(formData.id_formation)
+    f => String(f.id_formation) === String(formData.id_formation || selectedFormation)
   );
 
   const handleModalFormationChange = (e) => {
@@ -85,20 +87,17 @@ export default function Planning() {
     setFormData({
       ...formData,
       id_formation: formationId,
-      date_seance: selected && selected.date_debut ? formatDateLocal(selected.date_debut) : ''
+      date_seance: selected && selected.date_debut ? formatDateLocal(selected.date_debut) : formData.date_seance
     });
   };
 
-  const getWeekDays = (date) => {
-    const start = new Date(date);
-    const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(start.setDate(diff));
-
+  // Génère les 6 jours à afficher à partir de currentDate
+  const getWeekDays = (startDate) => {
+    const start = new Date(startDate);
     const days = [];
     for (let i = 0; i < 6; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       days.push(d);
     }
     return days;
@@ -113,22 +112,32 @@ export default function Planning() {
   };
 
   const handleOpenCreateForDate = (dateISO) => {
+    const targetFormationId = selectedFormation || (formations[0]?.id_formation ? String(formations[0].id_formation) : '');
     setFormData({
       ...initialFormState,
-      id_formation: selectedFormation,
+      id_formation: targetFormationId,
       date_seance: dateISO
     });
     setErrorMsg('');
     setShowModal(true);
   };
 
-  // SOU MISSION DU FORMULAIRE DE CRÉATION
+  // SOUMISSION DU FORMULAIRE DE CRÉATION
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
+    // Définition d'un nom par défaut automatique si non précisé
+    const targetFormation = formations.find(f => String(f.id_formation) === String(formData.id_formation));
+    const titreParDefaut = targetFormation ? `${formData.type_seance} - ${targetFormation.titre}` : formData.type_seance;
+
+    const payload = {
+      ...formData,
+      titre: formData.titre?.trim() || titreParDefaut
+    };
+
     try {
-      await API.post('/responsable/seances', formData);
+      await API.post('/responsable/seances', payload);
       setShowModal(false);
       setFormData(initialFormState);
       fetchSeances();
@@ -180,30 +189,34 @@ export default function Planning() {
               <option key={f.id_formation} value={f.id_formation}>{f.titre}</option>
             ))}
           </select>
-
         </div>
       </div>
 
-      {/* Navigation Semaine */}
+      {/* Navigation Calendrier */}
       <div className="mb-6 flex items-center justify-between rounded-xl border border-black/10 bg-black/[0.03] p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
         <button
           onClick={() => navigateWeek(-1)}
           className="rounded-lg p-2 text-orange-600 transition hover:bg-orange-500/10 dark:text-orange-400"
+          title="Semaine précédente"
         >
           <ChevronLeft size={22} />
         </button>
-        <span className="text-sm font-bold sm:text-base">
-          Semaine du {weekDays[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </span>
+        <div className="text-center">
+          <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">Période affichée</span>
+          <span className="text-sm font-bold sm:text-base">
+            Du {weekDays[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} au {weekDays[weekDays.length - 1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
+        </div>
         <button
           onClick={() => navigateWeek(1)}
           className="rounded-lg p-2 text-orange-600 transition hover:bg-orange-500/10 dark:text-orange-400"
+          title="Semaine suivante"
         >
           <ChevronRight size={22} />
         </button>
       </div>
 
-      {/* Grille Hebdomadaire */}
+      {/* Grille des Jours */}
       {loading ? (
         <div className="py-20 text-center text-black/45 dark:text-white/45">Chargement du planning...</div>
       ) : (
@@ -216,11 +229,11 @@ export default function Planning() {
             return (
               <div
                 key={idx}
-                  className={`flex min-h-[360px] cursor-pointer flex-col rounded-2xl border p-4 transition-all ${
+                className={`flex min-h-[360px] cursor-pointer flex-col rounded-2xl border p-4 transition-all ${
                   isToday ? 'border-orange-500/50 bg-orange-500/[0.05] shadow-lg shadow-orange-500/10' : 'border-black/10 bg-black/[0.02] dark:border-white/10 dark:bg-white/[0.03]'
                 }`}
                 onClick={() => handleOpenCreateForDate(dateISO)}
-                title="Cliquer pour créer une séance"
+                title="Cliquer pour ajouter une séance à cette date"
               >
                 <div className="mb-3 flex items-center justify-between border-b border-black/10 pb-3 text-center dark:border-white/10">
                   <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-orange-600 dark:text-orange-400' : 'text-black/45 dark:text-white/45'}`}>
@@ -233,17 +246,18 @@ export default function Planning() {
 
                 <div className="flex-1 space-y-3 overflow-y-auto">
                   {daySeances.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-xs italic text-black/40 dark:text-white/40">Cliquer pour ajouter une séance</p>
+                    <div className="h-full flex flex-col items-center justify-center text-black/40 dark:text-white/40 hover:text-orange-500 transition">
+                      <Plus size={20} className="mb-1" />
+                      <p className="text-xs italic">Ajouter une séance</p>
                     </div>
                   ) : (
                     daySeances.map(s => (
                       <div
                         key={s.id_seance}
                         onClick={(event) => { event.stopPropagation(); setSelectedSeanceDetails(s); }}
-                        className="p-3.5 bg-white rounded-xl shadow-md border-l-4 border-orange-500 hover:translate-y-[-2px] hover:shadow-orange-500/10 cursor-pointer transition text-left group"
+                        className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl shadow-md border-l-4 border-orange-500 hover:translate-y-[-2px] hover:shadow-orange-500/10 cursor-pointer transition text-left group"
                       >
-                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md inline-block mb-1">
+                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 px-2 py-0.5 rounded-md inline-block mb-1">
                           {s.type_seance || 'Séance'}
                         </span>
                         {s.formation_titre && (
@@ -251,8 +265,8 @@ export default function Planning() {
                             {s.formation_titre}
                           </p>
                         )}
-                        <h4 className="mt-0.5 line-clamp-1 text-sm font-bold transition group-hover:text-orange-600">
-                          {s.titre}
+                        <h4 className="mt-0.5 line-clamp-1 text-sm font-bold transition group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                          {s.titre || `${s.type_seance || 'Séance'}`}
                         </h4>
                         <div className="mt-2 space-y-1 text-xs text-black/50 dark:text-white/50">
                           <div className="flex items-center gap-1.5">
@@ -303,12 +317,12 @@ export default function Planning() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Formation</label>
+                <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Formation</label>
                 <select
                   required
                   value={formData.id_formation}
                   onChange={handleModalFormationChange}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
+                  className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05]"
                 >
                   <option value="">Sélectionner une formation</option>
                   {formations.map(f => (
@@ -317,25 +331,13 @@ export default function Planning() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Titre de la Séance</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Architecture Backend Node.js"
-                  value={formData.titre}
-                  onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Type de Séance</label>
+                  <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Type de Séance</label>
                   <select
                     value={formData.type_seance}
                     onChange={(e) => setFormData({ ...formData, type_seance: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
+                    className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05]"
                   >
                     <option value="Cours Magistral">Cours Magistral</option>
                     <option value="Travaux Pratiques (TP)">Travaux Pratiques (TP)</option>
@@ -346,19 +348,19 @@ export default function Planning() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Salle / Lieu</label>
+                  <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Salle / Lieu</label>
                   <input
                     type="text"
                     placeholder="Labo 2 / Zoom"
                     value={formData.salle}
                     onChange={(e) => setFormData({ ...formData, salle: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
+                    className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
+                <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Date</label>
                 <input
                   type="date"
                   required
@@ -367,10 +369,10 @@ export default function Planning() {
                   max={activeModalFormation?.date_fin ? formatDateLocal(activeModalFormation.date_fin) : ''}
                   value={formData.date_seance}
                   onChange={(e) => setFormData({ ...formData, date_seance: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 {activeModalFormation && (
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-black/50 dark:text-white/50 mt-1">
                     Du {new Date(activeModalFormation.date_debut).toLocaleDateString('fr-FR')} au {new Date(activeModalFormation.date_fin).toLocaleDateString('fr-FR')}
                   </p>
                 )}
@@ -378,41 +380,41 @@ export default function Planning() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Heure Début</label>
+                  <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Heure Début</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_debut}
                     onChange={(e) => setFormData({ ...formData, heure_debut: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
+                    className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Heure Fin</label>
+                  <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Heure Fin</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_fin}
                     onChange={(e) => setFormData({ ...formData, heure_fin: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50"
+                    className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Description (Optionnel)</label>
+                <label className="block text-xs font-bold text-black/70 dark:text-white/70 uppercase mb-1">Description / Remarques (Optionnel)</label>
                 <textarea
                   rows="2"
-                  placeholder="Objectifs ou prérequis pour ce cours..."
+                  placeholder="Informations complémentaires..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50 resize-none"
+                  className="w-full border border-black/15 dark:border-white/20 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-black/[0.02] dark:bg-white/[0.05] resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition mt-2"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-black font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition mt-2"
               >
                 Valider la Séance
               </button>
@@ -432,8 +434,8 @@ export default function Planning() {
               <X size={20} />
             </button>
 
-            <div className="flex gap-2 mb-2">
-              <span className="bg-orange-100 text-orange-700 font-bold text-xs px-2.5 py-1 rounded-md">
+            <div className="flex flex-wrap gap-2 mb-2">
+              <span className="bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold text-xs px-2.5 py-1 rounded-md">
                 {selectedSeanceDetails.type_seance || 'Séance'}
               </span>
               {selectedSeanceDetails.formation_titre && (
@@ -444,7 +446,7 @@ export default function Planning() {
             </div>
 
             <h3 className="mb-4 text-xl font-black">
-              {selectedSeanceDetails.titre}
+              {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance || 'Séance de cours'}
             </h3>
 
             <div className="mb-6 space-y-3 rounded-xl border border-black/10 bg-black/[0.03] p-4 text-sm text-black/65 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/65">
@@ -459,7 +461,7 @@ export default function Planning() {
                 <span>Salle : <strong>{selectedSeanceDetails.salle || 'Non spécifiée'}</strong></span>
               </div>
               {selectedSeanceDetails.description && (
-                <div className="pt-2 border-t border-slate-200">
+                <div className="pt-2 border-t border-black/10 dark:border-white/10">
                   <p className="text-xs italic text-black/50 dark:text-white/50">{selectedSeanceDetails.description}</p>
                 </div>
               )}

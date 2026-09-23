@@ -1,14 +1,22 @@
 // frontend/src/pages/Login.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { BookOpen, Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import API from '../services/api';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,7 +36,7 @@ export default function Login() {
       if (role === 'APPRENANT') {
         navigate('/apprenant/catalogue');
       } else if (role === 'RESPONSABLE') {
-        navigate('/Responsable/GsFormation'); //pour le moment on va pas mettre dashboard pour es test des autre pages mon reuf
+        navigate('/Responsable/GsFormation'); // pour le moment on va pas mettre dashboard pour les test
         console.log("Redirection fait");
       } else if (role === 'FORMATEUR') {
         navigate('/Formateur');
@@ -45,57 +53,109 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">Bienvenue 👋</h1>
-          <p className="text-sm text-gray-500 mt-1">Connectez-vous à votre espace formation</p>
+    <div className="relative min-h-screen bg-white text-black transition-colors duration-300 dark:bg-black dark:text-white flex flex-col justify-between">
+      {/* Main Form Box */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-8 shadow-xl dark:border-white/10 dark:bg-zinc-950 transition-all">
+          
+          {/* Titre & Sous-titre */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black tracking-tight text-black dark:text-white">Bienvenue 👋</h1>
+            <p className="text-sm text-black/60 dark:text-white/60 mt-2">
+              Connectez-vous pour accéder à votre espace formation
+            </p>
+          </div>
+
+          {/* Message d'erreur */}
+          {error && (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm font-medium text-orange-700 dark:text-orange-400">
+              <AlertCircle size={18} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Formulaire */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Champ Email */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-black/70 dark:text-white/70 mb-2">
+                Adresse Email
+              </label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre.email@exemple.com"
+                  className="w-full rounded-xl border border-black/15 bg-black/[0.02] pl-10 pr-4 py-3 text-sm focus:border-orange-500 focus:bg-transparent focus:outline-none dark:border-white/15 dark:bg-white/[0.02] dark:focus:border-orange-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Champ Mot de passe */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-black/70 dark:text-white/70 mb-2">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={motDePasse}
+                  onChange={(e) => setMotDePasse(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-black/15 bg-black/[0.02] pl-10 pr-10 py-3 text-sm focus:border-orange-500 focus:bg-transparent focus:outline-none dark:border-white/15 dark:bg-white/[0.02] dark:focus:border-orange-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Bouton de Soumission */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>Connexion en cours...</span>
+                </>
+              ) : (
+                <>
+                  <span>Se connecter</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Lien de bas de carte */}
+          <div className="mt-8 border-t border-black/10 pt-6 text-center text-xs text-black/60 dark:border-white/10 dark:text-white/60">
+            Pas encore inscrit ?{' '}
+            <Link 
+              to="/" 
+              className="font-bold text-orange-600 hover:underline dark:text-orange-400"
+            >
+              Consulter nos formations
+            </Link>
+          </div>
         </div>
+      </main>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre.email@exemple.com"
-              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-            <input
-              type="password"
-              required
-              value={motDePasse}
-              onChange={(e) => setMotDePasse(e.target.value)}
-              placeholder="••••••••"
-              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg text-sm transition duration-200 disabled:opacity-50"
-          >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
-          </button>
-        </form>
-
-        <div className="text-center text-xs text-gray-500 pt-2 border-t">
-          Pas encore inscrit ? <Link to="/" className="text-blue-600 font-semibold hover:underline">Consulter nos formations</Link>
-        </div>
-      </div>
+      {/* Footer minimaliste */}
+      <footer className="py-4 text-center text-xs text-black/40 dark:text-white/40 border-t border-black/5 dark:border-white/5">
+        &copy; {new Date().getFullYear()} Forma. Tous droits réservés.
+      </footer>
     </div>
   );
 }

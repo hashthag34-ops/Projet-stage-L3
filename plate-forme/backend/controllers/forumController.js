@@ -1,11 +1,43 @@
 // backend/controllers/forumController.js
 const db = require('../config/db');
 
+const canAccessForum = async (req, forumId) => {
+  const userId = req.user.id_utilisateur;
+  if (req.baseUrl.endsWith('/apprenant')) {
+    const result = await db.query(
+      `SELECT 1
+       FROM forum fo
+       JOIN inscription i ON i.id_formation = fo.id_formation AND i.statut = 'ACCEPTEE'
+       JOIN apprenant a ON a.id_candidat = i.id_candidat
+       WHERE fo.id_forum = $1 AND a.id_utilisateur = $2`,
+      [forumId, userId]
+    );
+    return result.rowCount > 0;
+  }
+
+  if (req.baseUrl.endsWith('/formateur')) {
+    const result = await db.query(
+      `SELECT 1
+       FROM forum fo
+       JOIN formation_formateur ff ON ff.id_formation = fo.id_formation
+       JOIN formateur f ON f.id_formateur = ff.id_formateur
+       WHERE fo.id_forum = $1 AND f.id_utilisateur = $2`,
+      [forumId, userId]
+    );
+    return result.rowCount > 0;
+  }
+
+  return false;
+};
+
 // Récupérer tous les messages d'un forum
 exports.getMessagesByForum = async (req, res) => {
   const { id_forum } = req.params;
 
   try {
+    if (!(await canAccessForum(req, id_forum))) {
+      return res.status(403).json({ message: 'Vous n’avez pas accès à ce forum.' });
+    }
     const query = `
       SELECT m.id_message, m.contenu, m.date_envoi AS created_at, m.id_utilisateur,
              u.nom AS nom_expediteur, u.prenom
@@ -33,6 +65,9 @@ exports.createMessage = async (req, res) => {
   }
 
   try {
+    if (!(await canAccessForum(req, id_forum))) {
+      return res.status(403).json({ message: 'Vous n’avez pas accès à ce forum.' });
+    }
     const query = `
       INSERT INTO message (id_forum, id_utilisateur, contenu)
       VALUES ($1, $2, $3)
