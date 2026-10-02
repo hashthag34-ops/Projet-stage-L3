@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { CheckCircle, Send, XCircle, RefreshCw, ChevronLeft, ChevronRight, UserRound, Mail, Phone, GraduationCap, BriefcaseBusiness, UserCheck } from 'lucide-react';
+import { 
+  CheckCircle, Send, XCircle, RefreshCw, ChevronLeft, ChevronRight, 
+  UserRound, Mail, Phone, GraduationCap, BriefcaseBusiness, UserCheck, Sparkles 
+} from 'lucide-react';
 import API from '../../services/api';
 
 export default function Candidatures() {
@@ -29,7 +32,6 @@ export default function Candidatures() {
     fetchCandidatures();
   }, []);
 
-  // Action sur une candidature
   const handleDecision = async (candidature, decision) => {
     setProcessingId(candidature.id_inscription);
     try {
@@ -44,7 +46,6 @@ export default function Candidatures() {
     }
   };
 
-  // Validation finale de la promotion
   const handleValiderPromotion = async (id_formation, titreFormation, countPreselection, maxCapacite) => {
     if (countPreselection > maxCapacite) {
       alert(`Impossible : Vous avez présélectionné ${countPreselection} candidat(s) pour une capacité de ${maxCapacite}.`);
@@ -91,10 +92,7 @@ export default function Candidatures() {
 
   const tousLesCandidats = selectedGroup?.liste || [];
 
-  // SÉPARATION DES CANDIDATS :
-  // 1. Candidats à examiner (Non encore acceptés définitivement) -> sous forme de Badge Card
   const candidatsAExaminer = tousLesCandidats.filter((c) => c.statut !== 'ACCEPTEE');
-  // 2. Candidats déjà acceptés -> affichés en Tableau
   const candidatsAcceptes = tousLesCandidats.filter((c) => c.statut === 'ACCEPTEE');
 
   const currentCandidate = candidatsAExaminer[currentCandidateIndex];
@@ -108,7 +106,6 @@ export default function Candidatures() {
     setCurrentCandidateIndex(0);
   };
 
-  // Gestion des gestes tactiles (Swipe sur Mobile)
   const handleTouchStart = (e) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
@@ -135,228 +132,279 @@ export default function Candidatures() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 bg-white px-4 py-8 text-black transition-colors duration-300 dark:bg-black dark:text-white sm:px-6">
-      {/* En-tête */}
-      <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-6 dark:border-white/10 sm:flex-row sm:items-end">
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Espace responsable</p>
-          <h1 className="text-3xl font-black tracking-tight">Examen des candidatures</h1>
-          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Étudiez chaque profil en carte, constituez votre promotion et transmettez-la en un clic.</p>
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 text-zinc-900 font-sans transition-colors duration-300 dark:text-zinc-100 sm:px-6 antialiased">
+      
+      {/* Header Unifié */}
+      <div className="relative flex flex-col justify-between gap-6 pb-6 border-b border-zinc-200/80 dark:border-zinc-800/80 sm:flex-row sm:items-end">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:bg-orange-500/15 dark:text-orange-400">
+            <Sparkles size={13} />
+            <span>Espace Responsable</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+            Examen des candidatures
+          </h1>
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-xl">
+            Passez en revue les badges candidats, sélectionnez les meilleurs profils et validez la promotion en toute simplicité.
+          </p>
         </div>
-        <button onClick={fetchCandidatures} className="flex items-center gap-2 self-start rounded-xl border border-black/15 px-3 py-2 text-sm font-semibold transition hover:border-orange-500 hover:text-orange-600 dark:border-white/20 dark:hover:text-orange-400 sm:self-auto">
-          <RefreshCw size={16} /> Actualiser
+
+        <button 
+          onClick={fetchCandidatures} 
+          className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-zinc-100 dark:bg-zinc-800/80 px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-orange-500/10 hover:text-orange-600 dark:hover:bg-orange-500/20 dark:hover:text-orange-400 transition-all active:scale-95"
+        >
+          <RefreshCw size={15} className={loading ? "animate-spin text-orange-500" : ""} /> 
+          <span>Actualiser</span>
         </button>
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-black/45 dark:text-white/45">Chargement des candidatures...</div>
+        <div className="flex flex-col items-center justify-center py-20 text-sm font-medium text-zinc-400">
+          <RefreshCw size={24} className="animate-spin text-orange-500 mb-3" />
+          <span>Chargement des dossiers...</span>
+        </div>
       ) : !selectedGroup ? (
-        <div className="rounded-2xl border border-dashed border-black/15 bg-black/[0.03] p-12 text-center text-black/55 dark:border-white/15 dark:bg-white/[0.04] dark:text-white/55">Aucune candidature enregistrée pour le moment.</div>
+        <div className="rounded-3xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 p-12 text-center text-zinc-500 dark:text-zinc-400">
+          Aucune candidature enregistrée pour le moment.
+        </div>
       ) : (
         <>
-          {/* Sélection de formation & Métriques */}
-          <div className="flex flex-col gap-4 rounded-2xl border border-black/10 bg-black/[0.03] p-5 dark:border-white/10 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <label htmlFor="formation-select" className="mb-2 block text-xs font-bold uppercase tracking-wider text-black/50 dark:text-white/50">1. Choisir la formation à traiter</label>
-              <select id="formation-select" value={selectedFormationId} onChange={(e) => selectFormation(e.target.value)} className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-orange-500 dark:border-white/20 dark:bg-black sm:min-w-[320px]">
-                {formationsDisponibles.map((group) => <option key={group.id_formation} value={group.id_formation}>{group.titre}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[330px]">
-              <div className="rounded-xl bg-white p-3 dark:bg-black"><strong className="block text-lg">{selectedGroup.capacite_max}</strong><span className="text-black/50 dark:text-white/50">places max</span></div>
-              <div className="rounded-xl bg-orange-500/10 p-3 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400"><strong className="block text-lg">{nbPreselectionnes}</strong><span>retenus</span></div>
-              <div className="rounded-xl bg-black p-3 text-white dark:bg-white dark:text-black"><strong className="block text-lg">{placesRestantes}</strong><span>restantes</span></div>
+          {/* Section 1 : Filtre & Statistiques en Bandeau Fusionné */}
+          <div className="rounded-3xl bg-gradient-to-br from-zinc-50 via-zinc-100/50 to-zinc-50 dark:from-zinc-900/60 dark:via-zinc-900/30 dark:to-zinc-900/60 p-6 border border-zinc-200/60 dark:border-zinc-800/60 shadow-sm backdrop-blur-xl">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              
+              <div className="flex-1 space-y-2">
+                <label htmlFor="formation-select" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  1. Sélectionner une formation
+                </label>
+                <div className="relative">
+                  <select 
+                    id="formation-select" 
+                    value={selectedFormationId} 
+                    onChange={(e) => selectFormation(e.target.value)} 
+                    className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white/80 dark:bg-zinc-950/80 px-4 py-3 text-sm font-bold text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-800"
+                  >
+                    {formationsDisponibles.map((group) => (
+                      <option key={group.id_formation} value={group.id_formation}>{group.titre}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Badges métriques fondus */}
+              <div className="grid grid-cols-3 gap-3 text-center sm:min-w-[360px]">
+                <div className="rounded-2xl bg-white/80 dark:bg-zinc-950/60 p-3.5 border border-zinc-200/50 dark:border-zinc-800/50 shadow-xs">
+                  <span className="block text-xl font-black text-zinc-900 dark:text-white">{selectedGroup.capacite_max}</span>
+                  <span className="text-[11px] font-medium text-zinc-400">Capacité max</span>
+                </div>
+                <div className="rounded-2xl bg-orange-500/10 dark:bg-orange-500/15 p-3.5 border border-orange-500/20 shadow-xs">
+                  <span className="block text-xl font-black text-orange-600 dark:text-orange-400">{nbPreselectionnes}</span>
+                  <span className="text-[11px] font-semibold text-orange-600/80 dark:text-orange-400/80">Retenus</span>
+                </div>
+                <div className="rounded-2xl bg-zinc-900 dark:bg-white p-3.5 shadow-xs text-white dark:text-zinc-900">
+                  <span className="block text-xl font-black">{placesRestantes}</span>
+                  <span className="text-[11px] font-medium opacity-80">Restantes</span>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* 2. SECTION BADGE CARDS (Candidats en attente / pré-sélectionnés) */}
+          {/* Section 2 : File d'examen & Badge Card */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between px-1">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">2. File d'examen des candidats</p>
-                <p className="mt-1 text-sm text-black/50 dark:text-white/50">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                  2. Carousel des candidats
+                </h2>
+                <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">
                   {candidatsAExaminer.length > 0 
-                    ? `Profil ${currentCandidateIndex + 1} sur ${candidatsAExaminer.length} à traiter`
-                    : 'Aucun candidat en attente d’examen.'}
+                    ? `Dossier ${currentCandidateIndex + 1} sur ${candidatsAExaminer.length}`
+                    : 'Aucun candidat en attente.'}
                 </p>
               </div>
             </div>
 
             {candidatsAExaminer.length === 0 ? (
-              <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-8 text-center text-sm text-black/50 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/50">
-                Tous les candidats de cette formation ont été acceptés ou traités !
+              <div className="rounded-3xl border border-zinc-200/60 bg-zinc-50/50 p-8 text-center text-sm font-medium text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/20">
+                Tous les candidats ont été traités ou acceptés !
               </div>
             ) : (
-              /* CARROUSEL AVEC BOUTONS DE PART ET D'AUTRE DE LA CARD */
-              <div className="relative flex items-center gap-2 sm:gap-4">
-                {/* Bouton Gauche */}
+              /* Carousel Responsive avec Flèches Latérales */
+              <div className="relative flex items-center gap-3 sm:gap-5">
+                
+                {/* Flèche Gauche */}
                 <button
                   onClick={() => setCurrentCandidateIndex((i) => Math.max(0, i - 1))}
                   disabled={currentCandidateIndex === 0}
                   aria-label="Candidat précédent"
-                  className="z-10 shrink-0 rounded-full border border-black/15 bg-white/80 p-2.5 text-black backdrop-blur-md transition hover:border-orange-500 hover:bg-orange-500 hover:text-black disabled:cursor-not-allowed disabled:opacity-20 dark:border-white/20 dark:bg-black/80 dark:text-white dark:hover:bg-orange-500 dark:hover:text-black"
+                  className="z-10 shrink-0 rounded-full border border-zinc-200 bg-white p-3 text-zinc-700 shadow-lg backdrop-blur-md transition hover:border-orange-500 hover:text-orange-600 disabled:opacity-20 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:text-orange-400 active:scale-95"
                 >
-                  <ChevronLeft size={22} />
+                  <ChevronLeft size={20} />
                 </button>
 
-                {/* Badge Card Principale avec support du Swipe */}
+                {/* Badge Card Principale */}
                 {currentCandidate && (
                   <div
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    className="w-full overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_16px_45px_rgba(0,0,0,0.08)] transition-all dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_16px_45px_rgba(0,0,0,0.35)]"
+                    className="w-full overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-xl shadow-zinc-200/40 dark:border-zinc-800/80 dark:bg-zinc-950 dark:shadow-none transition-all duration-300"
                   >
-                    {/* Header de la Card */}
-                    <div className="border-b border-black/10 bg-black/[0.03] p-5 dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
+                    {/* Header Card avec avatar gradient */}
+                    <div className="border-b border-zinc-100 bg-gradient-to-r from-orange-500/5 via-transparent to-transparent p-6 dark:border-zinc-900 dark:from-orange-500/10">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-xl font-black text-black">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 text-lg font-black text-white shadow-md shadow-orange-500/20">
                             {currentCandidate.prenom?.[0]}{currentCandidate.nom?.[0]}
                           </div>
                           <div>
-                            <h2 className="text-xl font-black sm:text-2xl">{currentCandidate.prenom} {currentCandidate.nom}</h2>
-                            <p className="mt-0.5 text-xs text-black/50 dark:text-white/50">
-                              Reçue le {new Date(currentCandidate.date_inscription).toLocaleDateString('fr-FR')}
+                            <h3 className="text-xl font-extrabold text-zinc-900 dark:text-white">
+                              {currentCandidate.prenom} {currentCandidate.nom}
+                            </h3>
+                            <p className="text-xs font-medium text-zinc-400">
+                              Candidature reçue le {new Date(currentCandidate.date_inscription).toLocaleDateString('fr-FR')}
                             </p>
                           </div>
                         </div>
-                        <span className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${
+
+                        <span className={`w-fit rounded-full px-3.5 py-1 text-xs font-bold transition-colors ${
                           currentCandidate.statut === 'PRESELECTIONNEE' 
-                            ? 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400' 
-                            : 'border-black/15 text-black/55 dark:border-white/20 dark:text-white/55'
+                            ? 'bg-orange-500/15 text-orange-600 border border-orange-500/30 dark:text-orange-400' 
+                            : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
                         }`}>
                           {currentCandidate.statut === 'PRESELECTIONNEE' ? 'PRÉSÉLECTIONNÉ' : currentCandidate.statut}
                         </span>
                       </div>
                     </div>
 
-                    {/* Corps de la Card */}
-                    <div className="grid gap-6 p-5 sm:grid-cols-[0.8fr_1.2fr] sm:p-6">
-                      <div className="space-y-3">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Profil candidat</h3>
-                        <div className="space-y-2.5 text-xs text-black/75 dark:text-white/75 sm:text-sm">
-                          <p className="flex items-center gap-2 truncate"><Mail size={16} className="shrink-0 text-orange-500" />{currentCandidate.email}</p>
-                          <p className="flex items-center gap-2"><Phone size={16} className="shrink-0 text-orange-500" />{currentCandidate.telephone || 'Non renseigné'}</p>
-                          <p className="flex items-center gap-2"><UserRound size={16} className="shrink-0 text-orange-500" />{currentCandidate.age ? `${currentCandidate.age} ans` : 'Âge N/R'}{currentCandidate.genre ? ` · ${currentCandidate.genre}` : ''}</p>
-                          <p className="flex items-center gap-2"><GraduationCap size={16} className="shrink-0 text-orange-500" />{currentCandidate.niveau_etude || 'Niveau N/R'}{currentCandidate.filiere ? ` · ${currentCandidate.filiere}` : ''}</p>
-                          <p className="flex items-center gap-2"><BriefcaseBusiness size={16} className="shrink-0 text-orange-500" />{currentCandidate.situation_professionnelle || 'Situation N/R'}</p>
+                    {/* Contenu Card */}
+                    <div className="grid gap-6 p-6 md:grid-cols-2">
+                      {/* Profil */}
+                      <div className="space-y-3 rounded-2xl bg-zinc-50/70 dark:bg-zinc-900/40 p-4 border border-zinc-100 dark:border-zinc-800/50">
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Coordonnées & Infos</h4>
+                        <div className="space-y-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                          <p className="flex items-center gap-2.5 truncate"><Mail size={15} className="text-orange-500 shrink-0" />{currentCandidate.email}</p>
+                          <p className="flex items-center gap-2.5"><Phone size={15} className="text-orange-500 shrink-0" />{currentCandidate.telephone || 'Non renseigné'}</p>
+                          <p className="flex items-center gap-2.5"><UserRound size={15} className="text-orange-500 shrink-0" />{currentCandidate.age ? `${currentCandidate.age} ans` : 'Âge N/R'}{currentCandidate.genre ? ` · ${currentCandidate.genre}` : ''}</p>
+                          <p className="flex items-center gap-2.5"><GraduationCap size={15} className="text-orange-500 shrink-0" />{currentCandidate.niveau_etude || 'Niveau N/R'}{currentCandidate.filiere ? ` · ${currentCandidate.filiere}` : ''}</p>
+                          <p className="flex items-center gap-2.5"><BriefcaseBusiness size={15} className="text-orange-500 shrink-0" />{currentCandidate.situation_professionnelle || 'Situation N/R'}</p>
                         </div>
                       </div>
 
+                      {/* Motivations */}
                       <div className="space-y-4">
                         <div>
-                          <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Motivation</h3>
-                          <p className="max-h-32 overflow-y-auto rounded-xl border border-orange-500/20 bg-orange-500/[0.06] p-3 text-xs leading-5 sm:text-sm">
+                          <h4 className="text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-2">Motivation</h4>
+                          <p className="max-h-28 overflow-y-auto rounded-2xl bg-orange-500/5 border border-orange-500/10 p-3.5 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
                             {currentCandidate.motivation || 'Aucune motivation renseignée.'}
                           </p>
                         </div>
                         <div>
-                          <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-black/50 dark:text-white/50">Objectifs et projet</h3>
-                          <p className="text-xs leading-5 text-black/70 dark:text-white/70 sm:text-sm">{currentCandidate.objectif || 'Objectif non renseigné.'}</p>
+                          <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Objectifs et projet</h4>
+                          <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">{currentCandidate.objectif || 'Non renseigné.'}</p>
                           {currentCandidate.projet_apres_formation && (
-                            <p className="mt-1 text-xs leading-5 text-black/70 dark:text-white/70 sm:text-sm">
-                              <strong>Après formation : </strong>{currentCandidate.projet_apres_formation}
+                            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                              <strong className="text-zinc-700 dark:text-zinc-300">Après formation : </strong>{currentCandidate.projet_apres_formation}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* Actions sur la Card */}
-                    <div className="flex flex-col-reverse gap-3 border-t border-black/10 p-4 dark:border-white/10 sm:flex-row sm:justify-end sm:p-5">
+                    {/* Pied de Card - Boutons de Décision */}
+                    <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-900/20 p-4 sm:flex-row sm:justify-end">
                       <button
                         onClick={() => handleDecision(currentCandidate, 'REFUSEE')}
                         disabled={processingId === currentCandidate.id_inscription}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-black/15 px-4 py-2 text-xs font-bold transition hover:border-orange-500 hover:text-orange-600 dark:border-white/20 dark:hover:text-orange-400 sm:text-sm"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95"
                       >
-                        <XCircle size={16} /> Annuler la candidature
+                        <XCircle size={15} className="text-rose-500" /> Refuser
                       </button>
                       <button
                         onClick={() => handleDecision(currentCandidate, 'PRESELECTIONNEE')}
                         disabled={processingId === currentCandidate.id_inscription || placesRestantes === 0}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                       >
-                        <CheckCircle size={16} /> Accepter le profil
+                        <CheckCircle size={15} /> Pré-sélectionner
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Bouton Droit */}
+                {/* Flèche Droite */}
                 <button
                   onClick={() => setCurrentCandidateIndex((i) => Math.min(candidatsAExaminer.length - 1, i + 1))}
                   disabled={currentCandidateIndex === candidatsAExaminer.length - 1}
                   aria-label="Candidat suivant"
-                  className="z-10 shrink-0 rounded-full border border-black/15 bg-white/80 p-2.5 text-black backdrop-blur-md transition hover:border-orange-500 hover:bg-orange-500 hover:text-black disabled:cursor-not-allowed disabled:opacity-20 dark:border-white/20 dark:bg-black/80 dark:text-white dark:hover:bg-orange-500 dark:hover:text-black"
+                  className="z-10 shrink-0 rounded-full border border-zinc-200 bg-white p-3 text-zinc-700 shadow-lg backdrop-blur-md transition hover:border-orange-500 hover:text-orange-600 disabled:opacity-20 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:text-orange-400 active:scale-95"
                 >
-                  <ChevronRight size={22} />
+                  <ChevronRight size={20} />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Validation Globale de la Promotion */}
-          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-5 sm:flex-row">
-            <div>
-              <p className="text-sm font-bold">Promotion prête à être transmise ?</p>
-              <p className="mt-1 text-xs text-black/60 dark:text-white/60">{nbPreselectionnes} candidat(s) pré-sélectionné(s) recevront leur accès.</p>
+          {/* Banner de Validation Globale */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-6">
+            <div className="space-y-0.5 text-center sm:text-left">
+              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-white">Validation finale de la promotion</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {nbPreselectionnes} candidat(s) pré-sélectionné(s) prêts à recevoir leurs accès officiels.
+              </p>
             </div>
             <button
               onClick={() => handleValiderPromotion(selectedGroup.id_formation, selectedGroup.titre, nbPreselectionnes, selectedGroup.capacite_max - nbAcceptes)}
               disabled={nbPreselectionnes === 0 || nbPreselectionnes > selectedGroup.capacite_max - nbAcceptes}
-              className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 text-xs font-extrabold text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600 transition disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
             >
-              <Send size={16} /> Valider et envoyer
+              <Send size={15} /> Valider la promotion
             </button>
           </div>
 
-          {/* 3. SECTION TABLEAU (Candidats déjà Acceptés) */}
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                  <UserCheck size={16} className="text-orange-500" />
-                  3. Candidats déjà acceptés ({candidatsAcceptes.length})
-                </p>
-                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
-                  Liste des candidats définitivement validés pour cette formation.
-                </p>
-              </div>
+          {/* Section 3 : Tableau des Candidats Définitifs */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 px-1">
+              <UserCheck size={18} className="text-emerald-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                3. Candidats déjà acceptés ({candidatsAcceptes.length})
+              </h2>
             </div>
 
             {candidatsAcceptes.length === 0 ? (
-              <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-6 text-center text-xs text-black/40 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/40">
+              <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50/50 p-6 text-center text-xs text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/20">
                 Aucun candidat n'a encore été définitivement accepté.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="border-b border-black/10 bg-black/[0.03] text-black/60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60">
-                    <tr>
-                      <th className="p-3 font-bold">Nom & Prénom</th>
-                      <th className="p-3 font-bold">Email</th>
-                      <th className="p-3 font-bold">Téléphone</th>
-                      <th className="p-3 font-bold">Niveau d'étude</th>
-                      <th className="p-3 font-bold text-right">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                    {candidatsAcceptes.map((cand) => (
-                      <tr key={cand.id_inscription} className="transition hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
-                        <td className="p-3 font-bold">{cand.prenom} {cand.nom}</td>
-                        <td className="p-3 text-black/70 dark:text-white/70">{cand.email}</td>
-                        <td className="p-3 text-black/70 dark:text-white/70">{cand.telephone || 'N/R'}</td>
-                        <td className="p-3 text-black/70 dark:text-white/70">{cand.niveau_etude || 'N/R'}</td>
-                        <td className="p-3 text-right">
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle size={12} /> Accepté
-                          </span>
-                        </td>
+              <div className="overflow-hidden rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-zinc-100 bg-zinc-50/70 text-zinc-400 dark:border-zinc-900 dark:bg-zinc-900/50 font-bold uppercase tracking-wider">
+                      <tr>
+                        <th className="p-4">Candidat</th>
+                        <th className="p-4">Email</th>
+                        <th className="p-4">Téléphone</th>
+                        <th className="p-4">Niveau</th>
+                        <th className="p-4 text-right">Statut</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                      {candidatsAcceptes.map((cand) => (
+                        <tr key={cand.id_inscription} className="transition hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
+                          <td className="p-4 font-bold text-zinc-800 dark:text-zinc-200">{cand.prenom} {cand.nom}</td>
+                          <td className="p-4 text-zinc-500">{cand.email}</td>
+                          <td className="p-4 text-zinc-500">{cand.telephone || 'N/R'}</td>
+                          <td className="p-4 text-zinc-500">{cand.niveau_etude || 'N/R'}</td>
+                          <td className="p-4 text-right">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle size={13} /> Accepté
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

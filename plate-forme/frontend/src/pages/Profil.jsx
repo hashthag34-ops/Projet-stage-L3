@@ -17,19 +17,19 @@ import {
 } from 'lucide-react';
 import API from '../services/api';
 
-const BACKEND_URL = 'http://localhost:5000';
+const URL_AVATAR = import.meta.env.VITE_URLTEST_AVATAR;
 
 const getImageUrl = (value) => {
   if (!value) return null;
   if (value.startsWith('http') || value.startsWith('data:') || value.startsWith('blob:')) return value;
-  return `${BACKEND_URL}/uploads/avatars/${value}`;
+  return `${URL_AVATAR}/uploads/avatars/${value}`;
 };
 
-const inputClass = 'w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-orange-500 dark:focus:bg-zinc-900 dark:focus:ring-orange-500/15';
+const inputClass = 'w-full rounded-2xl border border-zinc-200/80 bg-zinc-50/60 py-3.5 pl-11 pr-4 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition-all duration-200 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-orange-500 dark:focus:bg-zinc-900/90 dark:focus:ring-orange-500/15';
 
-const disabledInputClass = 'w-full cursor-not-allowed rounded-xl border border-zinc-200/60 bg-zinc-100/70 py-3 pl-10 pr-4 text-sm text-zinc-500 dark:border-zinc-800/60 dark:bg-zinc-900/30 dark:text-zinc-500';
+const disabledInputClass = 'w-full cursor-not-allowed rounded-2xl border border-zinc-200/50 bg-zinc-100/60 py-3.5 pl-11 pr-4 text-sm font-medium text-zinc-400 dark:border-zinc-800/40 dark:bg-zinc-900/20 dark:text-zinc-500';
 
-const labelClass = 'block mb-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300';
+const labelClass = 'block mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400';
 
 export default function Profil() {
   const [profile, setProfile] = useState({
@@ -135,7 +135,7 @@ export default function Profil() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8">
       
       {/* Toast Notification */}
       {message.text && (
@@ -161,66 +161,67 @@ export default function Profil() {
         </div>
       )}
 
-      {/* Carte d'en-tête de profil */}
-      <div className="relative overflow-hidden rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800/80 dark:bg-zinc-950 dark:shadow-none sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          
-          <div className="flex items-center gap-5">
-            {/* Avatar & Édition */}
-            <div className="relative shrink-0">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-orange-500/30 bg-orange-500/10 text-2xl font-black text-orange-600 ring-4 ring-orange-500/10 dark:text-orange-400">
-                {getAvatarSrc() ? (
-                  <img src={getAvatarSrc()} alt="Profil" className="h-full w-full object-cover" />
-                ) : (
-                  initials
-                )}
+      {/* Conteneur Unifié Fusionné */}
+      <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white/80 backdrop-blur-xl shadow-2xl shadow-zinc-200/50 dark:border-zinc-800/80 dark:bg-zinc-950/80 dark:shadow-none">
+        
+        {/* En-tête de profil */}
+        <div className="border-b border-zinc-100 p-6 dark:border-zinc-800/80 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            
+            <div className="flex items-center gap-5">
+              {/* Photo de profil complètement arrondie (rounded-full) */}
+              <div className="relative shrink-0">
+                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-orange-500/30 bg-orange-500/10 text-2xl font-black text-orange-600 ring-4 ring-orange-500/10 dark:text-orange-400">
+                  {getAvatarSrc() ? (
+                    <img src={getAvatarSrc()} alt="Profil" className="h-full w-full object-cover rounded-full" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <label
+                  htmlFor="profile-photo"
+                  title="Modifier la photo"
+                  className="absolute bottom-0 right-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-orange-500 text-black shadow-md transition-transform hover:scale-110 active:scale-95 ring-2 ring-white dark:ring-zinc-950"
+                >
+                  <Pencil size={13} />
+                  <input id="profile-photo" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                </label>
               </div>
-              <label
-                htmlFor="profile-photo"
-                title="Modifier la photo"
-                className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-orange-500 text-black shadow-md transition-transform hover:scale-105 active:scale-95"
+
+              {/* Informations principales */}
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+                  {profile.prenom} {profile.nom}
+                </h1>
+                <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">{profile.email}</p>
+                
+                <div className="mt-2.5 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-600 dark:text-orange-400">
+                    <ShieldCheck size={13} />
+                    {(profile.role || 'UTILISATEUR').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bouton QR Code */}
+            {profile.qr_code && (
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-orange-500 dark:text-black dark:hover:bg-orange-400"
               >
-                <Pencil size={14} />
-                <input id="profile-photo" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-              </label>
-            </div>
+                <QrCode size={16} />
+                <span>Mon Badge QR</span>
+              </button>
+            )}
 
-            {/* Informations principales */}
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
-                {profile.prenom} {profile.nom}
-              </h1>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{profile.email}</p>
-              
-              <div className="mt-2.5 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-0.5 text-xs font-bold text-orange-600 dark:text-orange-400">
-                  <ShieldCheck size={13} />
-                  {(profile.role || 'UTILISATEUR').toUpperCase()}
-                </span>
-              </div>
-            </div>
           </div>
-
-          {/* Bouton QR Code */}
-          {profile.qr_code && (
-            <button
-              type="button"
-              onClick={() => setShowQrModal(true)}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-orange-500 dark:text-black dark:hover:bg-orange-400"
-            >
-              <QrCode size={16} />
-              <span>Mon Badge QR</span>
-            </button>
-          )}
-
         </div>
-      </div>
 
-      {/* Formulaire d'édition */}
-      <form onSubmit={handleSubmit} className="mt-8 space-y-8">
-        <div className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800/80 dark:bg-zinc-950 dark:shadow-none sm:p-8">
-          
-          <h2 className="mb-6 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+        {/* Formulaire d'édition fusionné */}
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+          <h2 className="mb-6 text-sm font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
             Informations personnelles
           </h2>
 
@@ -230,7 +231,7 @@ export default function Profil() {
             <div>
               <label className={labelClass}>Prénom</label>
               <div className="relative">
-                <User size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <User size={18} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="text"
                   name="prenom"
@@ -246,7 +247,7 @@ export default function Profil() {
             <div>
               <label className={labelClass}>Nom</label>
               <div className="relative">
-                <User size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <User size={18} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="text"
                   name="nom"
@@ -262,7 +263,7 @@ export default function Profil() {
             <div>
               <label className={labelClass}>Adresse Email (non modifiable)</label>
               <div className="relative">
-                <Mail size={17} className="absolute left-3.5 top-3.5 text-zinc-400 dark:text-zinc-600" />
+                <Mail size={18} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-600" />
                 <input
                   type="email"
                   disabled
@@ -276,7 +277,7 @@ export default function Profil() {
             <div>
               <label className={labelClass}>Téléphone</label>
               <div className="relative">
-                <Phone size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <Phone size={18} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="text"
                   name="telephone"
@@ -292,7 +293,7 @@ export default function Profil() {
             <div>
               <label className={labelClass}>Âge</label>
               <div className="relative">
-                <Calendar size={17} className="absolute left-3.5 top-3.5 text-zinc-400" />
+                <Calendar size={18} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="number"
                   name="age"
@@ -311,15 +312,15 @@ export default function Profil() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 active:scale-[0.99] disabled:opacity-60"
+              className="flex items-center gap-2 rounded-2xl bg-orange-500 px-7 py-3.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 active:scale-[0.99] disabled:opacity-60"
             >
               {saving ? <LoaderCircle size={18} className="animate-spin" /> : <Save size={18} />}
               <span>{saving ? 'Enregistrement...' : 'Enregistrer les modifications'}</span>
             </button>
           </div>
+        </form>
 
-        </div>
-      </form>
+      </div>
 
       {/* MODAL BADGE QR CODE */}
       {showQrModal && (
@@ -337,8 +338,8 @@ export default function Profil() {
               <QrCode size={24} />
             </div>
 
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Badge d'Accès</h3>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Badge d'Accès</h3>
+            <p className="mt-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Présentez ce QR code pour confirmer votre présence.
             </p>
 
@@ -346,27 +347,27 @@ export default function Profil() {
               <img 
                 src={profile.qr_code} 
                 alt="Badge QR Code" 
-                className="h-48 w-48 mx-auto rounded-lg object-contain"
+                className="h-48 w-48 mx-auto rounded-xl object-contain"
               />
             </div>
 
             <div className="mb-6">
               <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{profile.prenom} {profile.nom}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{profile.email}</p>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{profile.email}</p>
             </div>
 
             <div className="flex gap-2">
               <a
                 href={profile.qr_code}
                 download={`QR_Badge_${profile.prenom}_${profile.nom}.png`}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 py-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 <Download size={15} /> Télécharger
               </a>
               <button
                 type="button"
                 onClick={() => setShowQrModal(false)}
-                className="flex-1 rounded-xl bg-orange-500 py-2.5 text-xs font-bold text-black transition hover:bg-orange-400"
+                className="flex-1 rounded-2xl bg-orange-500 py-3 text-xs font-bold text-black transition hover:bg-orange-400"
               >
                 Fermer
               </button>

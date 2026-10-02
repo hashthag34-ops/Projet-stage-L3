@@ -110,3 +110,80 @@ exports.updateUserStatus = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la mise à jour." });
   }
 };
+
+exports.getStatistics = async (req, res) => {
+  try {
+    const [overview, formationsByMonth, applicationsByFormation, successByFormation, ratingsByFormation] = await Promise.all([
+      db.query(
+        `SELECT COUNT(*)::INTEGER AS utilisateurs,
+                COUNT(*) FILTER (WHERE ap.id_apprenant IS NOT NULL)::INTEGER AS apprenants,
+                COUNT(*) FILTER (WHERE fo.id_formateur IS NOT NULL)::INTEGER AS formateurs,
+                COUNT(*) FILTER (WHERE r.id_responsable IS NOT NULL)::INTEGER AS responsables,
+                COUNT(*) FILTER (WHERE ad.id_administrateur IS NOT NULL)::INTEGER AS administrateurs
+         FROM utilisateur u
+         LEFT JOIN apprenant ap ON ap.id_utilisateur = u.id_utilisateur
+         LEFT JOIN formateur fo ON fo.id_utilisateur = u.id_utilisateur
+         LEFT JOIN responsable r ON r.id_utilisateur = u.id_utilisateur
+         LEFT JOIN administrateur ad ON ad.id_utilisateur = u.id_utilisateur`
+      ),
+      db.query(
+        `SELECT TO_CHAR(month_start, 'YYYY-MM') AS mois,
+                COUNT(f.id_formation)::INTEGER AS formations
+         FROM GENERATE_SERIES(
+           DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months',
+           DATE_TRUNC('month', CURRENT_DATE), INTERVAL '1 month'
+         ) AS months(month_start)
+         LEFT JOIN formation f ON DATE_TRUNC('month', f.date_creation) = month_start
+         GROUP BY month_start ORDER BY month_start`
+      ),
+      db.query(
+        `SELECT f.id_formation, f.titre,
+                COUNT(i.id_inscription)::INTEGER AS candidatures,
+                COUNT(i.id_inscription) FILTER (WHERE i.statut = 'ACCEPTEE')::INTEGER AS acceptees,
+                COUNT(i.id_inscription) FILTER (WHERE i.statut = 'EN_ATTENTE')::INTEGER AS en_attente
+         FROM formation f
+         LEFT JOIN inscription i ON i.id_formation = f.id_formation
+         GROUP BY f.id_formation
+         ORDER BY candidatures DESC, f.titre`
+      ),
+      db.query(
+        `WITH resultats AS (
+           SELECT es.id_formation, et.id_tentative, et.note
+           FROM evaluation_tentative et
+           JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+           WHERE et.statut = 'TERMINEE'
+         )
+         SELECT f.id_formation, f.titre,
+                COUNT(r.id_tentative)::INTEGER AS tentatives,
+                COUNT(r.id_tentative) FILTER (WHERE r.note >= 10)::INTEGER AS reussites,
+                ROUND(AVG(r.note), 1) AS note_moyenne,
+                ROUND(100.0 * COUNT(r.id_tentative) FILTER (WHERE r.note >= 10)
+                  / NULLIF(COUNT(r.id_tentative), 0), 1) AS taux_reussite
+         FROM formation f
+         LEFT JOIN resultats r ON r.id_formation = f.id_formation
+         GROUP BY f.id_formation
+         ORDER BY tentatives DESC, f.titre`
+      ),
+      db.query(
+        `SELECT f.id_formation, f.titre,
+                ROUND(AVG(fa.note)::NUMERIC, 1) AS note_moyenne,
+                COUNT(fa.id_avis)::INTEGER AS avis_count
+         FROM formation f
+         LEFT JOIN formation_avis fa ON fa.id_formation = f.id_formation
+         GROUP BY f.id_formation
+         ORDER BY avis_count DESC, note_moyenne DESC NULLS LAST, f.titre`
+      )
+    ]);
+
+    res.json({
+      overview: overview.rows[0],
+      formationsByMonth: formationsByMonth.rows,
+      applicationsByFormation: applicationsByFormation.rows,
+      successByFormation: successByFormation.rows,
+      ratingsByFormation: ratingsByFormation.rows
+    });
+  } catch (error) {
+    console.error('Erreur statistiques administrateur :', error);
+    res.status(500).json({ message: 'Impossible de charger les statistiques.' });
+  }
+};

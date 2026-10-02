@@ -15,9 +15,11 @@ import SetupAccount from './pages/SetupAccount';
 // Apprenant
 import ApprenantPlanning from './pages/Apprenant/ApprenantPlanning';
 import ApprenantForum from './pages/Apprenant/ApprenantForum';
+import ApprenantEvaluations from './pages/Apprenant/ApprenantEvaluations';
 
 // Admin
 import GsUsers from './pages/Admin/GsUsers';
+import AdminStats from './pages/Admin/AdminStats';
 
 // Responsable
 import Candidatures from './pages/Responsable/Candidature';
@@ -50,14 +52,16 @@ export default function App() {
           <Route path="/apprenant">
             <Route path="catalogue" element={<Catalogue />} />
             <Route path="planning" element={<ApprenantPlanning />} />
+            <Route path="evaluations" element={<ApprenantEvaluations />} />
             <Route path="forum" element={<ApprenantForum />} />
             <Route path="profil" element={<Profil />} />
           </Route>
 
           {/* 3. Espace Admin */}
           <Route path="/Admin">
-            <Route index element={<GsUsers />} />
-            <Route path="dashboard" element={<GsUsers />} />
+            <Route index element={<Navigate to="/Admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminStats />} />
+            <Route path="users" element={<GsUsers />} />
             <Route path="Profil" element={<Profil />} />
           </Route>
 

@@ -6,16 +6,17 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   CircleDashed,
-  UserCheck,
   Sparkles,
-  Filter
+  Filter,
+  PieChart as PieIcon
 } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import API from '../../services/api';
 
 export default function ApprenantPlanning() {
   const [seances, setSeances] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('ALL'); // 'ALL', 'UPCOMING', 'PRESENT', 'ABSENT'
+  const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
     API.get('/apprenant/seances')
@@ -24,18 +25,28 @@ export default function ApprenantPlanning() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Calculs statistiques rapides
+  // Calculs statistiques
   const stats = useMemo(() => {
     const total = seances.length;
     const presents = seances.filter(s => s.statut_presence === 'PRESENT').length;
     const retards = seances.filter(s => s.statut_presence === 'RETARD').length;
     const absents = seances.filter(s => s.statut_presence === 'ABSENT').length;
+    const aVenir = seances.filter(s => !s.statut_presence || s.statut_presence === 'EN_ATTENTE').length;
     const tauxPresence = total > 0 ? Math.round(((presents + retards) / total) * 100) : 0;
 
-    return { total, presents, retards, absents, tauxPresence };
+    return { total, presents, retards, absents, aVenir, tauxPresence };
   }, [seances]);
 
-  // Vérifier si la séance est aujourd'hui
+  // Données pour Recharts
+  const chartData = useMemo(() => {
+    return [
+      { name: 'Présents', value: stats.presents, color: '#f97316' },  // Orange
+      { name: 'Retards', value: stats.retards, color: '#f59e0b' },   // Amber
+      { name: 'Absents', value: stats.absents, color: '#64748b' },   // Slate
+      { name: 'À venir', value: stats.aVenir, color: '#e2e8f0' }     // Light Slate / Gray
+    ].filter(item => item.value > 0);
+  }, [stats]);
+
   const isToday = (dateStr) => {
     if (!dateStr) return false;
     const today = new Date().toISOString().split('T')[0];
@@ -43,7 +54,6 @@ export default function ApprenantPlanning() {
     return today === seanceDate;
   };
 
-  // Filtrage des séances
   const filteredSeances = useMemo(() => {
     return seances.filter((s) => {
       if (filter === 'PRESENT') return s.statut_presence === 'PRESENT';
@@ -53,30 +63,29 @@ export default function ApprenantPlanning() {
     });
   }, [seances, filter]);
 
-  // Rendu personnalisé des badges de statut
   const renderPresenceBadge = (statut) => {
     switch (statut) {
       case 'PRESENT':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:border-orange-500/40 dark:bg-orange-500/20 dark:text-orange-400">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
             <CheckCircle2 size={13} /> Présent
           </span>
         );
       case 'RETARD':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
             <AlertTriangle size={13} /> En retard
           </span>
         );
       case 'ABSENT':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-black bg-black px-2.5 py-1 text-xs font-bold text-white dark:border-white dark:bg-white dark:text-black">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/10 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-300">
             <CircleDashed size={13} /> Absent
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-black/[0.03] px-2.5 py-1 text-xs font-semibold text-black/60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
             <Clock3 size={13} /> À venir
           </span>
         );
@@ -84,69 +93,115 @@ export default function ApprenantPlanning() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 py-6 px-4 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-10 py-8 px-4 font-sans sm:px-6">
       
-      {/* En-tête de la page */}
-      <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-6 dark:border-white/10 sm:flex-row sm:items-end">
+      {/* En-tête Fusionné */}
+      <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
         <div>
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">
-            Espace apprenant
-          </p>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Mon planning
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500">
+            Espace Apprenant
+          </span>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Mon Planning & Assiduité
           </h1>
-          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-            Consultez votre emploi du temps et votre historique de présence.
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Suivez vos cours et visualisez vos statistiques de présence en temps réel.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-black/10 bg-black/[0.02] px-3.5 py-2 text-xs font-semibold text-black/70 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70">
-          <CalendarDays size={16} className="text-orange-500" />
-          <span>{seances.length} séance{seances.length > 1 ? 's' : ''} au total</span>
+        <div className="flex items-center gap-2 self-start rounded-2xl bg-orange-500/5 px-4 py-2.5 text-xs font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 sm:self-auto">
+          <CalendarDays size={16} />
+          <span>{seances.length} séance{seances.length > 1 ? 's' : ''} au programme</span>
         </div>
       </div>
 
-      {/* Cartes KPI / Bilan de Présence */}
+      {/* Section Statistiques Recharts avec design fluide */}
       {!loading && seances.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-            <p className="text-xs font-semibold text-black/50 dark:text-white/50">Taux de présence</p>
-            <p className="mt-1 text-2xl font-black text-orange-600 dark:text-orange-400">{stats.tauxPresence}%</p>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50/80 via-orange-50/30 to-slate-50/50 p-6 backdrop-blur-md dark:from-zinc-900/80 dark:via-zinc-900/40 dark:to-zinc-950/80 dark:border dark:border-white/5">
+          <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <PieIcon size={14} className="text-orange-500" /> Bilan de présence
           </div>
-          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-            <p className="text-xs font-semibold text-black/50 dark:text-white/50">Séances suivies</p>
-            <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{stats.presents}</p>
-          </div>
-          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-            <p className="text-xs font-semibold text-black/50 dark:text-white/50">Retards</p>
-            <p className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{stats.retards}</p>
-          </div>
-          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-            <p className="text-xs font-semibold text-black/50 dark:text-white/50">Absences</p>
-            <p className="mt-1 text-2xl font-black text-slate-800 dark:text-slate-200">{stats.absents}</p>
+
+          <div className="grid items-center gap-6 md:grid-cols-12">
+            {/* Graphique Donut Recharts */}
+            <div className="relative flex h-48 items-center justify-center md:col-span-5 lg:col-span-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={6}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                      fontSize: '12px'
+                    }} 
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Contenu au centre du Donut */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">
+                  {stats.tauxPresence}%
+                </span>
+                <span className="text-[10px] font-bold uppercase text-slate-400">Taux global</span>
+              </div>
+            </div>
+
+            {/* Légendes & Chiffres Clés */}
+            <div className="grid grid-cols-2 gap-3 md:col-span-7 lg:col-span-8 sm:grid-cols-4">
+              <div className="rounded-2xl bg-white/60 p-4 backdrop-blur-sm dark:bg-white/[0.03]">
+                <p className="text-xs font-medium text-slate-400">Présences</p>
+                <p className="mt-1 text-2xl font-black text-orange-500">{stats.presents}</p>
+              </div>
+              <div className="rounded-2xl bg-white/60 p-4 backdrop-blur-sm dark:bg-white/[0.03]">
+                <p className="text-xs font-medium text-slate-400">Retards</p>
+                <p className="mt-1 text-2xl font-black text-amber-500">{stats.retards}</p>
+              </div>
+              <div className="rounded-2xl bg-white/60 p-4 backdrop-blur-sm dark:bg-white/[0.03]">
+                <p className="text-xs font-medium text-slate-400">Absences</p>
+                <p className="mt-1 text-2xl font-black text-slate-700 dark:text-slate-300">{stats.absents}</p>
+              </div>
+              <div className="rounded-2xl bg-white/60 p-4 backdrop-blur-sm dark:bg-white/[0.03]">
+                <p className="text-xs font-medium text-slate-400">À venir</p>
+                <p className="mt-1 text-2xl font-black text-slate-400">{stats.aVenir}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Barre de Filtres */}
+      {/* Barre de Filtres Organique */}
       {!loading && seances.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/10 pb-4 dark:border-white/10">
-          <span className="mr-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
-            <Filter size={14} /> Filtrer :
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <Filter size={13} /> Filtrer
           </span>
           {[
             { id: 'ALL', label: 'Toutes' },
             { id: 'UPCOMING', label: 'À venir' },
-            { id: 'PRESENT', label: 'Présent' },
-            { id: 'ABSENT', label: 'Absences / Retards' },
+            { id: 'PRESENT', label: 'Présents' },
+            { id: 'ABSENT', label: 'Absences & Retards' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 filter === tab.id
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'border border-black/10 bg-black/[0.02] text-black/70 hover:bg-black/5 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/10'
+                  ? 'bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:bg-zinc-800'
               }`}
             >
               {tab.label}
@@ -155,42 +210,34 @@ export default function ApprenantPlanning() {
         </div>
       )}
 
-      {/* Chargement Skeleton */}
+      {/* Skeleton Loading */}
       {loading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="animate-pulse rounded-2xl border border-black/10 bg-white p-5 dark:border-white/10 dark:bg-zinc-950 space-y-4">
-              <div className="flex justify-between">
-                <div className="h-5 w-20 rounded bg-black/10 dark:bg-white/10" />
-                <div className="h-5 w-24 rounded-full bg-black/10 dark:bg-white/10" />
-              </div>
-              <div className="h-4 w-3/4 rounded bg-black/10 dark:bg-white/10" />
-              <div className="h-6 w-1/2 rounded bg-black/10 dark:bg-white/10" />
-              <div className="h-12 w-full rounded bg-black/5 dark:bg-white/5" />
-            </div>
+            <div key={n} className="h-56 animate-pulse rounded-3xl bg-slate-100 dark:bg-zinc-900" />
           ))}
         </div>
       ) : filteredSeances.length === 0 ? (
-        /* Etat vide / Aucun résultat */
-        <div className="rounded-3xl border border-dashed border-black/15 bg-black/[0.02] p-12 text-center text-black/55 dark:border-white/15 dark:bg-white/[0.02] dark:text-white/55">
-          <CalendarDays size={40} className="mx-auto mb-3 text-orange-500/80" />
-          <p className="text-base font-bold text-slate-800 dark:text-white">Aucune séance trouvée</p>
-          <p className="mt-1 text-xs">
-            {filter !== 'ALL' 
-              ? "Aucune séance ne correspond aux critères de filtrage sélectionnés." 
-              : "Vous n'avez pas de séance prévue dans vos formations actuelles."}
+        /* État vide */
+        <div className="rounded-3xl bg-slate-50/50 py-16 text-center dark:bg-zinc-900/30">
+          <CalendarDays size={36} className="mx-auto mb-3 text-slate-300 dark:text-zinc-600" />
+          <p className="text-base font-semibold text-slate-700 dark:text-slate-200">
+            Aucune séance correspondante
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {filter !== 'ALL' ? "Essayez de modifier vos critères de recherche." : "Votre emploi du temps est vide pour le moment."}
           </p>
           {filter !== 'ALL' && (
             <button
               onClick={() => setFilter('ALL')}
-              className="mt-4 inline-flex items-center rounded-xl bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition"
+              className="mt-4 rounded-full bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-600 transition hover:bg-orange-500/20"
             >
-              Réinitialiser les filtres
+              Voir toutes les séances
             </button>
           )}
         </div>
       ) : (
-        /* Grille des Séances */
+        /* Grille des Séances avec Cartes Mousse / Smooth UI */
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredSeances.map((s) => {
             const today = isToday(s.date_seance);
@@ -198,49 +245,47 @@ export default function ApprenantPlanning() {
             return (
               <div 
                 key={s.id_seance} 
-                className={`relative flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-1 hover:shadow-lg dark:bg-zinc-950 dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] ${
+                className={`relative flex flex-col justify-between rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1.5 ${
                   today 
-                    ? 'border-orange-500 ring-2 ring-orange-500/20' 
-                    : 'border-black/10 hover:border-orange-500/50 dark:border-white/10'
+                    ? 'bg-gradient-to-br from-orange-50/80 to-white ring-2 ring-orange-500/30 shadow-xl shadow-orange-500/5 dark:from-zinc-900 dark:to-zinc-950 dark:ring-orange-500/40' 
+                    : 'bg-slate-50/60 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 dark:bg-zinc-900/50 dark:hover:bg-zinc-900 dark:hover:shadow-none'
                 }`}
               >
-                {/* Tag "Aujourd'hui" */}
+                {/* Badge "Aujourd'hui" */}
                 {today && (
-                  <span className="absolute -top-3 right-4 flex items-center gap-1 rounded-full bg-orange-500 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                  <span className="absolute -top-3 right-6 flex items-center gap-1 rounded-full bg-orange-500 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-lg shadow-orange-500/30">
                     <Sparkles size={11} /> Aujourd'hui
                   </span>
                 )}
 
                 <div>
-                  {/* Badges : Type de séance + Statut de Présence */}
-                  <div className="mb-3.5 flex items-center justify-between gap-2">
-                    <span className="rounded-lg border border-black/10 bg-black/5 px-2.5 py-1 text-xs font-bold text-black/70 dark:border-white/15 dark:bg-white/10 dark:text-white/80">
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       {s.type_seance || 'Cours'}
                     </span>
                     {renderPresenceBadge(s.statut_presence)}
                   </div>
 
-                  {/* Formation d'appartenance */}
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-600 dark:text-orange-400">
+                  <p className="text-xs font-extrabold uppercase tracking-widest text-orange-500">
                     {s.titre_formation}
                   </p>
 
-                  {/* Titre & Description */}
-                  <h2 className="mt-1 text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                  <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                     {s.titre}
-                  </h2>
+                  </h3>
+
                   {s.description && (
-                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-black/60 dark:text-white/60">
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                       {s.description}
                     </p>
                   )}
                 </div>
 
-                {/* Details : Date, Heure et Lieu */}
-                <div className="mt-6 space-y-2.5 border-t border-black/10 pt-4 text-xs dark:border-white/10">
+                {/* Footer Carte Fusionné */}
+                <div className="mt-6 border-t border-slate-200/60 pt-4 text-xs dark:border-white/5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 font-semibold text-black/80 dark:text-white/80 capitalize">
-                      <CalendarDays size={15} className="text-orange-500" />
+                    <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300 capitalize">
+                      <CalendarDays size={14} className="text-orange-500" />
                       {new Date(s.date_seance).toLocaleDateString('fr-FR', {
                         weekday: 'short',
                         day: 'numeric',
@@ -248,15 +293,16 @@ export default function ApprenantPlanning() {
                         year: 'numeric'
                       })}
                     </span>
-                    <span className="flex items-center gap-1.5 rounded-lg bg-orange-500/10 px-2.5 py-1 font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
-                      <Clock3 size={13} /> {s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)}
+                    <span className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                      <Clock3 size={13} className="text-slate-400" /> 
+                      {s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 text-black/50 dark:text-white/50">
-                    <span>Lieu / Salle</span>
-                    <span className="flex min-w-0 items-center gap-1 font-semibold text-orange-600 dark:text-orange-400">
-                      <MapPin size={14} className="shrink-0" />
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>Lieu</span>
+                    <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                      <MapPin size={13} className="text-orange-500" />
                       <span className="truncate">{s.salle || 'En ligne'}</span>
                     </span>
                   </div>

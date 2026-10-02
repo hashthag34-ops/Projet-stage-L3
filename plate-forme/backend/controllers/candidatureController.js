@@ -3,6 +3,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -44,12 +45,14 @@ exports.validerCandidature = async (req, res) => {
       [id_inscription]
     );
 
-    // 3. Récupérer ou créer l'utilisateur
+    // 3. Récupérer ou créer l'utilisateur + Détecter s'il existait déjà
     let id_utilisateur;
+    let isExistingUser = false;
     const resUser = await client.query(`SELECT id_utilisateur FROM utilisateur WHERE email = $1`, [cand.email]);
 
     if (resUser.rows.length > 0) {
       id_utilisateur = resUser.rows[0].id_utilisateur;
+      isExistingUser = true; // L'utilisateur a déjà un compte
     } else {
       const resNewUser = await client.query(
         `INSERT INTO utilisateur (email, nom, prenom, telephone, age, statut_compte)
@@ -58,6 +61,7 @@ exports.validerCandidature = async (req, res) => {
         [cand.email, cand.nom, cand.prenom, cand.telephone, cand.age]
       );
       id_utilisateur = resNewUser.rows[0].id_utilisateur;
+      isExistingUser = false; // Nouveaut utilisateur
     }
 
     // 4. Créer l'entrée apprenant liée à l'utilisateur
@@ -93,14 +97,26 @@ exports.validerCandidature = async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 7. Envoi de l'email
-    const configLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/setup-account?email=${encodeURIComponent(cand.email)}`;
+    // 7. Personnalisation et Envoi de l'email
+    const configLink = `${FRONTEND_URL}/setup-account?email=${encodeURIComponent(cand.email)}`;
 
-    const mailOptions = {
-      from: '"Plateforme Formations" <no-reply@formation.com>',
-      to: cand.email,
-      subject: '🎉 Candidature acceptée - Activez votre compte & votre Badge',
-      html: `
+    const subject = isExistingUser 
+      ? `🎉 Candidature acceptée pour ${cand.formation_titre} !`
+      : `🎉 Candidature acceptée - Activez votre compte & votre Badge`;
+
+    const bodyHtml = isExistingUser
+      ? `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2>Bonjour ${cand.prenom} ${cand.nom},</h2>
+          <p>Félicitations ! Votre candidature pour la formation <strong>${cand.formation_titre}</strong> a été acceptée.</p>
+          <p>Vous pouvez dès à présent vous connecter avec vos identifiants habituels pour accéder à vos nouvelles sessions.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <h3>Votre Badge d'accès :</h3>
+          <p>Voici votre QR Code personnel à jour à conserver pour vos cours :</p>
+          <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
+        </div>
+      `
+      : `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
           <h2>Bonjour ${cand.prenom} ${cand.nom},</h2>
           <p>Félicitations ! Votre candidature pour <strong>${cand.formation_titre}</strong> a été acceptée.</p>
@@ -115,7 +131,13 @@ exports.validerCandidature = async (req, res) => {
           <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
           <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
         </div>
-      `,
+      `;
+
+    const mailOptions = {
+      from: '"Plateforme Formations" <no-reply@formation.com>',
+      to: cand.email,
+      subject: subject,
+      html: bodyHtml,
       attachments: [
         {
           filename: 'badge-qrcode.png',
@@ -140,7 +162,6 @@ exports.validerCandidature = async (req, res) => {
   }
 };
 
-// Modification ici : de `export const getCandidatures` à `exports.getCandidatures`
 exports.getCandidatures = async (req, res) => {
   try {
     const query = `
@@ -242,10 +263,12 @@ exports.validerPromotion = async (req, res) => {
       );
 
       let id_utilisateur;
+      let isExistingUser = false;
       const resUser = await client.query(`SELECT id_utilisateur FROM utilisateur WHERE email = $1`, [cand.email]);
 
       if (resUser.rows.length > 0) {
         id_utilisateur = resUser.rows[0].id_utilisateur;
+        isExistingUser = true;
         await client.query(
           `UPDATE utilisateur SET statut_compte = 'ACTIF', nom = $1, prenom = $2, telephone = $3, age = $4
            WHERE id_utilisateur = $5`,
@@ -259,6 +282,7 @@ exports.validerPromotion = async (req, res) => {
           [cand.email, cand.nom, cand.prenom, cand.telephone, cand.age]
         );
         id_utilisateur = resNewUser.rows[0].id_utilisateur;
+        isExistingUser = false;
       }
 
       const resApprenant = await client.query(
@@ -293,20 +317,35 @@ exports.validerPromotion = async (req, res) => {
         nom: cand.nom,
         prenom: cand.prenom,
         formation_titre: cand.formation_titre,
+        isExistingUser,
         qrCodeDataURL
       });
     }
 
     await client.query('COMMIT');
 
-    for (const item of candidatsTraites) {
-      const configLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/setup-account?email=${encodeURIComponent(item.email)}`;
+    const frontendBaseUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
-      const mailOptions = {
-        from: '"Plateforme Formations" <no-reply@formation.com>',
-        to: item.email,
-        subject: '🎉 Candidature acceptée - Activez votre compte & votre Badge',
-        html: `
+    for (const item of candidatsTraites) {
+      const configLink = `${frontendBaseUrl}/setup-account?email=${encodeURIComponent(item.email)}`;
+
+      const subject = item.isExistingUser
+        ? `🎉 Candidature acceptée pour ${item.formation_titre} !`
+        : `🎉 Candidature acceptée - Activez votre compte & votre Badge`;
+
+      const bodyHtml = item.isExistingUser
+        ? `
+          <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+            <h2>Bonjour ${item.prenom} ${item.nom},</h2>
+            <p>Félicitations ! Votre candidature pour la formation <strong>${item.formation_titre}</strong> a été acceptée.</p>
+            <p>Vous pouvez dès à présent vous connecter avec vos identifiants habituels pour accéder à vos nouvelles sessions.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            <h3>Votre Badge d'accès :</h3>
+            <p>Voici votre QR Code personnel à jour à conserver pour vos cours :</p>
+            <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
+          </div>
+        `
+        : `
           <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
             <h2>Bonjour ${item.prenom} ${item.nom},</h2>
             <p>Félicitations ! Votre candidature pour <strong>${item.formation_titre}</strong> a été acceptée.</p>
@@ -321,7 +360,13 @@ exports.validerPromotion = async (req, res) => {
             <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
             <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
           </div>
-        `,
+        `;
+
+      const mailOptions = {
+        from: '"Plateforme Formations" <no-reply@formation.com>',
+        to: item.email,
+        subject: subject,
+        html: bodyHtml,
         attachments: [
           {
             filename: 'badge-qrcode.png',
@@ -337,7 +382,7 @@ exports.validerPromotion = async (req, res) => {
     }
 
     res.json({ 
-      message: `Validation réussie ! ${candidatsTraites.length} comptes créés et emails envoyés.`,
+      message: `Validation réussie ! ${candidatsTraites.length} candidatures traitées et emails envoyés.`,
       totalTraites: candidatsTraites.length 
     });
 

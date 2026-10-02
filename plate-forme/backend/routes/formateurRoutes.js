@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyToken = require('../middleware/authMiddleware');
 const formateurController = require('../controllers/formateurController');
 const forumController = require('../controllers/forumController');
+const forumUpload = require('../middleware/forumUpload');
 
 router.use(verifyToken);
 
@@ -14,7 +15,8 @@ router.delete('/planning/:id_seance', formateurController.deleteSeance);
 router.get('/apprenants', formateurController.getStudents);
 router.get('/forums', formateurController.getForums);
 router.get('/forums/:id_forum/messages', forumController.getMessagesByForum);
-router.post('/forums/:id_forum/messages', forumController.createMessage);
+router.post('/forums/:id_forum/messages', forumUpload.single('fichier'), forumController.createMessage);
+router.get('/forums/:id_forum/messages/:id_message/download', forumController.downloadMessageFile);
 
 router.get('/evaluations', formateurController.getEvaluations);
 router.post('/evaluations', formateurController.createEvaluation);

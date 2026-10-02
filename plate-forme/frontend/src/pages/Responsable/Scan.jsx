@@ -31,7 +31,7 @@ export default function Scan() {
     const fetchSeances = async () => {
       setLoading(true);
       try {
-        const res = await API.get('/seances');
+        const res = await API.get('/responsable/seances');
         const data = Array.isArray(res.data) ? res.data : [];
         setSeances(data);
 

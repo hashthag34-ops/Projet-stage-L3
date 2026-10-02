@@ -2,12 +2,15 @@
 const express = require('express');
 const router = express.Router();
 const authOptional = require('../middleware/authOptional');
+const verifyToken = require('../middleware/authMiddleware');
 const formationController = require('../controllers/formationController');
 
 
 // Routes publiques
 router.get('/publiques', formationController.getFormationsPubliques);
 router.get('/catalogue', authOptional.authOptional, formationController.getCatalogue);
+router.get('/:id/avis', formationController.getFormationAvis);
+router.post('/:id/avis', verifyToken, formationController.createFormationAvis);
 
 // Liste globale des formateurs (pour les déroulants de sélection)
 router.get('/formateurs/all', formationController.getAllFormateursList);

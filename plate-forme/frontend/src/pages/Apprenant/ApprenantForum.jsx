@@ -1,7 +1,12 @@
-// frontend/src/pages/Apprenant/ApprenantForum.jsx
-import { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen, MessageCircle, Send } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ArrowLeft, BookOpen, Download, MessageCircle, Send, Paperclip } from 'lucide-react';
 import API from '../../services/api';
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+};
 
 export default function ApprenantForum() {
   const [forums, setForums] = useState([]);
@@ -11,17 +16,45 @@ export default function ApprenantForum() {
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(null);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // 1. Charger les forums restreints aux formations de l'apprenant
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // 1. Charger les forums et les infos de l'utilisateur
   useEffect(() => {
-    API.get('/apprenant/forums')
-      .then((res) => {
-        setForums(Array.isArray(res.data) ? res.data : []);
-      })
-      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger les forums.'))
-      .finally(() => setLoading(false));
+    const fetchData = async () => {
+      try {
+        const [forumsRes, userRes] = await Promise.allSettled([
+          API.get('/apprenant/forums'),
+          API.get('/me')
+        ]);
+
+        if (forumsRes.status === 'fulfilled') {
+          setForums(Array.isArray(forumsRes.value.data) ? forumsRes.value.data : []);
+        } else {
+          setError('Impossible de charger les forums.');
+        }
+
+        if (userRes.status === 'fulfilled') {
+          setCurrentUser(userRes.value.data);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // 2. Charger les messages du forum sélectionné
   const handleOpenForum = async (forum) => {
@@ -57,101 +90,183 @@ export default function ApprenantForum() {
     }
   };
 
-  if (loading) return <div className="p-6 text-gray-500">Chargement des forums...</div>;
+  const handleDownload = async (message) => {
+    setDownloading(message.id_message);
+    setError('');
+    try {
+      const response = await API.get(
+        `/apprenant/forums/${selectedForum.id_forum}/messages/${message.id_message}/download`,
+        { responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = message.nom_fichier || 'piece-jointe';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Impossible de télécharger ce fichier.');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  if (loading) return <p className="py-8 text-sm text-black/50 dark:text-white/50">Chargement des espaces de discussion...</p>;
 
   return (
-    <div className="space-y-7">
-      <div className="border-b border-black/10 pb-6 dark:border-white/10">
+    <div className="space-y-6">
+      <header className="flex flex-col justify-between gap-3 border-b border-black/10 pb-5 sm:flex-row sm:items-end dark:border-white/10">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
-          <h1 className="mt-2 text-3xl font-black">Forum de discussion</h1>
-          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Échangez avec vos formateurs et camarades de formation.</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight">Forum & Discussions</h1>
+          <p className="mt-1 text-sm text-black/55 dark:text-white/55">Échangez en direct avec vos formateurs et collègues de promotion.</p>
         </div>
-      </div>
+      </header>
 
-      {error && <p className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-3 text-sm text-orange-700 dark:text-orange-400">{error}</p>}
+      {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
       {!selectedForum ? (
-        /* VUE 1 : Liste des forums autorisés */
-        <div className="grid gap-4 md:grid-cols-2">
+        /* VUE 1 : Liste des espaces de discussion */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {forums.length === 0 ? (
-            <div className="col-span-2 rounded-2xl border border-dashed border-black/15 bg-black/[0.03] p-12 text-center text-sm text-black/50 dark:border-white/15 dark:bg-white/[0.04] dark:text-white/50">
-              <MessageCircle size={32} className="mx-auto mb-3 text-orange-500" />
-              Aucun forum disponible pour tes formations.
+            <div className="col-span-full border-y border-dashed border-black/15 py-14 text-center dark:border-white/15">
+              <MessageCircle size={36} className="mx-auto text-orange-500" />
+              <h2 className="mt-3 font-bold">Aucune discussion active</h2>
+              <p className="mt-1 text-sm text-black/50 dark:text-white/50">Les forums ouverts pour vos formations s'afficheront ici.</p>
             </div>
           ) : (
             forums.map((f) => (
-              <div key={f.id_forum} className="flex flex-col justify-between rounded-2xl border border-black/10 bg-white p-6 shadow-sm transition hover:border-orange-500 dark:border-white/10 dark:bg-zinc-950">
+              <article key={f.id_forum} className="flex flex-col justify-between border-b border-black/10 pb-5 dark:border-white/10">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">
-                    <BookOpen size={13} />
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">
+                    <BookOpen size={14} />
                     {f.titre_formation || 'Formation'}
                   </span>
-                  <h2 className="mt-3 text-lg font-black">{f.nom}</h2>
-                  <p className="mt-1 line-clamp-2 text-sm text-black/55 dark:text-white/55">{f.description || 'Espace de discussion de la formation.'}</p>
+                  <h2 className="mt-2 text-lg font-bold">{f.nom}</h2>
+                  <p className="mt-1 line-clamp-2 text-sm text-black/55 dark:text-white/55">{f.description || 'Discussions et entraide au sein du groupe.'}</p>
                 </div>
                 
                 <button 
+                  type="button"
                   onClick={() => handleOpenForum(f)}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-black transition hover:bg-orange-400"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-orange-600 hover:underline dark:text-orange-400"
                 >
-                  <MessageCircle size={15} /> Accéder aux discussions
+                  <MessageCircle size={16} /> Rejoindre la conversation
                 </button>
-              </div>
+              </article>
             ))
           )}
         </div>
       ) : (
-        /* VUE 2 : Discussion dans le forum sélectionné */
-        <div className="flex h-[600px] flex-col rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          {/* Header du Chat */}
-          <div className="flex items-center justify-between border-b border-black/10 p-5 dark:border-white/10">
-            <div>
-              <h2 className="font-black">{selectedForum.nom}</h2>
-              <p className="mt-1 text-xs text-black/50 dark:text-white/50">{selectedForum.titre_formation}</p>
+        /* VUE 2 : Discussion façon Messagerie */
+        <div className="flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-hidden rounded-2xl border border-black/10 bg-black/[0.015] dark:border-white/10 dark:bg-white/[0.015]">
+          {/* Header conversation */}
+          <div className="flex items-center justify-between border-b border-black/10 bg-white/50 px-5 py-3.5 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/50">
+            <div className="flex items-center gap-3">
+              <button 
+                type="button"
+                onClick={() => setSelectedForum(null)}
+                className="rounded-lg p-1.5 text-black/60 hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/5"
+                title="Retour à la liste"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <h2 className="font-bold leading-tight">{selectedForum.nom}</h2>
+                <p className="text-xs text-black/50 dark:text-white/50">{selectedForum.titre_formation}</p>
+              </div>
             </div>
-            <button 
-              onClick={() => setSelectedForum(null)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-black/60 transition hover:bg-orange-500/10 hover:text-orange-600 dark:text-white/60 dark:hover:text-orange-400"
-            >
-              <ArrowLeft size={15} /> Retour
-            </button>
           </div>
 
-          {/* Zone des messages */}
-          <div className="flex-1 space-y-4 overflow-y-auto p-5">
-            {messagesLoading ? <p className="py-10 text-center text-sm text-black/50 dark:text-white/50">Chargement des messages...</p> : messages.length === 0 ? (
-              <p className="py-10 text-center text-sm italic text-black/40 dark:text-white/40">Soyez le premier à poser une question.</p>
+          {/* Zone de chat */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messagesLoading ? (
+              <p className="py-12 text-center text-sm text-black/50 dark:text-white/50">Chargement de la conversation...</p>
+            ) : messages.length === 0 ? (
+              <div className="py-16 text-center text-sm text-black/40 dark:text-white/40">
+                <MessageCircle size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="font-medium">Aucun message pour le moment.</p>
+                <p className="text-xs">Posez la première question à votre groupe !</p>
+              </div>
             ) : (
               messages.map((msg) => {
+                const isMe = currentUser && (msg.id_utilisateur === currentUser.id_utilisateur || msg.id_expediteur === currentUser.id_utilisateur);
+
                 return (
-                  <div key={msg.id_message} className="rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
-                    <span className="text-[11px] font-bold text-orange-600 dark:text-orange-400">
-                      {msg.prenom} {msg.nom_expediteur} · {new Date(msg.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                  <div key={msg.id_message} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    {!isMe && (
+                      <span className="mb-1 ml-1 text-[11px] font-semibold text-black/50 dark:text-white/50">
+                        {msg.prenom} {msg.nom_expediteur}
+                      </span>
+                    )}
+
+                    <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
+                      isMe 
+                        ? 'bg-orange-500 text-black font-medium rounded-br-xs' 
+                        : 'bg-white border border-black/10 dark:bg-zinc-900 dark:border-white/10 dark:text-white rounded-bl-xs shadow-xs'
+                    }`}>
+                      {msg.contenu && <p className="whitespace-pre-wrap leading-relaxed">{msg.contenu}</p>}
+
+                      {msg.chemin_fichier && (
+                        <div className={`mt-2 flex items-center justify-between gap-3 rounded-xl border p-2.5 ${
+                          isMe 
+                            ? 'border-black/10 bg-black/5 dark:border-black/20' 
+                            : 'border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5'
+                        }`}>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold">{msg.nom_fichier}</p>
+                            <p className="text-[10px] opacity-70">
+                              {msg.type_fichier || 'Fichier'}{msg.taille_fichier ? ` · ${formatFileSize(Number(msg.taille_fichier))}` : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(msg)}
+                            disabled={downloading === msg.id_message}
+                            className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                              isMe 
+                                ? 'bg-black text-white hover:bg-black/80' 
+                                : 'bg-orange-500 text-black hover:bg-orange-400'
+                            } disabled:opacity-50`}
+                          >
+                            <Download size={13} />
+                            {downloading === msg.id_message ? '...' : 'Ouvrir'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="mt-1 text-[10px] text-black/40 dark:text-white/40 px-1">
+                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <p className="mt-1 whitespace-pre-wrap text-sm">{msg.contenu}</p>
                   </div>
                 );
               })
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Saisie du message */}
-          <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-black/10 p-4 dark:border-white/10">
-            <input 
-              type="text"
-              placeholder="Écrivez votre message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 rounded-xl border border-black/15 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-orange-500 dark:border-white/20"
-            />
-            <button 
-              type="submit"
-              disabled={sending}
-              className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:opacity-50"
-            >
-              <Send size={16} /> {sending ? 'Envoi...' : 'Envoyer'}
-            </button>
+          {/* Formulaire de saisie style Messenger */}
+          <form onSubmit={handleSendMessage} className="border-t border-black/10 bg-white/50 p-3 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/50">
+            <div className="flex items-center gap-2">
+              <input 
+                type="text"
+                placeholder="Écrivez un message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1 rounded-full border border-black/15 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:bg-white dark:border-white/20 dark:bg-zinc-950/80 dark:focus:bg-zinc-950"
+              />
+              <button 
+                type="submit"
+                disabled={sending || !newMessage.trim()}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-black transition hover:bg-orange-400 disabled:opacity-40"
+                title="Envoyer"
+              >
+                <Send size={16} className={sending ? 'animate-pulse' : ''} />
+              </button>
+            </div>
           </form>
         </div>
       )}

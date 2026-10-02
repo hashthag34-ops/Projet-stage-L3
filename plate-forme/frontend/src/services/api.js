@@ -1,8 +1,9 @@
 // src/services/api.js
 import axios from 'axios';
+const API_URL = import.meta.env.VITE_URLTEST || import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 const API = axios.create({
-  baseURL: `http://localhost:5000/api`, // Adresse de ton backend Express
+  baseURL: API_URL,
 });
 
 // Intercepteur pour attacher le token JWT automatiquement

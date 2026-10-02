@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { getAuthUser, logout as logoutService } from '../services/authService'; 
+import { getAuthUser, logout as logoutService } from '../services/authService';
 import { 
   BookOpen, 
   FileText, 
@@ -16,13 +16,13 @@ import {
   LayoutDashboard,
   GraduationCap,
   ClipboardCheck,
+  Activity,
   Menu,
   X
 } from 'lucide-react';
+import sitelogo from '../assets/logo.jpg';
 
-import heroLogo from '../assets/hero.png';
-
-const BACKEND_URL = 'http://localhost:5000';
+const API_AVATARS = import.meta.env.VITE_URLTEST_AVATAR;
 
 // Configuration dynamique des onglets par Rôle
 const NAV_CONFIG = {
@@ -32,10 +32,16 @@ const NAV_CONFIG = {
   apprenant: [
     { path: '/apprenant/catalogue', label: 'Catalogue', icon: BookOpen },
     { path: '/apprenant/planning', label: 'Mon Planning', icon: Calendar },
+    { path: '/apprenant/evaluations', label: 'Évaluations', icon: ClipboardCheck },
     { path: '/apprenant/forum', label: 'Forum', icon: MessageSquare },
   ],
   admin: [
-    { path: '/Admin/dashboard', label: 'Utilisateurs', icon: Users },
+    { path: '/Admin/dashboard', label: 'Statistiques', icon: Activity },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
+  ],
+  administrateur: [
+    { path: '/Admin/dashboard', label: 'Statistiques', icon: Activity },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
   ],
   responsable: [
     { path: '/Responsable/GsFormation', label: 'Formations', icon: BookOpen },
@@ -59,7 +65,7 @@ const getAvatarSrc = (user) => {
   const avatar = user.photo_profil || user.photo;
   if (!avatar) return null;
   if (avatar.startsWith('http') || avatar.startsWith('data:') || avatar.startsWith('blob:')) return avatar;
-  return `${BACKEND_URL}/uploads/avatars/${avatar}`;
+  return `${API_AVATARS}/uploads/avatars/${avatar}`;
 };
 
 export default function MainLayout() {
@@ -123,29 +129,33 @@ export default function MainLayout() {
   const initials = user ? `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase() : '';
 
   return (
-    <div className="flex min-h-screen flex-col bg-white font-sans text-black transition-colors duration-300 dark:bg-black dark:text-white">
+    <div className="flex min-h-screen flex-col bg-white text-black transition-colors duration-300 dark:bg-black dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Import de la police cool Google Font */}
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}
+      </style>
+
       {/* En-tête Navigation */}
       <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 shadow-sm backdrop-blur transition-colors duration-300 dark:border-white/10 dark:bg-black/95">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             
-            {/* Logo / Image d'en-tête */}
+            {/* Logo Carré Parfait 50x50 Sans Contour */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="relative flex h-10 w-10 overflow-hidden rounded-xl bg-orange-500/10 p-1 border border-orange-500/20 shadow-sm transition group-hover:scale-105">
+              <div className="h-[80px] w-[80px] overflow-hidden bg-transparent shrink-0">
                 <img 
-                  src={heroLogo} 
+                  src={sitelogo} 
                   alt="Logo" 
-                  className="h-full w-full object-cover rounded-lg"
+                  className="h-full w-full object-cover"
                   onError={(e) => {
-                    // Fallback si l'image hero.png est momentanément inaccessible
                     e.target.style.display = 'none';
                     e.target.parentNode.innerText = 'E';
-                    e.target.parentNode.className = 'flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-xl font-black text-black';
+                    e.target.parentNode.className = 'flex h-[50px] w-[50px] items-center justify-center bg-orange-500 text-xl font-black text-black';
                   }}
                 />
               </div>
               <span className="text-lg font-black tracking-tight text-black dark:text-white">
-                Skill<span className="text-orange-500">Hub</span>
+                Orange digital center<span className="text-orange-500">Club</span>
               </span>
             </Link>
 
@@ -160,11 +170,11 @@ export default function MainLayout() {
                     to={link.path}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-orange-500 text-black shadow-md shadow-orange-500/20'
+                        ? 'bg-black text-white shadow-md shadow-white/20'
                         : 'text-black/65 hover:bg-black/5 hover:text-orange-600 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-orange-400'
                     }`}
                   >
-                    <Icon size={16} className={isActive ? 'text-black' : 'text-black/45 dark:text-white/45'} />
+                    <Icon size={16} className={isActive ? 'text-white/45' : 'text-black/45 dark:text-white/45'} />
                     {link.label}
                   </Link>
                 );
@@ -174,21 +184,21 @@ export default function MainLayout() {
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-3">
               
-              {/* Bouton de Thème (Dark / Light) */}
+              {/* Bouton Switch Mode Dark / Light (Version Réduite) */}
               <button
                 onClick={toggleDarkMode}
                 aria-label="Changer de thème"
-                className="relative flex h-9 w-16 items-center rounded-full bg-zinc-200 p-1 transition-colors duration-300 dark:bg-zinc-800"
+                className="relative flex h-6 w-11 items-center rounded-full bg-zinc-200 p-0.5 transition-colors duration-300 dark:bg-zinc-800"
               >
                 <div
-                  className={`flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 dark:bg-zinc-950 ${
-                    darkMode ? 'translate-x-7' : 'translate-x-0'
+                  className={`flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-300 dark:bg-zinc-950 ${
+                    darkMode ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 >
                   {darkMode ? (
-                    <Moon size={14} className="text-orange-400" />
+                    <Moon size={11} className="text-orange-400" />
                   ) : (
-                    <Sun size={14} className="text-amber-500" />
+                    <Sun size={11} className="text-amber-500" />
                   )}
                 </div>
               </button>
@@ -204,19 +214,20 @@ export default function MainLayout() {
                 </Link>
               ) : (
                 <div className="relative" ref={dropdownRef}>
+                  {/* Avatar Cercle Parfait (style Facebook) */}
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center justify-center rounded-xl p-1 transition hover:ring-2 hover:ring-orange-500/50 focus:outline-none"
+                    className="flex items-center justify-center rounded-full transition hover:ring-2 hover:ring-orange-500/50 focus:outline-none"
                     title={`${user?.prenom || ''} ${user?.nom || ''}`}
                   >
                     {getAvatarSrc(user) ? (
                       <img
                         src={getAvatarSrc(user)}
                         alt="Profil"
-                        className="h-9 w-9 rounded-xl object-cover ring-2 ring-orange-500/30"
+                        className="h-9 w-9 rounded-full object-cover ring-2 ring-black/10 dark:ring-white/20"
                       />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-xs font-black text-orange-500 ring-2 ring-orange-500/40 dark:bg-zinc-900">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-xs font-black text-orange-500 ring-2 ring-orange-500/40 dark:bg-zinc-900">
                         {initials || <User size={18} />}
                       </div>
                     )}

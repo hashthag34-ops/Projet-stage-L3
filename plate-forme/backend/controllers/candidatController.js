@@ -2,6 +2,7 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -40,7 +41,7 @@ const isApplicationEditable = (candidature) => (
 );
 
 const sendReceiptEmail = async (candidature, editToken) => {
-  const editLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/postuler/${candidature.id_formation}?edit_token=${encodeURIComponent(editToken)}`;
+  const editLink = `${FRONTEND_URL}/postuler/${candidature.id_formation}?edit_token=${encodeURIComponent(editToken)}`;
   await transporter.sendMail({
     from: '"Plateforme Formations" <no-reply@formation.com>',
     to: candidature.email,
