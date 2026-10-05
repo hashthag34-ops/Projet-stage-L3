@@ -1,31 +1,60 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  GraduationCap, 
+  Info, 
+  Plus, 
+  Search, 
+  Trash2, 
+  UserPlus, 
+  X, 
+  Users, 
+  Sparkles, 
+  Edit3, 
+  Image as ImageIcon, 
+  Upload, 
+  Link as LinkIcon, 
+  UserCheck, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  Archive,
+  ArrowUpDown
+} from 'lucide-react';
 import API from '../../services/api';
 
-// --- COMPOSANT MODAL DETAILS / CARD STYLE BADGE ---
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
+
+const inputClass = `w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900 ${focusRing}`;
+
+const getStatusBadgeClass = (statut) => {
+  switch (statut?.toUpperCase()) {
+    case 'OUVERTE':
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+    case 'EN_COURS':
+      return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20';
+    case 'BROUILLON':
+      return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+    case 'TERMINEE':
+      return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700';
+    case 'ARCHIVEE':
+    default:
+      return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
+  }
+};
+
+// --- COMPOSANT MODAL DETAILS FORMATION ---
 function FormationDetailsModal({ formation, onClose }) {
   if (!formation) return null;
 
-  const getStatusBadgeClass = (statut) => {
-    switch (statut) {
-      case 'OUVERTE':
-        return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400';
-      case 'EN_COURS':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400';
-      case 'BROUILLON':
-        return 'bg-amber-500/10 text-amber-700 border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400';
-      case 'TERMINEE':
-        return 'bg-zinc-500/10 text-zinc-700 border-zinc-500/30 dark:bg-zinc-500/20 dark:text-zinc-400';
-      default:
-        return 'bg-black/5 text-black/60 border-black/10 dark:bg-white/10 dark:text-white/60';
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm transition-opacity">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
         
-        {/* Banner / Image Header */}
-        <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-900">
+        {/* Bannière Image */}
+        <div className="relative h-48 w-full bg-slate-100 dark:bg-zinc-800">
           {formation.image_url ? (
             <img 
               src={formation.image_url} 
@@ -34,58 +63,54 @@ function FormationDetailsModal({ formation, onClose }) {
               onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-zinc-400">
-              <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+            <div className="flex h-full w-full items-center justify-center text-slate-400 dark:text-zinc-500">
+              <ImageIcon size={48} strokeWidth={1.5} />
             </div>
           )}
           <button 
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition-transform hover:scale-110"
+            className={`absolute right-3 top-3 rounded-xl bg-slate-950/60 p-1.5 text-white backdrop-blur-md transition hover:bg-slate-950/80 ${focusRing}`}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={18} />
           </button>
         </div>
 
-        {/* Content Body */}
+        {/* Corps du contenu */}
         <div className="space-y-5 p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(formation.statut)}`}>
-                <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current"></span>
-                {formation.statut}
-              </span>
-              <h2 className="mt-2 text-2xl font-black tracking-tight">{formation.titre}</h2>
-            </div>
+          <div>
+            <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold ${getStatusBadgeClass(formation.statut)}`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
+              {formation.statut}
+            </span>
+            <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {formation.titre}
+            </h2>
           </div>
 
-          <p className="text-sm leading-relaxed text-black/70 dark:text-white/70">
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
             {formation.description || "Aucune description fournie."}
           </p>
 
-          {/* Grid Infos / Badges */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-3.5 dark:border-white/10 dark:bg-white/[0.03]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">Période</span>
-              <p className="mt-1 text-xs font-bold">
+          {/* Grille d'infos */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+              <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
+              <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-zinc-200">
                 {new Date(formation.date_debut).toLocaleDateString('fr-FR')} ➔ {new Date(formation.date_fin).toLocaleDateString('fr-FR')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-3.5 dark:border-white/10 dark:bg-white/[0.03]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">Limite d'inscription</span>
-              <p className="mt-1 text-xs font-bold">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+              <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Limite d'inscription</span>
+              <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-zinc-200">
                 {formation.date_limite_inscription ? new Date(formation.date_limite_inscription).toLocaleDateString('fr-FR') : 'Non spécifiée'}
               </p>
             </div>
 
-            <div className="col-span-2 rounded-2xl border border-orange-500/20 bg-orange-500/5 p-3.5 dark:bg-orange-500/10">
+            <div className="col-span-2 rounded-xl border border-orange-500/20 bg-orange-500/10 p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400">Capacité d'accueil</span>
-                <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-xs font-black text-orange-700 dark:text-orange-300">
+                <span className="text-xs font-bold text-orange-700 dark:text-orange-400">Capacité d'accueil</span>
+                <span className="rounded-lg bg-orange-500/20 px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-300">
                   {formation.capacite_max} places max
                 </span>
               </div>
@@ -94,7 +119,7 @@ function FormationDetailsModal({ formation, onClose }) {
 
           <button 
             onClick={onClose}
-            className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400"
+            className={`w-full rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
           >
             Fermer
           </button>
@@ -160,57 +185,55 @@ function FormateurAssignModal({ formation, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm transition-opacity">
-      <div className="w-full max-w-lg space-y-6 rounded-2xl border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-lg space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
         
-        <div className="flex items-start justify-between border-b border-black/10 pb-4 dark:border-white/10">
+        <div className="flex items-start justify-between border-b border-slate-100 pb-4 dark:border-zinc-800">
           <div>
-            <h2 className="text-xl font-black">Gestion des intervenants</h2>
-            <p className="mt-0.5 text-sm text-black/55 dark:text-white/55">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Gestion des intervenants</h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
               Formation : <span className="font-semibold text-orange-600 dark:text-orange-400">{formation?.titre}</span>
             </p>
           </div>
           <button 
             onClick={onClose} 
-            className="rounded-lg p-1.5 text-black/40 transition-colors hover:bg-black/5 hover:text-orange-600 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-orange-400"
+            className={`rounded-xl p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 ${focusRing}`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={18} />
           </button>
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">Formateurs actuellement assignés</h3>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+            Formateurs actuellement assignés
+          </h3>
           {loading ? (
-            <div className="py-4 text-center text-sm text-black/45 dark:text-white/45">Chargement...</div>
+            <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">Chargement...</div>
           ) : assignedFormateurs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-black/15 bg-black/[0.03] p-4 text-center dark:border-white/15 dark:bg-white/[0.04]">
-              <p className="text-sm text-black/55 dark:text-white/55">Aucun formateur affecté pour le moment.</p>
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">Aucun formateur affecté pour le moment.</p>
             </div>
           ) : (
             <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
               {assignedFormateurs.map((f) => (
-                <div key={f.id_formateur} className="flex items-center justify-between rounded-xl border border-black/10 bg-black/[0.03] p-3 transition-colors hover:bg-orange-500/[0.05] dark:border-white/10 dark:bg-white/[0.04]">
+                <div key={f.id_formateur} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
                   <div className="flex items-center space-x-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500/15 text-xs font-semibold text-orange-700 dark:text-orange-400">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-xs font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
                       {f.prenom?.[0]}{f.nom?.[0]}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">{f.nom} {f.prenom}</p>
-                      <span className="mt-0.5 inline-block rounded-md bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-400">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{f.nom} {f.prenom}</p>
+                      <span className="mt-0.5 inline-block rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">
                         {f.role_formateur || 'Intervenant'}
                       </span>
                     </div>
                   </div>
                   <button 
                     onClick={() => handleRemove(f.id_formateur)}
-                    className="rounded-lg p-1.5 text-black/40 transition-colors hover:bg-orange-500/10 hover:text-orange-600 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-orange-400"
+                    className={`rounded-xl p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`}
                     title="Retirer"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 size={15} />
                   </button>
                 </div>
               ))}
@@ -218,16 +241,18 @@ function FormateurAssignModal({ formation, onClose }) {
           )}
         </div>
 
-        <form onSubmit={handleAssign} className="space-y-4 border-t border-black/10 pt-4 dark:border-white/10">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">Assigner un nouvel intervenant</h3>
+        <form onSubmit={handleAssign} className="space-y-3 border-t border-slate-100 pt-4 dark:border-zinc-800">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+            Assigner un nouvel intervenant
+          </h3>
           
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-black/60 dark:text-white/60">Sélectionner un formateur</label>
+              <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Sélectionner un formateur</label>
               <select 
                 value={selectedFormateur} 
                 onChange={(e) => setSelectedFormateur(e.target.value)}
-                className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black"
+                className={inputClass}
                 required
               >
                 <option value="">-- Choisir dans la liste --</option>
@@ -240,24 +265,22 @@ function FormateurAssignModal({ formation, onClose }) {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-black/60 dark:text-white/60">Rôle attribué</label>
+              <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Rôle attribué</label>
               <input 
                 type="text" 
                 placeholder="Ex: Formateur Principal, Intervenant..." 
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black"
+                className={inputClass}
               />
             </div>
           </div>
 
           <button 
             type="submit" 
-            className="flex w-full items-center justify-center space-x-2 rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-black shadow-sm shadow-orange-500/20 transition-all hover:bg-orange-400"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+            <UserPlus size={15} />
             <span>Affecter à la formation</span>
           </button>
         </form>
@@ -278,6 +301,8 @@ export default function ResponsableFormations() {
 
   // Recherche & Gestion Image
   const [searchTerm, setSearchTerm] = useState('');
+  const [sort, setSort] = useState('recent');
+  const [mobileIndex, setMobileIndex] = useState(0);
   const [imageInputType, setImageInputType] = useState('url'); // 'url' ou 'file'
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -296,7 +321,7 @@ export default function ResponsableFormations() {
   const fetchFormations = async () => {
     try {
       const res = await API.get('/formations');
-      setFormations(res.data);
+      setFormations(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -312,12 +337,10 @@ export default function ResponsableFormations() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Traitement Upload Fichier Image
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
-      // Prévisualisation locale immédiate
       const localPreviewUrl = URL.createObjectURL(file);
       setFormData((prev) => ({ ...prev, image_url: localPreviewUrl }));
     }
@@ -364,7 +387,6 @@ export default function ResponsableFormations() {
     try {
       let finalImageUrl = formData.image_url;
 
-      // Si un fichier local a été choisi, on le téléverse au serveur
       if (imageInputType === 'file' && selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', selectedFile);
@@ -403,212 +425,313 @@ export default function ResponsableFormations() {
     }
   };
 
-  const getBadgeStyle = (statut) => {
-    switch (statut) {
-      case 'OUVERTE':
-        return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40';
-      case 'EN_COURS':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/40';
-      case 'BROUILLON':
-        return 'bg-amber-500/10 text-amber-700 border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/40';
-      case 'TERMINEE':
-        return 'bg-zinc-500/10 text-zinc-700 border-zinc-500/30 dark:bg-zinc-500/15 dark:text-zinc-400 dark:border-zinc-500/40';
-      default:
-        return 'bg-black/5 text-black/60 border-black/10 dark:bg-white/5 dark:text-white/60 dark:border-white/10';
-    }
-  };
+  // Filtrage et tri
+  const filteredFormations = useMemo(() => {
+    return formations
+      .filter((f) => {
+        const term = searchTerm.toLowerCase();
+        return (
+          f.titre?.toLowerCase().includes(term) ||
+          f.description?.toLowerCase().includes(term) ||
+          f.statut?.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => {
+        if (sort === 'title') return a.titre.localeCompare(b.titre);
+        if (sort === 'status') return a.statut.localeCompare(b.statut);
+        return b.id_formation - a.id_formation;
+      });
+  }, [formations, searchTerm, sort]);
 
-  // Filtrage dynamique
-  const filteredFormations = formations.filter((f) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      f.titre?.toLowerCase().includes(term) ||
-      f.description?.toLowerCase().includes(term) ||
-      f.statut?.toLowerCase().includes(term)
-    );
-  });
+  const currentFormation = filteredFormations[mobileIndex];
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl space-y-8 bg-white px-4 py-8 text-black transition-colors duration-300 dark:bg-black dark:text-white sm:px-6 lg:px-8">
+    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100">
       
-      {/* Top Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-5 dark:border-white/10 sm:flex-row sm:items-center">
+      {/* En-tête */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Espace responsable</p>
-          <h1 className="text-3xl font-black tracking-tight">Gestion des formations</h1>
-          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Planifiez, administrez et affectez les formateurs à vos programmes d'apprentissage.</p>
-        </div>
-        <button 
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center space-x-2 rounded-xl bg-orange-500 px-4 py-2.5 font-bold text-black shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 hover:shadow-xl"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Nouvelle Formation</span>
-        </button>
-      </div>
-
-      {/* Barre de Recherche Dynamique */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-md">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-black/40 dark:text-white/40">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
+            <Sparkles size={14} />
+            <span>Espace responsable</span>
           </div>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Gestion des formations
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400">
+            Planifiez, administrez et affectez les formateurs à vos programmes d'apprentissage.
+          </p>
+        </div>
+
+        <button 
+          onClick={handleOpenCreate} 
+          className={`inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+        >
+          <Plus size={16} />
+          <span>Nouvelle formation</span>
+        </button>
+      </header>
+
+      {/* Filtres & Recherche */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-3.5 text-slate-400 dark:text-zinc-500" />
           <input 
-            type="text"
-            placeholder="Rechercher par titre, description ou statut..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-black/15 bg-black/[0.02] py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.03] dark:text-white dark:focus:bg-black"
+            value={searchTerm} 
+            onChange={(e) => { setSearchTerm(e.target.value); setMobileIndex(0); }} 
+            placeholder="Rechercher par titre, description ou statut..." 
+            className={`${inputClass} pl-10`} 
           />
         </div>
-        <div className="text-xs font-semibold text-black/50 dark:text-white/50">
-          {filteredFormations.length} {filteredFormations.length > 1 ? 'formations trouvées' : 'formation trouvée'}
+        <div className="relative sm:w-56">
+          <select 
+            value={sort} 
+            onChange={(e) => setSort(e.target.value)} 
+            className={`${inputClass} cursor-pointer appearance-none pr-8`}
+          >
+            <option value="recent">Tri : Plus récentes</option>
+            <option value="title">Tri : Titre A-Z</option>
+            <option value="status">Tri : Par statut</option>
+          </select>
+          <ArrowUpDown size={14} className="pointer-events-none absolute right-3 top-3.5 text-slate-400 dark:text-zinc-500" />
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Contenu */}
       {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-orange-500"></div>
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
+          <p className="text-xs font-semibold text-slate-400 dark:text-zinc-500">Chargement des formations...</p>
         </div>
       ) : filteredFormations.length === 0 ? (
-        <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-12 text-center shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-          <svg className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <h3 className="text-base font-semibold">Aucune formation trouvée</h3>
-          <p className="mt-1 text-sm text-black/55 dark:text-white/55">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+          <GraduationCap size={32} className="text-slate-300 dark:text-zinc-600" />
+          <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-zinc-300">Aucune formation trouvée</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_12px_35px_rgba(0,0,0,0.07)] dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-black/10 bg-black/[0.03] text-xs font-semibold uppercase tracking-wider text-black/50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/50">
-                  <th className="py-3.5 px-6">Formation</th>
-                  <th className="py-3.5 px-4">Statut</th>
-                  <th className="py-3.5 px-4">Période</th>
-                  <th className="py-3.5 px-4">Capacité</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/10 text-sm dark:divide-white/10">
-                {filteredFormations.map((f) => (
-                  <tr key={f.id_formation} className="transition-colors hover:bg-orange-500/[0.04]">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-3">
-                        {f.image_url && (
-                          <img 
-                            src={f.image_url} 
-                            alt="" 
-                            className="h-9 w-9 rounded-lg object-cover border border-black/10 dark:border-white/10" 
-                          />
-                        )}
-                        <div>
-                          <div className="font-semibold">{f.titre}</div>
-                          {f.description && (
-                            <div className="mt-0.5 line-clamp-1 max-w-xs text-xs text-black/45 dark:text-white/45">
-                              {f.description}
+        <>
+          {/* Vue Desktop : Tableau */}
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-200/80 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-zinc-800/80 dark:bg-zinc-800/30 dark:text-zinc-500">
+                  <tr>
+                    <th className="p-4">Formation</th>
+                    <th className="p-4">Statut</th>
+                    <th className="p-4">Période</th>
+                    <th className="p-4">Capacité</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                  {filteredFormations.map((f) => (
+                    <tr 
+                      key={f.id_formation} 
+                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/40"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {f.image_url ? (
+                            <img 
+                              src={f.image_url} 
+                              alt="" 
+                              className="h-10 w-10 rounded-xl object-cover ring-2 ring-orange-500/20" 
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+                              <GraduationCap size={18} />
                             </div>
                           )}
+                          <div>
+                            <p className="font-bold text-slate-900 dark:text-white">{f.titre}</p>
+                            {f.description && (
+                              <p className="mt-0.5 max-w-xs truncate text-[11px] text-slate-400 dark:text-zinc-500">
+                                {f.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getBadgeStyle(f.statut)}`}>
-                        <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current opacity-75"></span>
-                        {f.statut}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-xs font-medium text-black/65 dark:text-white/65">
-                      {new Date(f.date_debut).toLocaleDateString('fr-FR')} 
-                      <span className="mx-1 text-orange-500">➔</span> 
-                      {new Date(f.date_fin).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-xs text-black/60 dark:text-white/60">
-                      <span className="font-semibold">{f.capacite_max}</span> places
-                    </td>
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end space-x-2">
-                        {/* Bouton Info / Card Modal */}
-                        <button 
-                          onClick={() => setSelectedFormationForDetails(f)}
-                          className="rounded-lg p-1.5 text-black/45 transition-colors hover:bg-black/5 hover:text-orange-600 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-orange-400"
-                          title="Fiche détaillée"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </button>
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        <span className={`inline-flex rounded-lg px-2.5 py-1 text-[11px] font-bold ${getStatusBadgeClass(f.statut)}`}>
+                          {f.statut}
+                        </span>
+                      </td>
+                      <td className="p-4 whitespace-nowrap text-[11px] font-semibold text-slate-600 dark:text-zinc-300">
+                        {new Date(f.date_debut).toLocaleDateString('fr-FR')} 
+                        <span className="mx-1 text-orange-500">➔</span> 
+                        {new Date(f.date_fin).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="p-4 whitespace-nowrap font-medium text-slate-600 dark:text-zinc-400">
+                        <span className="font-bold text-slate-900 dark:text-white">{f.capacite_max}</span> places
+                      </td>
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Info */}
+                          <button 
+                            onClick={() => setSelectedFormationForDetails(f)}
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
+                            title="Fiche détaillée"
+                          >
+                            <Info size={17} />
+                          </button>
 
-                        {/* Assignation Formateurs */}
-                        <button 
-                          onClick={() => setSelectedFormationForFormateurs(f)}
-                          className="inline-flex items-center space-x-1 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-700 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          <span>Formateurs</span>
-                        </button>
+                          {/* Assignation Formateurs */}
+                          <button 
+                            onClick={() => setSelectedFormationForFormateurs(f)}
+                            className={`inline-flex items-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-50 px-2.5 py-1.5 text-[11px] font-bold text-orange-700 transition hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:hover:bg-orange-500/20 ${focusRing}`}
+                          >
+                            <Users size={14} />
+                            <span>Formateurs</span>
+                          </button>
 
-                        {/* Édition */}
-                        <button 
-                          onClick={() => handleOpenEdit(f)} 
-                          className="rounded-lg p-1.5 text-black/45 transition-colors hover:bg-black/5 hover:text-orange-600 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-orange-400"
-                          title="Modifier"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
+                          {/* Édition */}
+                          <button 
+                            onClick={() => handleOpenEdit(f)} 
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
+                            title="Modifier"
+                          >
+                            <Edit3 size={16} />
+                          </button>
 
-                        {/* Suppression */}
-                        <button 
-                          onClick={() => handleDelete(f.id_formation)} 
-                          className="rounded-lg p-1.5 text-black/45 transition-colors hover:bg-black/5 hover:text-orange-600 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-orange-400"
-                          title="Supprimer"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {/* Suppression */}
+                          <button 
+                            onClick={() => handleDelete(f.id_formation)} 
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`}
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Vue Mobile : Fiche Carrousel */}
+          <div className="md:hidden">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+              <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
+                <button 
+                  onClick={() => setMobileIndex((index) => Math.max(0, index - 1))} 
+                  disabled={mobileIndex === 0} 
+                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                  Programme {mobileIndex + 1} / {filteredFormations.length}
+                </span>
+                <button 
+                  onClick={() => setMobileIndex((index) => Math.min(filteredFormations.length - 1, index + 1))} 
+                  disabled={mobileIndex === filteredFormations.length - 1} 
+                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+
+              {currentFormation && (
+                <div>
+                  <div className="flex flex-col items-center text-center">
+                    {currentFormation.image_url ? (
+                      <img 
+                        src={currentFormation.image_url} 
+                        alt="" 
+                        className="h-20 w-20 rounded-2xl object-cover ring-2 ring-orange-500/30" 
+                      />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+                        <GraduationCap size={32} />
+                      </div>
+                    )}
+                    <h2 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
+                      {currentFormation.titre}
+                    </h2>
+                    <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
+                      {currentFormation.description || 'Aucune description'}
+                    </p>
+                    <span className={`mt-3 rounded-lg px-2.5 py-1 text-[11px] font-bold ${getStatusBadgeClass(currentFormation.statut)}`}>
+                      {currentFormation.statut}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
+                      <strong className="mt-0.5 block truncate text-slate-700 dark:text-zinc-300">
+                        {new Date(currentFormation.date_debut).toLocaleDateString('fr-FR')} ➔ {new Date(currentFormation.date_fin).toLocaleDateString('fr-FR')}
+                      </strong>
+                    </div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Capacité</span>
+                      <strong className="mt-0.5 block text-slate-700 dark:text-zinc-300">
+                        {currentFormation.capacite_max} places
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <button 
+                      onClick={() => setSelectedFormationForDetails(currentFormation)} 
+                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 active:scale-[0.98] dark:text-slate-950 ${focusRing}`}
+                    >
+                      <Info size={15} />
+                      <span>Détails</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSelectedFormationForFormateurs(currentFormation)} 
+                      className={`flex items-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-50 px-3 py-2.5 text-xs font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 ${focusRing}`}
+                    >
+                      <Users size={15} />
+                      <span>Formateurs</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleOpenEdit(currentFormation)} 
+                      className={`rounded-xl border border-slate-200 p-2.5 text-slate-600 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
+                    >
+                      <Edit3 size={15} />
+                    </button>
+
+                    <button 
+                      onClick={() => handleDelete(currentFormation.id_formation)} 
+                      className={`rounded-xl border border-slate-200 p-2.5 text-red-600 dark:border-zinc-800 dark:text-red-400 ${focusRing}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
-      {/* MODAL CRÉATION & ÉDITION FORMATION */}
+      {/* Modal Création & Édition Formation */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-lg space-y-6 overflow-y-auto rounded-2xl border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
             
-            <div className="flex items-center justify-between border-b border-black/10 pb-4 dark:border-white/10">
-              <h2 className="text-xl font-black">
-                {editingId ? "Modifier la Formation" : "Nouvelle Formation"}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                {editingId ? "Modifier la formation" : "Nouvelle formation"}
               </h2>
               <button 
                 onClick={() => setShowModal(false)}
-                className="rounded-lg p-1.5 text-black/40 hover:bg-black/5 hover:text-orange-600 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-orange-400"
+                className={`rounded-xl p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 ${focusRing}`}
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Titre de la formation</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Titre de la formation</label>
                 <input 
                   type="text" 
                   name="titre" 
@@ -616,12 +739,12 @@ export default function ResponsableFormations() {
                   value={formData.titre} 
                   onChange={handleChange}
                   placeholder="Ex: Devenir Développeur Full-Stack"
-                  className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                  className={inputClass} 
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Description</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Description</label>
                 <textarea 
                   name="description" 
                   required 
@@ -629,28 +752,30 @@ export default function ResponsableFormations() {
                   value={formData.description} 
                   onChange={handleChange}
                   placeholder="Présentation générale des objectifs..."
-                  className="w-full resize-none rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                  className={`${inputClass} resize-none`} 
                 />
               </div>
 
-              {/* SECTION IMAGE AMÉLIORÉE (Fichier ou URL) */}
-              <div className="space-y-2 rounded-xl border border-black/10 bg-black/[0.02] p-3.5 dark:border-white/10 dark:bg-white/[0.02]">
+              {/* Section Image (Fichier ou URL) */}
+              <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Image de couverture</label>
-                  <div className="flex space-x-1 rounded-lg bg-black/5 p-0.5 dark:bg-white/10">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">Image de couverture</label>
+                  <div className="flex space-x-1 rounded-lg bg-slate-200/60 p-0.5 dark:bg-zinc-800">
                     <button
                       type="button"
                       onClick={() => setImageInputType('url')}
-                      className={`rounded-md px-2 py-0.5 text-xs font-bold transition-all ${imageInputType === 'url' ? 'bg-orange-500 text-black shadow-sm' : 'text-black/50 dark:text-white/50'}`}
+                      className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
                     >
-                      Lien URL
+                      <LinkIcon size={12} />
+                      <span>URL</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setImageInputType('file')}
-                      className={`rounded-md px-2 py-0.5 text-xs font-bold transition-all ${imageInputType === 'file' ? 'bg-orange-500 text-black shadow-sm' : 'text-black/50 dark:text-white/50'}`}
+                      className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
                     >
-                      Fichier
+                      <Upload size={12} />
+                      <span>Fichier</span>
                     </button>
                   </div>
                 </div>
@@ -662,82 +787,81 @@ export default function ResponsableFormations() {
                     value={formData.image_url} 
                     onChange={handleChange}
                     placeholder="https://images.unsplash.com/photo-..."
-                    className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                    className={inputClass} 
                   />
                 ) : (
                   <input 
                     type="file" 
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="w-full text-xs text-black/60 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-orange-700 hover:file:bg-orange-500/20 dark:text-white/60 dark:file:text-orange-400" 
+                    className="w-full text-xs text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-orange-700 hover:file:bg-orange-100 dark:text-zinc-400 dark:file:bg-orange-500/10 dark:file:text-orange-400" 
                   />
                 )}
 
-                {/* Aperçu en direct de l'image */}
                 {formData.image_url && (
-                  <div className="relative mt-2 h-24 w-full overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+                  <div className="relative mt-2 h-24 w-full overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-800">
                     <img src={formData.image_url} alt="Aperçu" className="h-full w-full object-cover" />
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Date de début</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Date de début</label>
                   <input 
                     type="date" 
                     name="date_debut" 
                     required 
                     value={formData.date_debut} 
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                    className={inputClass} 
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Date de fin</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Date de fin</label>
                   <input 
                     type="date" 
                     name="date_fin" 
                     required 
                     value={formData.date_fin} 
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                    className={inputClass} 
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Limite candidature</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Limite candidature</label>
                   <input 
                     type="date" 
                     name="date_limite_inscription" 
                     required 
                     value={formData.date_limite_inscription} 
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                    className={inputClass} 
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Capacité Max</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Capacité Max</label>
                   <input 
                     type="number" 
                     name="capacite_max" 
                     required 
                     value={formData.capacite_max} 
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black" 
+                    className={inputClass} 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-black/60 dark:text-white/60">Statut</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Statut</label>
                 <select 
                   name="statut" 
                   value={formData.statut} 
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-black/15 bg-black/[0.03] p-2.5 text-sm outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.04] dark:text-white dark:focus:bg-black"
+                  className={inputClass}
                 >
                   <option value="BROUILLON">BROUILLON</option>
                   <option value="OUVERTE">OUVERTE</option>
@@ -747,34 +871,25 @@ export default function ResponsableFormations() {
                 </select>
               </div>
 
-              <div className="flex justify-end space-x-3 border-t border-black/10 pt-4 dark:border-white/10">
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)}
-                  className="rounded-xl border border-black/15 px-4 py-2 text-sm font-semibold text-black/65 transition-colors hover:border-orange-500 hover:text-orange-600 dark:border-white/20 dark:text-white/65 dark:hover:text-orange-400"
-                >
-                  Annuler
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={uploadingImage}
-                  className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-black shadow-sm shadow-orange-500/20 transition-all hover:bg-orange-400 disabled:opacity-50"
-                >
-                  {uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}
-                </button>
-              </div>
+              <button 
+                type="submit" 
+                disabled={uploadingImage}
+                className={`mt-2 w-full rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+              >
+                {uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}
+              </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL FICHE DÉTAILLÉE (INFO CARD) */}
+      {/* Modal Fiche Détaillée */}
       <FormationDetailsModal 
         formation={selectedFormationForDetails}
         onClose={() => setSelectedFormationForDetails(null)}
       />
 
-      {/* MODAL GESTION DES FORMATEURS */}
+      {/* Modal Gestion des Formateurs */}
       {selectedFormationForFormateurs && (
         <FormateurAssignModal 
           formation={selectedFormationForFormateurs}

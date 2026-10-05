@@ -18,9 +18,10 @@ import {
   ClipboardCheck,
   Activity,
   Menu,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
-import sitelogo from '../assets/logo.jpg';
+import sitelogo from '../assets/logo.png';
 
 const API_AVATARS = import.meta.env.VITE_URLTEST_AVATAR;
 
@@ -128,39 +129,37 @@ export default function MainLayout() {
 
   const initials = user ? `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase() : '';
 
-  return (
-    <div className="flex min-h-screen flex-col bg-white text-black transition-colors duration-300 dark:bg-black dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Import de la police cool Google Font */}
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}
-      </style>
+  const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 transition-colors duration-300 dark:bg-black dark:text-zinc-100">
+      
       {/* En-tête Navigation */}
-      <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 shadow-sm backdrop-blur transition-colors duration-300 dark:border-white/10 dark:bg-black/95">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md transition-colors duration-300 dark:border-zinc-800/80 dark:bg-zinc-900/80">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
             
-            {/* Logo Carré Parfait 50x50 Sans Contour */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="h-[80px] w-[80px] overflow-hidden bg-transparent shrink-0">
+            {/* Logo */}
+            <Link to="/" className={`flex items-center gap-3 rounded-xl transition-opacity hover:opacity-90 ${focusRing}`}>
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden">
                 <img 
                   src={sitelogo} 
                   alt="Logo" 
-                  className="h-full w-full object-cover"
+                  className="h-7 w-7 object-contain"
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    e.target.parentNode.innerText = 'E';
-                    e.target.parentNode.className = 'flex h-[50px] w-[50px] items-center justify-center bg-orange-500 text-xl font-black text-black';
+                    e.target.parentNode.innerText = 'ODC';
+                    e.target.parentNode.className = 'flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-xs font-black text-white dark:text-slate-950';
                   }}
                 />
               </div>
-              <span className="text-lg font-black tracking-tight text-black dark:text-white">
-                Orange digital center<span className="text-orange-500">Club</span>
+              <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                Orange Digital Center <span className="text-orange-600 dark:text-orange-400">Club</span>
               </span>
             </Link>
 
             {/* Navigation Desktop */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center gap-1 rounded-2xl  bg-slate-100/50 p-1 dark:border-zinc-800/60 dark:bg-zinc-800/40">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -168,13 +167,13 @@ export default function MainLayout() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${focusRing} ${
                       isActive
-                        ? 'bg-black text-white shadow-md shadow-white/20'
-                        : 'text-black/65 hover:bg-black/5 hover:text-orange-600 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-orange-400'
+                        ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950'
+                        : 'text-slate-600 hover:bg-white hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
                     }`}
                   >
-                    <Icon size={16} className={isActive ? 'text-white/45' : 'text-black/45 dark:text-white/45'} />
+                    <Icon size={15} className={isActive ? 'text-orange-500' : 'opacity-70'} />
                     {link.label}
                   </Link>
                 );
@@ -184,21 +183,21 @@ export default function MainLayout() {
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-3">
               
-              {/* Bouton Switch Mode Dark / Light (Version Réduite) */}
+              {/* Toggle Dark / Light Mode */}
               <button
                 onClick={toggleDarkMode}
                 aria-label="Changer de thème"
-                className="relative flex h-6 w-11 items-center rounded-full bg-zinc-200 p-0.5 transition-colors duration-300 dark:bg-zinc-800"
+                className={`relative flex h-8 w-14 items-center rounded-full bg-slate-200/80 p-1 transition-colors duration-300 dark:bg-zinc-800 ${focusRing}`}
               >
                 <div
-                  className={`flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-300 dark:bg-zinc-950 ${
-                    darkMode ? 'translate-x-5' : 'translate-x-0'
+                  className={`flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-300 dark:bg-zinc-900 ${
+                    darkMode ? 'translate-x-6' : 'translate-x-0'
                   }`}
                 >
                   {darkMode ? (
-                    <Moon size={11} className="text-orange-400" />
+                    <Moon size={13} className="text-orange-400" />
                   ) : (
-                    <Sun size={11} className="text-amber-500" />
+                    <Sun size={13} className="text-amber-500" />
                   )}
                 </div>
               </button>
@@ -207,57 +206,57 @@ export default function MainLayout() {
               {!isAuthenticated ? (
                 <Link
                   to="/login"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-black font-extrabold text-xs hover:bg-orange-600 transition shadow-lg shadow-orange-500/20"
+                  className={`inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
                 >
-                  <LogIn size={16} />
+                  <LogIn size={15} />
                   <span className="hidden sm:inline">Se connecter</span>
                 </Link>
               ) : (
                 <div className="relative" ref={dropdownRef}>
-                  {/* Avatar Cercle Parfait (style Facebook) */}
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center justify-center rounded-full transition hover:ring-2 hover:ring-orange-500/50 focus:outline-none"
+                    className={`flex items-center gap-2 rounded-full p-0.5 transition hover:opacity-90 ${focusRing}`}
                     title={`${user?.prenom || ''} ${user?.nom || ''}`}
                   >
                     {getAvatarSrc(user) ? (
                       <img
                         src={getAvatarSrc(user)}
                         alt="Profil"
-                        className="h-9 w-9 rounded-full object-cover ring-2 ring-black/10 dark:ring-white/20"
+                        className="h-9 w-9 rounded-full object-cover ring-2 ring-orange-500/30"
                       />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-xs font-black text-orange-500 ring-2 ring-orange-500/40 dark:bg-zinc-900">
-                        {initials || <User size={18} />}
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 ring-2 ring-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400">
+                        {initials || <User size={16} />}
                       </div>
                     )}
+                    <ChevronDown size={14} className="hidden text-slate-400 sm:block dark:text-zinc-500" />
                   </button>
 
-                  {/* Dropdown Profil */}
+                  {/* Dropdown Menu */}
                   {isDropdownOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-black/10 bg-white p-1.5 shadow-2xl dark:border-white/10 dark:bg-zinc-950">
-                      <div className="px-3 py-2 border-b border-black/5 dark:border-white/5 mb-1">
-                        <p className="text-xs font-bold text-black dark:text-white truncate">
+                    <div className="absolute right-0 z-50 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="mb-2 border-b border-slate-100 px-3 py-2.5 dark:border-zinc-800">
+                        <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
                           {user?.prenom} {user?.nom}
                         </p>
-                        <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wider">
+                        <p className="mt-0.5 text-[11px] font-medium text-orange-600 uppercase tracking-wider dark:text-orange-400">
                           {user?.role || 'Utilisateur'}
                         </p>
                       </div>
 
                       <Link
                         to="/profil"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-black/70 hover:bg-orange-500/10 hover:text-orange-600 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-orange-400"
+                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800 ${focusRing}`}
                       >
-                        <User size={15} className="text-black/40 dark:text-white/40" />
+                        <User size={15} className="text-slate-400 dark:text-zinc-500" />
                         Mon Profil
                       </Link>
 
-                      <div className="border-t border-black/5 dark:border-white/5 my-1"></div>
+                      <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
 
                       <button
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+                        className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 ${focusRing}`}
                       >
                         <LogOut size={15} />
                         Déconnexion
@@ -267,23 +266,23 @@ export default function MainLayout() {
                 </div>
               )}
 
-              {/* Bouton Menu Mobile (Hamburger) */}
+              {/* Bouton Menu Mobile */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="rounded-xl p-2 text-black/70 hover:bg-black/5 dark:text-white/70 dark:hover:bg-white/10 md:hidden"
+                className={`rounded-xl border border-slate-200/80 p-2 text-slate-600 transition hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 md:hidden ${focusRing}`}
                 aria-label="Ouvrir le menu"
               >
-                {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
 
             </div>
           </div>
         </div>
 
-        {/* Menu Déroulant Mobile */}
+        {/* Menu Mobile */}
         {isMobileMenuOpen && (
-          <div className="border-t border-black/10 bg-white px-4 pb-4 pt-2 dark:border-white/10 dark:bg-black md:hidden">
-            <nav className="flex flex-col space-y-1">
+          <div className="border-t border-slate-200/80 bg-white/95 px-4 pb-4 pt-3 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95 md:hidden">
+            <nav className="flex flex-col gap-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -291,13 +290,13 @@ export default function MainLayout() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+                    className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'bg-orange-500 text-black'
-                        : 'text-black/70 hover:bg-black/5 dark:text-white/70 dark:hover:bg-white/10'
+                        ? 'bg-orange-500 text-white dark:text-slate-950'
+                        : 'text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                     }`}
                   >
-                    <Icon size={18} />
+                    <Icon size={16} />
                     {link.label}
                   </Link>
                 );
@@ -308,7 +307,7 @@ export default function MainLayout() {
       </header>
 
       {/* Contenu Principal */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-6xl flex-1">
         <Outlet />
       </main>
     </div>

@@ -1,5 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Activity, Award, RefreshCw, Star, Users } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { 
+  Activity, 
+  Award, 
+  RefreshCw, 
+  Star, 
+  Users, 
+  Sparkles, 
+  TrendingUp, 
+  GraduationCap, 
+  CheckCircle2, 
+  BarChart3,
+  PieChart as PieChartIcon
+} from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -9,37 +21,84 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
+  YAxis,
+  PieChart,
+  Pie,
+  Cell,
+  RadialBarChart,
+  RadialBar,
+  Legend
 } from 'recharts';
 import API from '../../services/api';
 
-const chartColors = ['#f97316', '#0f766e', '#2563eb', '#ca8a04', '#dc2626', '#7c3aed'];
-const panelClass = 'border-y border-black/10 py-6 dark:border-white/10';
-const tooltipStyle = { borderRadius: 8, border: '1px solid rgba(0,0,0,.12)' };
+const COLOR_PALETTE = [
+  '#f97316', // Orange principal ODC
+  '#3b82f6', // Bleu
+  '#10b981', // Émeraude
+  '#f59e0b', // Ambre
+  '#8b5cf6', // Violet
+  '#ec4899', // Rose
+  '#14b8a6', // Teal
+];
 
-const monthName = (month) => new Date(`${month}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'short' });
+const monthName = (month) =>
+  new Date(`${month}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'short' });
 
-function StatCard({ label, value, detail, icon: Icon, color }) {
-  return (
-    <article className="flex items-start justify-between border-l-2 border-black/10 py-2 pl-4 dark:border-white/15">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">{label}</p>
-        <p className="mt-2 text-3xl font-black tabular-nums">{value ?? 0}</p>
-        <p className="mt-1 text-xs text-black/50 dark:text-white/50">{detail}</p>
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
+
+// Tooltip sur-mesure stylé dark/light
+const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95">
+        {label && <p className="mb-1 text-xs font-bold text-slate-700 dark:text-zinc-300">{label}</p>}
+        {payload.map((entry, index) => (
+          <div key={`item-${index}`} className="flex items-center gap-2 text-xs font-semibold">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+            <span className="text-slate-500 dark:text-zinc-400">{entry.name}:</span>
+            <span className="text-slate-900 dark:text-white">
+              {entry.value} {suffix}
+            </span>
+          </div>
+        ))}
       </div>
-      <Icon size={20} className={color} />
+    );
+  }
+  return null;
+};
+
+function StatCard({ label, value, detail, icon: Icon, colorClass, bgClass }) {
+  return (
+    <article className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_12px_32px_-8px_rgba(249,115,22,0.12)] dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-orange-500/30">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">{label}</p>
+          <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white">
+            {value ?? 0}
+          </p>
+        </div>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bgClass}`}>
+          <Icon size={20} className={colorClass} />
+        </div>
+      </div>
+      <p className="mt-3 text-xs font-medium text-slate-400 dark:text-zinc-500">{detail}</p>
     </article>
   );
 }
 
-function ChartPanel({ title, subtitle, children }) {
+function ChartPanel({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className={panelClass}>
-      <div className="mb-5">
-        <h2 className="text-lg font-black">{title}</h2>
-        <p className="mt-1 text-xs text-black/50 dark:text-white/50">{subtitle}</p>
+    <section className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all dark:border-zinc-800 dark:bg-zinc-900/60">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+            {Icon && <Icon size={18} className="text-orange-500" />}
+            {title}
+          </h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{subtitle}</p>
+        </div>
       </div>
-      {children}
+      <div className="flex-1">{children}</div>
     </section>
   );
 }
@@ -50,110 +109,355 @@ export default function AdminStats() {
   const [error, setError] = useState('');
 
   const loadStatistics = async () => {
+    setLoading(true);
     setError('');
     try {
       const response = await API.get('/admin/statistics');
       setStatistics(response.data);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || 'Impossible de charger les statistiques.');
+      setError(
+        requestError.response?.data?.message || 'Impossible de charger les statistiques.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(loadStatistics, 0);
-    return () => window.clearTimeout(timer);
+    loadStatistics();
   }, []);
 
   const overview = statistics?.overview || {};
-  const averageRating = statistics?.ratingsByFormation?.filter((item) => Number(item.avis_count) > 0) || [];
-  const totalReviews = averageRating.reduce((sum, item) => sum + Number(item.avis_count), 0);
-  const weightedRating = totalReviews
-    ? averageRating.reduce((sum, item) => sum + Number(item.note_moyenne) * Number(item.avis_count), 0) / totalReviews
-    : null;
-  const monthlyData = statistics?.formationsByMonth?.map((item) => ({ ...item, libelle: monthName(item.mois) })) || [];
-  const applicationData = statistics?.applicationsByFormation || [];
-  const successData = (statistics?.successByFormation || []).filter((item) => Number(item.tentatives) > 0);
-  const ratingData = averageRating;
+  const averageRating = useMemo(() => 
+    statistics?.ratingsByFormation?.filter((item) => Number(item.avis_count) > 0) || [],
+    [statistics]
+  );
+  
+  const totalReviews = useMemo(() => 
+    averageRating.reduce((sum, item) => sum + Number(item.avis_count), 0),
+    [averageRating]
+  );
+  
+  const weightedRating = useMemo(() => 
+    totalReviews
+      ? averageRating.reduce((sum, item) => sum + Number(item.note_moyenne) * Number(item.avis_count), 0) / totalReviews
+      : null,
+    [averageRating, totalReviews]
+  );
+
+  const monthlyData = useMemo(() => 
+    statistics?.formationsByMonth?.map((item) => ({
+      ...item,
+      libelle: monthName(item.mois),
+    })) || [],
+    [statistics]
+  );
+
+  const applicationData = useMemo(() => 
+    statistics?.applicationsByFormation || [],
+    [statistics]
+  );
+
+  const successData = useMemo(() => 
+    (statistics?.successByFormation || [])
+      .filter((item) => Number(item.tentatives) > 0)
+      .map((item, idx) => ({
+        ...item,
+        fill: COLOR_PALETTE[idx % COLOR_PALETTE.length],
+      })),
+    [statistics]
+  );
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-4 border-b border-black/10 pb-6 sm:flex-row sm:items-end dark:border-white/10">
+    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100">
+      
+      {/* En-tête principal */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Administration</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">Vue statistique</h1>
-          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Activité des formations, candidatures, évaluations et avis.</p>
+          <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
+            <Sparkles size={14} />
+            <span>Panneau Administration</span>
+          </div>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Vue statistique
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400">
+            Aperçu global de l'activité des formations, des candidatures et du taux de réussite.
+          </p>
         </div>
-        <button type="button" onClick={loadStatistics} disabled={loading} aria-label="Actualiser les statistiques" title="Actualiser" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-black/15 transition hover:border-orange-500 hover:text-orange-600 disabled:opacity-50 dark:border-white/15 dark:hover:text-orange-400">
-          <RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+
+        <button
+          type="button"
+          onClick={loadStatistics}
+          disabled={loading}
+          aria-label="Actualiser les statistiques"
+          title="Actualiser"
+          className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 active:scale-[0.98] disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-orange-500 dark:hover:text-orange-400 ${focusRing}`}
+        >
+          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          <span>Actualiser</span>
         </button>
       </header>
 
-      {error && <p role="alert" className="border-l-2 border-red-500 bg-red-500/5 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
-      {loading && !statistics ? <p className="py-12 text-center text-sm text-black/50 dark:text-white/50">Chargement des indicateurs...</p> : statistics && <>
-        <section className="grid gap-6 border-b border-black/10 pb-7 sm:grid-cols-2 xl:grid-cols-4 dark:border-white/10">
-          <StatCard label="Comptes utilisateurs" value={overview.utilisateurs} detail={`${overview.apprenants} apprenants`} icon={Users} color="text-orange-500" />
-          <StatCard label="Formateurs" value={overview.formateurs} detail={`${overview.responsables} responsables`} icon={Activity} color="text-teal-700 dark:text-teal-400" />
-          <StatCard label="Candidatures" value={applicationData.reduce((sum, item) => sum + Number(item.candidatures), 0)} detail={`${overview.administrateurs} administrateurs`} icon={Award} color="text-blue-600 dark:text-blue-400" />
-          <StatCard label="Avis formations" value={totalReviews} detail={weightedRating === null ? 'Pas encore de note' : `Moyenne globale ${weightedRating.toFixed(1)} / 5`} icon={Star} color="text-amber-500" />
-        </section>
-
-        <div className="grid gap-x-10 lg:grid-cols-2">
-          <ChartPanel title="Formations créées par mois" subtitle="Évolution sur les 12 derniers mois">
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-                  <defs><linearGradient id="formationFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f97316" stopOpacity={0.28} /><stop offset="95%" stopColor="#f97316" stopOpacity={0} /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="rgba(120,120,120,.18)" />
-                  <XAxis dataKey="libelle" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value, 'Formations']} />
-                  <Area type="monotone" dataKey="formations" stroke="#f97316" strokeWidth={2.5} fill="url(#formationFill)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartPanel>
-
-          <ChartPanel title="Candidatures par formation" subtitle="Toutes candidatures, avec le nombre d'acceptations">
-            {applicationData.length === 0 ? <p className="py-14 text-center text-sm text-black/45">Aucune formation enregistrée.</p> : <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={applicationData} margin={{ top: 4, right: 10, bottom: 0, left: 4 }}>
-                  <CartesianGrid horizontal={false} stroke="rgba(120,120,120,.18)" />
-                  <XAxis dataKey="titre" interval={0} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} angle={-18} textAnchor="end" height={55} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="candidatures" name="Candidatures" fill="#f97316" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="acceptees" name="Acceptées" fill="#0f766e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>}
-          </ChartPanel>
-
-          <ChartPanel title="Réussite aux évaluations" subtitle="Part des tentatives terminées avec une note d'au moins 10/20">
-            {successData.length === 0 ? <p className="py-14 text-center text-sm text-black/45">Aucune évaluation terminée.</p> : <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={successData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                  <CartesianGrid horizontal={false} stroke="rgba(120,120,120,.18)" />
-                  <XAxis dataKey="titre" interval={0} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} angle={-18} textAnchor="end" height={55} />
-                  <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value, name, item) => [`${value ?? 0}% (${item.payload.reussites}/${item.payload.tentatives})`, 'Réussite']} />
-                  <Bar dataKey="taux_reussite" name="Taux de réussite" fill="#0f766e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>}
-          </ChartPanel>
-
-          <ChartPanel title="Notes des formations terminées" subtitle="Moyenne sur 5 étoiles, uniquement lorsque des apprenants ont donné leur avis">
-            {ratingData.length === 0 ? <p className="py-14 text-center text-sm text-black/45">Aucun avis publié pour le moment.</p> : <div className="space-y-4">
-              {ratingData.map((item, index) => <div key={item.id_formation} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-                <div className="min-w-0"><div className="flex items-center justify-between gap-3"><span className="truncate text-sm font-semibold">{item.titre}</span><span className="shrink-0 text-xs text-black/45 dark:text-white/45">{item.avis_count} avis</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-black/5 dark:bg-white/10"><div className="h-full rounded-full" style={{ width: `${Number(item.note_moyenne) / 5 * 100}%`, backgroundColor: chartColors[index % chartColors.length] }} /></div></div>
-                <span className="flex items-center gap-1 text-sm font-black tabular-nums"><Star size={14} fill="currentColor" className="text-amber-500" /> {Number(item.note_moyenne).toFixed(1)}</span>
-              </div>)}
-            </div>}
-          </ChartPanel>
+      {/* Message d'erreur */}
+      {error && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+        >
+          {error}
         </div>
-      </>}
+      )}
+
+      {/* Skeletons / Chargement */}
+      {loading && !statistics ? (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="h-80 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
+            <div className="h-80 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
+          </div>
+        </div>
+      ) : statistics && (
+        <>
+          {/* Cartes KPI */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Comptes Utilisateurs"
+              value={overview.utilisateurs}
+              detail={`${overview.apprenants || 0} apprenants inscrits`}
+              icon={Users}
+              colorClass="text-orange-600 dark:text-orange-400"
+              bgClass="bg-orange-50 dark:bg-orange-500/10"
+            />
+            <StatCard
+              label="Formateurs & Staff"
+              value={overview.formateurs}
+              detail={`${overview.responsables || 0} responsables ODC`}
+              icon={GraduationCap}
+              colorClass="text-blue-600 dark:text-blue-400"
+              bgClass="bg-blue-50 dark:bg-blue-500/10"
+            />
+            <StatCard
+              label="Total Candidatures"
+              value={applicationData.reduce((sum, item) => sum + Number(item.candidatures), 0)}
+              detail={`${overview.administrateurs || 0} administrateurs`}
+              icon={Award}
+              colorClass="text-emerald-600 dark:text-emerald-400"
+              bgClass="bg-emerald-50 dark:bg-emerald-500/10"
+            />
+            <StatCard
+              label="Avis Formations"
+              value={totalReviews}
+              detail={
+                weightedRating === null
+                  ? 'Aucune note pour le moment'
+                  : `Moyenne globale : ${weightedRating.toFixed(1)} / 5`
+              }
+              icon={Star}
+              colorClass="text-amber-500"
+              bgClass="bg-amber-50 dark:bg-amber-500/10"
+            />
+          </section>
+
+          {/* Grille de Graphiques Stylés */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            
+            {/* 1. AreaChart : Formations créées */}
+            <ChartPanel
+              title="Formations créées"
+              subtitle="Évolution chronologique sur les 12 derniers mois"
+              icon={TrendingUp}
+            >
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                    <defs>
+                      <linearGradient id="colorOrange" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                    <XAxis
+                      dataKey="libelle"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11, fill: '#888' }}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11, fill: '#888' }}
+                    />
+                    <Tooltip content={<CustomTooltip suffix="formation(s)" />} />
+                    <Area
+                      type="monotone"
+                      dataKey="formations"
+                      name="Formations"
+                      stroke="#f97316"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorOrange)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartPanel>
+
+            {/* 2. PieChart (Donut) : Répartition des Candidatures */}
+            <ChartPanel
+              title="Répartition des Candidatures"
+              subtitle="Volume de candidatures reçues par formation"
+              icon={PieChartIcon}
+            >
+              {applicationData.length === 0 ? (
+                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                  Aucune donnée disponible.
+                </div>
+              ) : (
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={applicationData}
+                        dataKey="candidatures"
+                        nameKey="titre"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={95}
+                        paddingAngle={4}
+                        cornerRadius={6}
+                      >
+                        {applicationData.map((_, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLOR_PALETTE[index % COLOR_PALETTE.length]}
+                            stroke="transparent"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip suffix="candidature(s)" />} />
+                      <Legend
+                        layout="horizontal"
+                        verticalAlign="bottom"
+                        align="center"
+                        iconType="circle"
+                        formatter={(value) => (
+                          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-400">
+                            {value.length > 18 ? `${value.substring(0, 18)}…` : value}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ChartPanel>
+
+            {/* 3. BarChart : Réussite aux Évaluations */}
+            <ChartPanel
+              title="Taux de Réussite aux Évaluations"
+              subtitle="Note moyenne ≥ 10/20 par formation"
+              icon={CheckCircle2}
+            >
+              {successData.length === 0 ? (
+                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                  Aucune évaluation terminée.
+                </div>
+              ) : (
+                <div className="h-72 w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                      <XAxis
+                        dataKey="titre"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: '#888' }}
+                        interval={0}
+                        tickFormatter={(v) => (v.length > 12 ? `${v.substring(0, 10)}...` : v)}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tickFormatter={(v) => `${v}%`}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11, fill: '#888' }}
+                      />
+                      <Tooltip content={<CustomTooltip suffix="%" />} />
+                      <Bar
+                        dataKey="taux_reussite"
+                        name="Taux de réussite"
+                        radius={[8, 8, 0, 0]}
+                      >
+                        {successData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ChartPanel>
+
+            {/* 4. Horizontal BarChart : Notes Moyennes des Formations */}
+            <ChartPanel
+              title="Appréciation des Apprenants"
+              subtitle="Notes moyennes attribuées (sur 5 étoiles)"
+              icon={Star}
+            >
+              {averageRating.length === 0 ? (
+                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                  Aucun avis publié pour le moment.
+                </div>
+              ) : (
+                <div className="h-72 w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={averageRating}
+                      margin={{ top: 5, right: 20, bottom: 5, left: 30 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                      <XAxis
+                        type="number"
+                        domain={[0, 5]}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11, fill: '#888' }}
+                      />
+                      <YAxis
+                        dataKey="titre"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11, fill: '#888' }}
+                        tickFormatter={(v) => (v.length > 14 ? `${v.substring(0, 12)}…` : v)}
+                      />
+                      <Tooltip content={<CustomTooltip suffix="/ 5" />} />
+                      <Bar
+                        dataKey="note_moyenne"
+                        name="Note moyenne"
+                        fill="#f59e0b"
+                        radius={[0, 8, 8, 0]}
+                        barSize={18}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ChartPanel>
+
+          </div>
+        </>
+      )}
     </div>
   );
 }
