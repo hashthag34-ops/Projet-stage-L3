@@ -77,7 +77,9 @@ exports.getMesForums = async (req, res) => {
       JOIN inscription i ON a.id_candidat = i.id_candidat
       JOIN formation f ON i.id_formation = f.id_formation
       JOIN forum fo ON fo.id_formation = f.id_formation
-      WHERE a.id_utilisateur = $1 AND i.statut = 'ACCEPTEE'
+      WHERE a.id_utilisateur = $1
+        AND i.statut = 'ACCEPTEE'
+        AND f.date_fin >= CURRENT_DATE
     `;
     const { rows } = await db.query(query, [id_utilisateur]);
     res.json(rows);
@@ -160,7 +162,7 @@ exports.getEvaluationApprenant = async (req, res) => {
 exports.startEvaluationAttempt = async (req, res) => {
   try {
     const subject = await db.query(
-      `SELECT es.id_evaluation_sujet, a.id_apprenant
+      `SELECT es.id_evaluation_sujet, es.duree_minutes, a.id_apprenant
        FROM evaluation_sujet es
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
@@ -170,14 +172,46 @@ exports.startEvaluationAttempt = async (req, res) => {
     );
     if (!subject.rows[0]) return res.status(404).json({ message: 'Évaluation introuvable ou non accessible.' });
 
-    const existing = await db.query(
-      `SELECT id_tentative, id_evaluation_sujet, date_debut, statut
+    const completed = await db.query(
+      `SELECT 1
        FROM evaluation_tentative
-       WHERE id_evaluation_sujet = $1 AND id_apprenant = $2 AND statut = 'EN_COURS'
-       ORDER BY date_debut DESC LIMIT 1`,
+       WHERE id_evaluation_sujet = $1
+         AND id_apprenant = $2
+         AND statut = 'TERMINEE'
+       LIMIT 1`,
       [req.params.id, subject.rows[0].id_apprenant]
     );
-    if (existing.rows[0]) return res.json(existing.rows[0]);
+    if (completed.rows[0]) {
+      return res.status(409).json({ message: 'Vous avez déjà terminé cette évaluation.' });
+    }
+
+    const existing = await db.query(
+      `SELECT et.id_tentative, et.id_evaluation_sujet, et.date_debut, et.statut,
+              es.duree_minutes,
+              CASE WHEN es.duree_minutes IS NULL THEN NULL
+                   ELSE FLOOR(EXTRACT(EPOCH FROM (
+                     (et.date_debut + es.duree_minutes * INTERVAL '1 minute')
+                     AT TIME ZONE current_setting('TIMEZONE')
+                   )) * 1000)::BIGINT
+              END AS deadline_epoch_ms,
+              FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000)::BIGINT AS server_now_epoch_ms
+       FROM evaluation_tentative et
+       JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+       WHERE et.id_evaluation_sujet = $1
+         AND et.id_apprenant = $2
+         AND et.statut = 'EN_COURS'
+       ORDER BY et.date_debut DESC LIMIT 1`,
+      [req.params.id, subject.rows[0].id_apprenant]
+    );
+    if (existing.rows[0]) {
+      const answers = await db.query(
+        `SELECT id_question, id_choix
+         FROM evaluation_reponse
+         WHERE id_tentative = $1`,
+        [existing.rows[0].id_tentative]
+      );
+      return res.json({ ...existing.rows[0], reponses: answers.rows });
+    }
 
     const { rows } = await db.query(
       `INSERT INTO evaluation_tentative (id_evaluation_sujet, id_apprenant)
@@ -185,24 +219,114 @@ exports.startEvaluationAttempt = async (req, res) => {
        RETURNING id_tentative, id_evaluation_sujet, date_debut, statut`,
       [req.params.id, subject.rows[0].id_apprenant]
     );
-    res.status(201).json(rows[0]);
+    const attempt = rows[0];
+    const deadline = await db.query(
+      `SELECT CASE WHEN es.duree_minutes IS NULL THEN NULL
+                   ELSE FLOOR(EXTRACT(EPOCH FROM (
+                     (et.date_debut + es.duree_minutes * INTERVAL '1 minute')
+                     AT TIME ZONE current_setting('TIMEZONE')
+                   )) * 1000)::BIGINT
+              END AS deadline_epoch_ms,
+              FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000)::BIGINT AS server_now_epoch_ms
+       FROM evaluation_tentative et
+       JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+       WHERE et.id_tentative = $1`,
+      [attempt.id_tentative]
+    );
+    res.status(201).json({
+      ...attempt,
+      duree_minutes: subject.rows[0].duree_minutes,
+      deadline_epoch_ms: deadline.rows[0].deadline_epoch_ms,
+      server_now_epoch_ms: deadline.rows[0].server_now_epoch_ms,
+      reponses: []
+    });
   } catch (error) {
     console.error('Erreur démarrage tentative :', error);
     res.status(500).json({ message: 'Impossible de démarrer cette évaluation.' });
   }
 };
 
-exports.submitEvaluationAttempt = async (req, res) => {
-  const { reponses } = req.body;
-  if (!Array.isArray(reponses)) {
-    return res.status(400).json({ message: 'Les réponses fournies sont invalides.' });
+exports.saveEvaluationAnswer = async (req, res) => {
+  const { id_question, id_choix } = req.body;
+  if (!id_question || !id_choix) {
+    return res.status(400).json({ message: 'La question et le choix sont obligatoires.' });
   }
 
   const client = await db.connect();
   try {
     await client.query('BEGIN');
     const attemptResult = await client.query(
-      `SELECT et.id_tentative, et.id_apprenant, et.id_evaluation_sujet, et.statut
+      `SELECT et.id_tentative, et.id_evaluation_sujet, es.duree_minutes,
+              (es.duree_minutes IS NOT NULL
+               AND et.date_debut + es.duree_minutes * INTERVAL '1 minute' <= LOCALTIMESTAMP) AS expired
+       FROM evaluation_tentative et
+       JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+       JOIN apprenant a ON a.id_apprenant = et.id_apprenant
+       JOIN inscription i ON i.id_candidat = a.id_candidat
+         AND i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
+       WHERE et.id_tentative = $1 AND a.id_utilisateur = $2
+         AND et.statut = 'EN_COURS' AND es.statut = 'PUBLIEE'
+       FOR UPDATE OF et`,
+      [req.params.id_tentative, req.user.id_utilisateur]
+    );
+    const attempt = attemptResult.rows[0];
+    if (!attempt) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Tentative introuvable ou terminée.' });
+    }
+
+    if (attempt.expired) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'Le temps de cette évaluation est écoulé.' });
+    }
+
+    const choiceResult = await client.query(
+      `SELECT ec.id_choix, eq.points,
+              CASE WHEN ec.est_correct THEN eq.points ELSE 0 END AS points_obtenus
+       FROM evaluation_choix ec
+       JOIN evaluation_question eq ON eq.id_question = ec.id_question
+       WHERE ec.id_choix = $1
+         AND eq.id_question = $2
+         AND eq.id_evaluation_sujet = $3`,
+      [id_choix, id_question, attempt.id_evaluation_sujet]
+    );
+    if (!choiceResult.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Le choix ne correspond pas à cette question.' });
+    }
+
+    await client.query(
+      `INSERT INTO evaluation_reponse (id_tentative, id_question, id_choix, points_obtenus)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id_tentative, id_question)
+       DO UPDATE SET id_choix = EXCLUDED.id_choix,
+                     points_obtenus = EXCLUDED.points_obtenus`,
+      [attempt.id_tentative, id_question, id_choix, choiceResult.rows[0].points_obtenus]
+    );
+    await client.query('COMMIT');
+    res.json({ id_question: Number(id_question), id_choix: Number(id_choix) });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erreur sauvegarde réponse évaluation :', error);
+    res.status(500).json({ message: 'Impossible de sauvegarder cette réponse.' });
+  } finally {
+    client.release();
+  }
+};
+
+exports.submitEvaluationAttempt = async (req, res) => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const attemptResult = await client.query(
+      `SELECT et.id_tentative, et.id_apprenant, et.id_evaluation_sujet, et.statut,
+              et.note, et.date_fin,
+              CASE WHEN es.duree_minutes IS NULL THEN NULL
+                   ELSE FLOOR(EXTRACT(EPOCH FROM (
+                     (et.date_debut + es.duree_minutes * INTERVAL '1 minute')
+                     AT TIME ZONE current_setting('TIMEZONE')
+                   )) * 1000)::BIGINT
+              END AS deadline_epoch_ms
        FROM evaluation_tentative et
        JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
        JOIN apprenant a ON a.id_apprenant = et.id_apprenant
@@ -219,50 +343,30 @@ exports.submitEvaluationAttempt = async (req, res) => {
     }
     if (attempt.statut !== 'EN_COURS') {
       await client.query('ROLLBACK');
-      return res.status(409).json({ message: 'Cette tentative est déjà terminée.' });
+      return res.json(attempt);
     }
 
-    const questionsResult = await client.query(
-      `SELECT eq.id_question, eq.points, ec.id_choix, ec.est_correct
-       FROM evaluation_question eq
-       JOIN evaluation_choix ec ON ec.id_question = eq.id_question
-       WHERE eq.id_evaluation_sujet = $1`,
-      [attempt.id_evaluation_sujet]
-    );
-    const choicesByQuestion = new Map();
-    questionsResult.rows.forEach((row) => {
-      if (!choicesByQuestion.has(row.id_question)) choicesByQuestion.set(row.id_question, []);
-      choicesByQuestion.get(row.id_question).push(row);
-    });
-
-    const answeredQuestions = new Set();
-    let note = 0;
-    for (const answer of reponses) {
-      const questionId = Number(answer.id_question);
-      const choiceId = Number(answer.id_choix);
-      const choices = choicesByQuestion.get(questionId);
-      const selectedChoice = choices?.find((choice) => choice.id_choix === choiceId);
-      if (!selectedChoice || answeredQuestions.has(questionId)) {
-        const error = new Error('Une ou plusieurs réponses ne correspondent pas à cette évaluation.');
-        error.status = 400;
-        throw error;
-      }
-      answeredQuestions.add(questionId);
-      const points = selectedChoice.est_correct ? Number(selectedChoice.points) : 0;
-      note += points;
-      await client.query(
-        `INSERT INTO evaluation_reponse (id_tentative, id_question, id_choix, points_obtenus)
-         VALUES ($1, $2, $3, $4)`,
-        [attempt.id_tentative, questionId, choiceId, points]
-      );
-    }
+    const deadline = attempt.deadline_epoch_ms;
 
     const { rows } = await client.query(
       `UPDATE evaluation_tentative
-       SET note = $1, statut = 'TERMINEE', date_fin = CURRENT_TIMESTAMP
-       WHERE id_tentative = $2
+       SET note = COALESCE((
+             SELECT SUM(er.points_obtenus)
+             FROM evaluation_reponse er
+             WHERE er.id_tentative = $1
+           ), 0),
+           statut = 'TERMINEE',
+           date_fin = CASE
+             WHEN $2::BIGINT IS NOT NULL
+               AND $2::BIGINT <= EXTRACT(EPOCH FROM (
+                 LOCALTIMESTAMP AT TIME ZONE current_setting('TIMEZONE')
+               )) * 1000
+             THEN to_timestamp($2::BIGINT / 1000.0) AT TIME ZONE current_setting('TIMEZONE')
+             ELSE LOCALTIMESTAMP
+           END
+       WHERE id_tentative = $1
        RETURNING id_tentative, note, statut, date_debut, date_fin`,
-      [note, attempt.id_tentative]
+      [attempt.id_tentative, deadline]
     );
     await client.query('COMMIT');
     res.json(rows[0]);

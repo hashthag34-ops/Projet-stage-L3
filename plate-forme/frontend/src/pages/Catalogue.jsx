@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, CheckCircle2, Clock, Info, UserX, ArrowRight, Star,
   Search, Send, Calendar, Users, X, MessageSquare, Sparkles,
-  TrendingUp, GraduationCap
+  TrendingUp, GraduationCap, LayoutGrid, List, MapPin, Plus, Heart,
+  Filter, ChevronDown, Check, ArrowUpRight
 } from 'lucide-react';
-import API from '../services/api';
+import API, { getFormationImageUrl } from '../services/api';
 
 const STATUT_LABELS = {
   OUVERTE: 'Ouverte',
@@ -15,17 +16,17 @@ const STATUT_LABELS = {
 };
 
 const STATUT_DOT = {
-  OUVERTE: 'bg-orange-500',
+  OUVERTE: 'bg-emerald-500',
   EN_COURS: 'bg-blue-500',
-  TERMINEE: 'bg-slate-400',
-  FERMEE: 'bg-slate-400',
+  TERMINEE: 'bg-zinc-400',
+  FERMEE: 'bg-zinc-400',
 };
 
-const STATUT_BADGE = {
-  OUVERTE: 'bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20',
-  EN_COURS: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20',
-  TERMINEE: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700',
-  FERMEE: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700',
+const STATUT_BADGE_STYLE = {
+  OUVERTE: 'bg-emerald-600 text-white',
+  EN_COURS: 'bg-blue-600 text-white',
+  TERMINEE: 'bg-zinc-700 text-white',
+  FERMEE: 'bg-zinc-500 text-white',
 };
 
 const FILTER_TABS = [
@@ -47,20 +48,19 @@ function ProgressBar({ value, max }) {
   const pct = max ? Math.min((value / max) * 100, 100) : 0;
   const isFull = max !== null && value >= max;
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800">
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
             isFull
-              ? 'bg-slate-400'
-              : 'bg-gradient-to-r from-orange-400 to-orange-500'
+              ? 'bg-zinc-400'
+              : 'bg-emerald-600 dark:bg-emerald-500'
           }`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500 dark:text-zinc-400">
-        {value}
-        {max ? ` / ${max}` : ''}
+      <span className="shrink-0 text-[11px] font-semibold tabular-nums text-stone-500 dark:text-zinc-400">
+        {value}{max ? `/${max}` : ''}
       </span>
     </div>
   );
@@ -76,7 +76,7 @@ function Stars({ note, size = 13 }) {
           className={
             s <= Math.round(note)
               ? 'fill-amber-400 text-amber-400'
-              : 'text-slate-200 dark:text-zinc-700'
+              : 'text-stone-300 dark:text-zinc-700'
           }
         />
       ))}
@@ -86,19 +86,17 @@ function Stars({ note, size = 13 }) {
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-      <div className="h-44 w-full animate-pulse bg-slate-100 dark:bg-zinc-800" />
-      <div className="flex flex-1 flex-col p-5">
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-stone-200/80 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+      <div className="h-48 w-full animate-pulse rounded-2xl bg-stone-200/60 dark:bg-zinc-800" />
+      <div className="flex flex-1 flex-col p-4">
         <div className="flex justify-between gap-3">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100 dark:bg-zinc-800" />
-          <div className="h-4 w-12 animate-pulse rounded bg-slate-100 dark:bg-zinc-800" />
+          <div className="h-5 w-3/4 animate-pulse rounded-md bg-stone-200/60 dark:bg-zinc-800" />
+          <div className="h-5 w-16 animate-pulse rounded-md bg-stone-200/60 dark:bg-zinc-800" />
         </div>
-        <div className="mt-3 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-zinc-800" />
-        <div className="mt-1.5 h-3 w-2/3 animate-pulse rounded bg-slate-100 dark:bg-zinc-800" />
-        <div className="mt-5 h-2 w-full animate-pulse rounded-full bg-slate-100 dark:bg-zinc-800" />
-        <div className="mt-2.5 h-2 w-full animate-pulse rounded-full bg-slate-100 dark:bg-zinc-800" />
-        <div className="mt-2.5 h-2 w-3/4 animate-pulse rounded-full bg-slate-100 dark:bg-zinc-800" />
-        <div className="mt-6 h-9 w-full animate-pulse rounded-xl bg-slate-100 dark:bg-zinc-800" />
+        <div className="mt-3 h-3.5 w-full animate-pulse rounded bg-stone-200/60 dark:bg-zinc-800" />
+        <div className="mt-2 h-3.5 w-2/3 animate-pulse rounded bg-stone-200/60 dark:bg-zinc-800" />
+        <div className="mt-6 h-2 w-full animate-pulse rounded-full bg-stone-200/60 dark:bg-zinc-800" />
+        <div className="mt-6 h-10 w-full animate-pulse rounded-xl bg-stone-200/60 dark:bg-zinc-800" />
       </div>
     </div>
   );
@@ -110,6 +108,9 @@ export default function Catalogue() {
   const [selectedFormation, setSelectedFormation] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Layout View State (Grid vs List)
+  const [viewMode, setViewMode] = useState('grid');
 
   // Filtres & Recherche
   const [searchTerm, setSearchTerm] = useState('');
@@ -241,125 +242,128 @@ export default function Catalogue() {
   }, [formations]);
 
   const focusRing =
-    'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 dark:focus-visible:ring-amber-400';
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 transition-colors duration-300 dark:bg-black dark:text-zinc-100">
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F3F2EE] font-sans text-stone-900 transition-colors duration-300 dark:bg-[#0C0C0E] dark:text-zinc-100">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         
-        {/* En-tête principal & Stats */}
-        <header className="mb-10">
-          <div className="flex items-center gap-2 text-xs font-medium text-orange-600 dark:text-orange-400">
-            <Sparkles size={14} />
-            <span>Formations certifiantes</span>
+        {/* Top Header Title & Actions Bar */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+              Formations & Catalogue
+            </h1>
+            
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Catalogue des formations
-          </h1>
-          <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-500 dark:text-zinc-400">
-            Découvrez nos programmes et développez vos compétences à votre rythme.
-          </p>
 
-          {!loading && formations.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-4">
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-500/10">
-                  <GraduationCap size={16} className="text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {stats.ouvertes}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-                    formations ouvertes
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
-                  <Users size={16} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {stats.totalInscrits}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-                    apprenants inscrits
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/10">
-                  <TrendingUp size={16} className="text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {stats.avgNote} / 5
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-                    note moyenne
-                  </p>
-                </div>
-              </div>
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2.5">
+            {/* View Mode Switcher Pills */}
+            <div className="flex items-center rounded-full bg-stone-200/70 p-1 dark:bg-zinc-800/80">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-stone-900 shadow-sm dark:bg-zinc-900 dark:text-white'
+                    : 'text-stone-600 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <LayoutGrid size={14} />
+                <span className="hidden sm:inline">Grille</span>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-stone-900 shadow-sm dark:bg-zinc-900 dark:text-white'
+                    : 'text-stone-600 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <List size={14} />
+                <span className="hidden sm:inline">Liste</span>
+              </button>
             </div>
-          )}
-        </header>
+          </div>
+        </div>
 
-        {/* Barre d'outils : Recherche & Filtres */}
-        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative lg:w-72">
+        {/* Filters and Search Bar Section */}
+        {}
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          
+          {/* Status Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FILTER_TABS.map((tab) => {
+              const active = selectedStatus === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setSelectedStatus(tab.value)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${focusRing} ${
+                    active
+                      ? 'bg-stone-900 text-white shadow-sm dark:bg-white dark:text-stone-950'
+                      : 'bg-white/80 text-stone-700 hover:bg-white dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Input Box */}
+          <div className="relative w-full md:w-80">
             <Search
-              size={16}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500"
+              size={15}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 dark:text-zinc-500"
             />
             <input
               type="text"
               aria-label="Rechercher une formation"
-              placeholder="Rechercher une formation…"
+              placeholder="Rechercher intitulé, compétences..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-600 ${focusRing}`}
+              className={`w-full rounded-full border border-stone-200/80 bg-white/90 py-2 pl-10 pr-4 text-xs font-medium text-stone-900 placeholder-stone-400 shadow-sm transition hover:border-stone-300 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-white dark:placeholder-zinc-500 ${focusRing}`}
             />
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {FILTER_TABS.map((tab) => (
+            {searchTerm && (
               <button
-                key={tab.value}
-                onClick={() => setSelectedStatus(tab.value)}
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${focusRing} ${
-                  selectedStatus === tab.value
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                }`}
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-200"
               >
-                {tab.label}
+                <X size={13} />
               </button>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* Grille des cartes */}
+        {/* Card Grid / List Container */}
+        {}
         {loading ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : filteredFormations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 py-20 dark:border-zinc-800">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-900">
-              <Search size={20} className="text-slate-400 dark:text-zinc-600" />
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-stone-300 bg-white/50 py-16 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-zinc-400">
+              <Search size={22} />
             </div>
-            <p className="mt-4 text-sm font-medium text-slate-600 dark:text-zinc-300">
-              Aucune formation ne correspond à votre recherche.
+            <p className="mt-4 text-sm font-bold text-stone-800 dark:text-zinc-200">
+              Aucune formation trouvée
             </p>
-            <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
-              Essayez de modifier vos filtres ou votre recherche.
+            <p className="mt-1 text-xs text-stone-500 dark:text-zinc-400">
+              Modifiez vos termes de recherche ou sélectionnez une autre catégorie.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
+                : 'flex flex-col gap-4'
+            }
+          >
             {filteredFormations.map((f, idx) => {
               const ouverte = isInscriptionOuverte(f);
               const estApprenant = f.est_apprenant;
@@ -369,150 +373,130 @@ export default function Catalogue() {
               const badgeLabel = estComplete
                 ? 'Complet'
                 : STATUT_LABELS[f.statut] || f.statut;
-              const fillPct = f.capacite_max
-                ? Math.min((f.inscrits_count / f.capacite_max) * 100, 100)
-                : 0;
 
               return (
                 <article
                   key={f.id_formation}
-                  className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_12px_32px_-8px_rgba(249,115,22,0.15)] dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-orange-500/30 dark:hover:shadow-[0_12px_32px_-8px_rgba(249,115,22,0.2)]"
-                  style={{ animationDelay: `${idx * 60}ms` }}
+                  className={`group relative flex flex-col overflow-hidden rounded-3xl border border-stone-200/80 bg-white  transition-all duration-300 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900/90 ${
+                    viewMode === 'list' ? 'sm:flex-row sm:items-center' : ''
+                  }`}
                 >
-                  {/* Visuel */}
-                  <div className="relative h-44 w-full overflow-hidden bg-slate-100 dark:bg-zinc-800">
+                  {/* Image Preview with Floating Badges */}
+                  <div
+                    className={`relative w-full overflow-hidden rounded-t-3xl bg-stone-100 dark:bg-zinc-800 ${
+                      viewMode === 'list' ? 'h-48 sm:h-36 sm:w-56 shrink-0' : 'h-52'
+                    }`}
+                  >
                     {f.image_url ? (
                       <img
-                        src={f.image_url}
+                        src={getFormationImageUrl(f.image_url)}
                         alt={f.titre}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+                        }}
+                        onLoad={(event) => {
+                          event.currentTarget.style.display = '';
+                        }}
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <BookOpen size={32} className="text-orange-500/70" />
+                      <div className="flex h-full w-full items-center justify-center bg-stone-200/60 dark:bg-zinc-800">
+                        <BookOpen size={36} className="text-stone-400 dark:text-zinc-600" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
-                    <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur-md dark:bg-zinc-900/80 dark:text-zinc-200">
+
+                    {/* Top Left Status Pill Badge (Replicating "New", "Active" from reference) */}
+                    <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-stone-900/80 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-md dark:bg-black/80">
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
+                        className={`h-2 w-2 rounded-full ${
                           STATUT_DOT[badgeKey] || STATUT_DOT.FERMEE
                         }`}
                       />
                       {badgeLabel}
                     </div>
-                    <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur-md dark:bg-zinc-900/80 dark:text-zinc-200">
+
+                    {/* Top Right Wishlist / Rating Pill Badge */}
+                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-stone-800 shadow-sm backdrop-blur-md dark:bg-zinc-900/90 dark:text-zinc-100">
                       <Star size={12} className="fill-amber-400 text-amber-400" />
                       {Number(f.note_moyenne || 0).toFixed(1)}
-                      <span className="font-normal text-slate-400 dark:text-zinc-500">
-                        ({f.avis_count})
-                      </span>
                     </div>
                   </div>
 
-                  {/* Contenu */}
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3 className="text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
-                      {f.titre}
-                    </h3>
+                  {/* Card Content Header & Details */}
+                  <div className="flex flex-1 flex-col p-3.5">
+                    
+                    {/* Title & Price/Highlight Row */}
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-base font-extrabold text-stone-900 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-400">
+                        {f.titre}
+                      </h3>
+                    </div>
 
-                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+                    {/* Short Description */}
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-stone-500 dark:text-zinc-400">
                       {f.description}
                     </p>
 
-                    {/* Méta infos */}
-                    <div className="mt-4 space-y-2.5 text-xs text-slate-500 dark:text-zinc-400">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="shrink-0 text-slate-400 dark:text-zinc-600" />
-                        <span>
-                          Début le{' '}
-                          <strong className="font-medium text-slate-700 dark:text-zinc-300">
-                            {formatDate(f.date_debut)}
-                          </strong>
-                        </span>
+                    {/* Key Metadata Row */}
+                    <div className="mt-3 flex flex-wrap items-center gap-y-1 gap-x-4 text-[11px] font-medium text-stone-500 dark:text-zinc-400">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={13} className="text-stone-400 dark:text-zinc-500" />
+                        <span>Début: {formatDate(f.date_debut)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock size={14} className="shrink-0 text-slate-400 dark:text-zinc-600" />
-                        <span>
-                          Inscriptions jusqu'au{' '}
-                          <strong className="font-medium text-slate-700 dark:text-zinc-300">
-                            {formatDate(f.date_limite_inscription)}
-                          </strong>
-                        </span>
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={13} className="text-stone-400 dark:text-zinc-500" />
+                        <span>Limite: {formatDate(f.date_limite_inscription)}</span>
                       </div>
                     </div>
 
-                    {/* Progression / Places */}
-                    <div className="mt-4">
-                      <div className="mb-1.5 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-zinc-400">
-                        <span className="flex items-center gap-1.5">
-                          <Users size={12} className="text-slate-400 dark:text-zinc-600" />
-                          Places
-                        </span>
-                        {f.capacite_max && fillPct >= 100 && (
-                          <span className="font-semibold text-slate-500 dark:text-zinc-400">
-                            Complet
-                          </span>
-                        )}
-                      </div>
+                    {/* Capacity Progress Indicator */}
+                    <div className="mt-3">
                       <ProgressBar value={f.inscrits_count} max={f.capacite_max} />
                     </div>
 
-                    {/* Action */}
-                    <div className="mt-auto pt-5">
+                    {/* Bottom Action Section (Replicating matched buyers / link from reference) */}
+                    <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-3 dark:border-zinc-800/80">
+                      <span className="text-[11px] font-semibold text-stone-500 dark:text-zinc-400">
+                        {f.inscrits_count || 0} inscrits
+                      </span>
+
+                      {/* Action Button */}
                       {estApprenant ? (
                         <button
                           onClick={() => handleOpenDetails(f)}
-                          className={`flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-700 transition hover:bg-orange-100 active:scale-[0.98] dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-400 dark:hover:bg-orange-500/20 ${focusRing}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:underline dark:text-emerald-400"
                         >
-                          {f.statut === 'TERMINEE' ? (
-                            <>
-                              <Star size={15} />{' '}
-                              {f.avis_deja_depose
-                                ? 'Consulter les avis'
-                                : 'Donner votre avis'}
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 size={15} /> Vous suivez cette formation
-                            </>
-                          )}
+                          {f.statut === 'TERMINEE' ? 'Consulter les avis' : 'Formation suivie'}
+                          <ArrowUpRight size={14} />
                         </button>
                       ) : statutCandidature === 'EN_ATTENTE' ? (
-                        <button
-                          disabled
-                          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400"
-                        >
-                          <Clock size={15} /> Candidature en cours
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                          En attente
+                        </span>
                       ) : estComplete ? (
-                        <button
-                          disabled
-                          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-400 dark:bg-zinc-800 dark:text-zinc-500"
-                        >
-                          <UserX size={15} /> Formation complète
-                        </button>
+                        <span className="text-xs font-bold text-stone-400 dark:text-zinc-500">
+                          Complet
+                        </span>
                       ) : ouverte ? (
                         <button
                           onClick={() => handlePostuler(f)}
-                          className={`group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 hover:shadow-md hover:shadow-orange-500/30 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-stone-900 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-400"
                         >
                           Postuler
-                          <ArrowRight
-                            size={15}
-                            className="transition-transform group-hover/btn:translate-x-0.5"
-                          />
+                          <ArrowRight size={14} />
                         </button>
                       ) : (
                         <button
                           onClick={() => handleOpenDetails(f)}
-                          className={`flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-orange-300 hover:text-orange-600 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-orange-500 dark:hover:text-orange-400 ${focusRing}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-stone-600 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-white"
                         >
-                          <Info size={15} /> À propos et avis
+                          Avis & Infos
+                          <Info size={14} />
                         </button>
                       )}
                     </div>
+
                   </div>
                 </article>
               );
@@ -521,10 +505,11 @@ export default function Catalogue() {
         )}
       </main>
 
-      {/* Modal Détails & Avis */}
+      {/* Modal Details & Review Posting */}
+      {}
       {showDetailModal && selectedFormation && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4 backdrop-blur-sm dark:bg-black/70"
           onClick={handleCloseModal}
         >
           <div
@@ -532,200 +517,137 @@ export default function Catalogue() {
             aria-modal="true"
             aria-label={selectedFormation.titre}
             onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+            className="relative max-h-[90vh] w-full max-w-lg overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           >
-            {/* Bannière d'en-tête de la modal */}
-            <div className="relative h-28 w-full overflow-hidden bg-slate-100 dark:bg-zinc-800">
+            {/* Modal Header Image */}
+            <div className="relative h-32 w-full bg-stone-200 dark:bg-zinc-800">
               {selectedFormation.image_url && (
                 <img
-                  src={selectedFormation.image_url}
+                  src={getFormationImageUrl(selectedFormation.image_url)}
                   alt=""
                   className="h-full w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={(event) => {
+                    event.currentTarget.style.display = '';
+                  }}
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              {/* Close Button */}
               <button
                 type="button"
                 aria-label="Fermer"
                 onClick={handleCloseModal}
-                className={`absolute right-3 top-3 rounded-full bg-white/90 p-2 text-slate-500 shadow-sm transition hover:bg-white hover:text-slate-700 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 ${focusRing}`}
+                className="absolute right-3 top-3 rounded-full bg-stone-900/80 p-2 text-white shadow-md backdrop-blur-md hover:bg-black dark:bg-white/90 dark:text-black"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
-              <div className="absolute bottom-3 left-5">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-                    STATUT_BADGE[selectedFormation.statut] ||
-                    STATUT_BADGE.FERMEE
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      STATUT_DOT[selectedFormation.statut] || STATUT_DOT.FERMEE
-                    }`}
-                  />
-                  {STATUT_LABELS[selectedFormation.statut] ||
-                    selectedFormation.statut}
+
+              <div className="absolute bottom-3 left-4">
+                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-stone-900 shadow-sm backdrop-blur-md dark:bg-zinc-900 dark:text-white">
+                  {STATUT_LABELS[selectedFormation.statut] || selectedFormation.statut}
                 </span>
               </div>
             </div>
 
-            {/* Corps de la modal */}
-            <div className="max-h-[calc(90vh-7rem)] overflow-y-auto p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            {/* Modal Scrollable Content */}
+            <div className="max-h-[calc(90vh-8rem)] overflow-y-auto p-6">
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white">
                 {selectedFormation.titre}
               </h3>
 
-              <div className="mt-2 flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-zinc-300">
+              <div className="mt-2 flex items-center gap-4 text-xs font-semibold text-stone-500 dark:text-zinc-400">
+                <span className="flex items-center gap-1">
                   <Star size={13} className="fill-amber-400 text-amber-400" />
-                  {Number(selectedFormation.note_moyenne || 0).toFixed(1)}
-                  <span className="font-normal text-slate-400 dark:text-zinc-500">
-                    ({selectedFormation.avis_count} avis)
-                  </span>
+                  {Number(selectedFormation.note_moyenne || 0).toFixed(1)} / 5 ({selectedFormation.avis_count || 0} avis)
                 </span>
-                <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
-                  <Users size={13} /> {selectedFormation.inscrits_count} apprenants
+                <span className="flex items-center gap-1">
+                  <Users size={13} /> {selectedFormation.inscrits_count || 0} inscrits
                 </span>
               </div>
 
-              <div className="mt-5 space-y-6 text-sm text-slate-600 dark:text-zinc-300">
-                {/* Présentation */}
-                <section>
-                  <h4 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+              {/* Description */}
+              <div className="mt-5 space-y-4 text-xs text-stone-600 dark:text-zinc-300">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 dark:text-zinc-500">
                     Présentation
                   </h4>
-                  <p className="leading-relaxed text-slate-600 dark:text-zinc-400">
+                  <p className="mt-1 leading-relaxed text-stone-700 dark:text-zinc-300">
                     {selectedFormation.description}
                   </p>
-                </section>
+                </div>
 
-                {/* Liste des avis */}
-                <section>
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-zinc-800">
-                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Avis des apprenants
-                    </h4>
-                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-zinc-300">
-                      <Star size={13} className="fill-amber-400 text-amber-400" />
-                      {Number(selectedFormation.note_moyenne || 0).toFixed(1)} / 5
-                    </span>
-                  </div>
+                {/* Reviews List */}
+                <div className="pt-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 dark:text-zinc-500">
+                    Avis des apprenants
+                  </h4>
 
                   {reviewError && (
-                    <p
-                      role="alert"
-                      className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
-                    >
+                    <p className="mt-2 rounded-xl bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">
                       {reviewError}
                     </p>
                   )}
                   {reviewSuccess && (
-                    <p
-                      role="status"
-                      className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-                    >
+                    <p className="mt-2 rounded-xl bg-emerald-50 p-2.5 text-xs text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                       {reviewSuccess}
                     </p>
                   )}
 
-                  <div className="mt-3 max-h-56 space-y-2.5 overflow-y-auto pr-1">
+                  <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1">
                     {commentsLoading ? (
-                      <div className="space-y-2">
-                        {Array.from({ length: 2 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="rounded-xl bg-slate-50 p-3.5 dark:bg-zinc-800/40"
-                          >
-                            <div className="h-3 w-24 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
-                            <div className="mt-2 h-2.5 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
-                            <div className="mt-1.5 h-2.5 w-2/3 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-center text-xs text-stone-400">Chargement des avis...</p>
                     ) : comments.length ? (
                       comments.map((comment) => (
-                        <article
+                        <div
                           key={comment.id_avis}
-                          className="rounded-xl bg-slate-50 p-3.5 transition hover:bg-slate-100 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60"
+                          className="rounded-2xl bg-stone-100/70 p-3 dark:bg-zinc-800/50"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-[10px] font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
-                                {comment.auteur
-                                  ? comment.auteur.charAt(0).toUpperCase()
-                                  : 'U'}
-                              </div>
-                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
-                                {comment.auteur}
-                              </span>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-stone-800 dark:text-zinc-200">
+                              {comment.auteur || 'Anonyme'}
+                            </span>
                             <Stars note={comment.note} size={11} />
                           </div>
-                          <p className="mt-2 text-xs leading-normal text-slate-600 dark:text-zinc-300">
+                          <p className="mt-1 text-xs text-stone-600 dark:text-zinc-300">
                             {comment.commentaire}
                           </p>
-                          <time className="mt-2 block text-[11px] text-slate-400 dark:text-zinc-500">
-                            {formatDate(comment.date_creation)}
-                          </time>
-                        </article>
+                        </div>
                       ))
                     ) : (
-                      <div className="py-8 text-center">
-                        <MessageSquare
-                          size={20}
-                          className="mx-auto text-slate-300 dark:text-zinc-700"
-                        />
-                        <p className="mt-2 text-xs text-slate-400 dark:text-zinc-500">
-                          Aucun avis pour le moment.
-                        </p>
-                      </div>
+                      <p className="py-4 text-center text-xs text-stone-400 dark:text-zinc-500">
+                        Aucun avis publié pour le moment.
+                      </p>
                     )}
                   </div>
-                </section>
+                </div>
 
-                {/* Formulaire d'avis */}
+                {/* Add Review Form */}
                 {selectedFormation.statut === 'TERMINEE' &&
                   selectedFormation.est_apprenant &&
                   !selectedFormation.avis_deja_depose && (
-                    <form
-                      onSubmit={handleCommentSubmit}
-                      className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-zinc-800"
-                    >
+                    <form onSubmit={handleCommentSubmit} className="mt-4 space-y-3 rounded-2xl border border-stone-200 p-3.5 dark:border-zinc-800">
                       <div className="flex items-center justify-between">
-                        <h4 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white">
-                          <MessageSquare size={14} className="text-orange-500" />{' '}
-                          Donner votre avis
-                        </h4>
-
-                        <div
-                          className="flex items-center"
-                          role="radiogroup"
-                          aria-label="Note"
-                        >
+                        <span className="text-xs font-bold text-stone-900 dark:text-white">
+                          Déposer un avis
+                        </span>
+                        <div className="flex">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
                               key={star}
                               type="button"
-                              role="radio"
-                              aria-checked={newComment.note === star}
-                              aria-label={`${star} sur 5`}
-                              onMouseEnter={() => setHoverRating(star)}
-                              onMouseLeave={() => setHoverRating(0)}
-                              onClick={() =>
-                                setNewComment((prev) => ({
-                                  ...prev,
-                                  note: star,
-                                }))
-                              }
-                              className={`rounded p-0.5 transition-transform hover:scale-110 ${focusRing}`}
+                              onClick={() => setNewComment((prev) => ({ ...prev, note: star }))}
+                              className="p-0.5"
                             >
                               <Star
-                                size={18}
+                                size={16}
                                 className={
-                                  (hoverRating || newComment.note) >= star
+                                  newComment.note >= star
                                     ? 'fill-amber-400 text-amber-400'
-                                    : 'text-slate-300 dark:text-zinc-600'
+                                    : 'text-stone-300 dark:text-zinc-700'
                                 }
                               />
                             </button>
@@ -734,10 +656,9 @@ export default function Catalogue() {
                       </div>
 
                       <textarea
-                        rows={3}
+                        rows={2}
                         required
-                        maxLength={2000}
-                        placeholder="Partagez votre expérience : contenu, formateur, organisation…"
+                        placeholder="Rédigez votre retour sur la formation..."
                         value={newComment.commentaire}
                         onChange={(e) =>
                           setNewComment((prev) => ({
@@ -745,31 +666,17 @@ export default function Catalogue() {
                             commentaire: e.target.value,
                           }))
                         }
-                        className={`w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-600 ${focusRing}`}
+                        className="w-full rounded-xl border border-stone-200 p-2 text-xs text-stone-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
                       />
 
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                          Réservé aux apprenants ayant terminé cette session.
-                        </span>
-                        <button
-                          type="submit"
-                          disabled={submittingComment}
-                          className={`inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 hover:shadow-md hover:shadow-orange-500/30 disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
-                        >
-                          <Send size={13} />
-                          {submittingComment ? 'Envoi…' : 'Publier'}
-                        </button>
-                      </div>
+                      <button
+                        type="submit"
+                        disabled={submittingComment}
+                        className="w-full rounded-full bg-stone-900 py-2 text-xs font-bold text-white transition hover:bg-stone-800 dark:bg-white dark:text-stone-900"
+                      >
+                        {submittingComment ? 'Envoi...' : 'Publier mon avis'}
+                      </button>
                     </form>
-                  )}
-
-                {selectedFormation.statut === 'TERMINEE' &&
-                  selectedFormation.est_apprenant &&
-                  selectedFormation.avis_deja_depose && (
-                    <p className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500 dark:bg-zinc-800/40 dark:text-zinc-400">
-                      Vous avez déjà partagé votre avis sur cette formation.
-                    </p>
                   )}
               </div>
             </div>

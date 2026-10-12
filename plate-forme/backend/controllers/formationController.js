@@ -1,6 +1,16 @@
 // backend/controllers/formationController.js
 const db = require('../config/db');
 
+exports.uploadFormationImage = (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Aucune image reçue.' });
+  }
+
+  res.status(201).json({
+    url: `/uploads/formations/${req.file.filename}`,
+  });
+};
+
 exports.getCatalogue = async (req, res) => {
   try {
     const userId = req.user ? req.user.id_utilisateur : null;

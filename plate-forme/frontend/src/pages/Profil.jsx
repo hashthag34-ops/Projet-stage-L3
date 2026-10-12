@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import API from '../services/api';
 
-const URL_AVATAR = import.meta.env.VITE_URLTEST_AVATAR;
+const URL_AVATAR = import.meta.env.VITE_URL;
 
 const getImageUrl = (value) => {
   if (!value) return null;

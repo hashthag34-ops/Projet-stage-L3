@@ -2,7 +2,7 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const FRONTEND_URL = process.env.FRONTEND_URL;
+const getFrontendBaseUrl = require('../utils/frontendUrl');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -40,8 +40,8 @@ const isApplicationEditable = (candidature) => (
   new Date(candidature.date_limite_inscription) >= new Date()
 );
 
-const sendReceiptEmail = async (candidature, editToken) => {
-  const editLink = `${FRONTEND_URL}/postuler/${candidature.id_formation}?edit_token=${encodeURIComponent(editToken)}`;
+const sendReceiptEmail = async (candidature, editToken, frontendBaseUrl) => {
+  const editLink = `${frontendBaseUrl}/postuler/${candidature.id_formation}?edit_token=${encodeURIComponent(editToken)}`;
   await transporter.sendMail({
     from: '"Plateforme Formations" <no-reply@formation.com>',
     to: candidature.email,
@@ -69,6 +69,7 @@ exports.postuler = async (req, res) => {
   }
 
   try {
+    const frontendBaseUrl = getFrontendBaseUrl(req);
     await db.query('BEGIN');
 
     const formationRes = await db.query(
@@ -133,7 +134,7 @@ exports.postuler = async (req, res) => {
     const candidature = await getEditableCandidature(newInscription.rows[0].id_inscription, normalizedEmail);
     const editToken = getEditToken(candidature.id_inscription, normalizedEmail);
     try {
-      await sendReceiptEmail(candidature, editToken);
+      await sendReceiptEmail(candidature, editToken, frontendBaseUrl);
     } catch (emailError) {
       console.error("Erreur d'envoi de l'email de réception :", emailError);
     }

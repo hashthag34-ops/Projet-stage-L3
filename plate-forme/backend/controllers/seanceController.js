@@ -61,7 +61,8 @@ exports.createSeance = async (req, res) => {
     const { date_debut, date_fin } = formationRes.rows[0];
     const dateSeanceObj = new Date(date_seance);
 
-    if (dateSeanceObj < new Date(date_debut) || dateSeanceObj > new Date(date_fin)) {
+    if ( new Date(date_debut) <= dateSeanceObj || dateSeanceObj <= new Date(date_fin)) {
+    } else {
       return res.status(400).json({
         message: `La date doit être comprise entre le ${new Date(date_debut).toLocaleDateString('fr-FR')} et le ${new Date(date_fin).toLocaleDateString('fr-FR')}.`
       });

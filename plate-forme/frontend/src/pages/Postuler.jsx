@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
+  ArrowLeft,
   ArrowRight, 
   CheckCircle2, 
   FilePenLine, 
@@ -9,7 +10,8 @@ import {
   GraduationCap, 
   Target, 
   X, 
-  AlertCircle 
+  AlertCircle,
+  ClipboardCheck
 } from 'lucide-react';
 import API from '../services/api';
 
@@ -24,20 +26,77 @@ const inputClass = 'w-full rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5
 
 const labelClass = 'block mb-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300';
 
+const situationOptions = [
+  'Etudiant',
+  "Chercheur d'emploi",
+  'CDD ou CDI',
+  'Freelancer',
+  'Entrepreneur',
+  'Fonctionnaire',
+  'Other'
+];
+
+const candidatureConditions = [
+  'Être présent(e) et assidu(e) durant toute la durée de la formation.',
+  'Autoriser Orange Digital Center et Orange Madagascar à utiliser les photos prises pendant la formation à des fins de communication.',
+  'Garantir l’exactitude des informations fournies dans ce formulaire.'
+];
+
+const getSituationChoice = (value) => {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  if (!normalizedValue) return '';
+  if (normalizedValue === 'etudiant' || normalizedValue === 'étudiant' || normalizedValue === 'etudiante' || normalizedValue === 'étudiante') return 'Etudiant';
+  if (normalizedValue.includes('chercheur') || normalizedValue.includes('recherche')) return "Chercheur d'emploi";
+  if (normalizedValue === 'cdd' || normalizedValue === 'cdi' || normalizedValue === 'cdd ou cdi') return 'CDD ou CDI';
+  if (normalizedValue === 'freelancer' || normalizedValue === 'freelance') return 'Freelancer';
+  if (normalizedValue === 'entrepreneur') return 'Entrepreneur';
+  if (normalizedValue === 'fonctionnaire') return 'Fonctionnaire';
+  return 'Other';
+};
+
+const normalizeMadagascarPhone = (value) => {
+  let digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('261')) digits = `0${digits.slice(3)}`;
+  return digits.slice(0, 10);
+};
+
+const isAllowedPhonePrefix = (digits) => (
+  (!digits.length || digits[0] === '0')
+  && (digits.length < 2 || digits[1] === '3')
+  && (digits.length < 3 || ['2', '7'].includes(digits[2]))
+);
+
 export default function Postuler() {
   const { id_formation } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const editToken = searchParams.get('edit_token');
   const [formData, setFormData] = useState(emptyForm);
+  const [situationChoice, setSituationChoice] = useState('');
+  const [situationAutre, setSituationAutre] = useState('');
   const [profileFound, setProfileFound] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [conditionsConfirmed, setConditionsConfirmed] = useState(false);
   const [notice, setNotice] = useState({ type: '', text: '' });
 
   useEffect(() => {
     if (!editToken) return;
     API.get('/candidats/candidature/modifier', { params: { token: editToken } })
-      .then((res) => setFormData((current) => ({ ...current, ...res.data, conditions_acceptees: true })))
+      .then((res) => {
+        const candidature = res.data;
+        const choice = getSituationChoice(candidature.situation_professionnelle);
+        setFormData((current) => ({
+          ...current,
+          ...candidature,
+          telephone: normalizeMadagascarPhone(candidature.telephone),
+          conditions_acceptees: true
+        }));
+        setSituationChoice(choice);
+        setSituationAutre(choice === 'Other' ? candidature.situation_professionnelle || '' : '');
+        setConditionsConfirmed(true);
+      })
       .catch((err) => setNotice({ type: 'error', text: err.response?.data?.message || 'Ce lien de modification est invalide.' }));
   }, [editToken]);
 
@@ -54,9 +113,11 @@ export default function Postuler() {
     setLookupLoading(true);
     try {
       const res = await API.get('/candidats/profil', { params: { email: formData.email } });
+      const choice = getSituationChoice(res.data.situation_professionnelle);
       setFormData((current) => ({ 
         ...current, 
         ...res.data, 
+        telephone: normalizeMadagascarPhone(res.data.telephone),
         email: current.email, 
         motivation: '', 
         objectif: '', 
@@ -65,6 +126,8 @@ export default function Postuler() {
         formation_precedente: '', 
         retour_suggestion: '' 
       }));
+      setSituationChoice(choice);
+      setSituationAutre(choice === 'Other' ? res.data.situation_professionnelle || '' : '');
       setProfileFound(true);
     } catch (err) {
       if (err.response?.status !== 404) console.error('Erreur recherche profil :', err);
@@ -79,16 +142,50 @@ export default function Postuler() {
     setFormData((current) => ({ ...current, [e.target.name]: value }));
   };
 
+  const handlePhoneChange = (event) => {
+    const digits = normalizeMadagascarPhone(event.target.value);
+    if (isAllowedPhonePrefix(digits)) {
+      setFormData((current) => ({ ...current, telephone: digits }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.telephone && !/^(032|037)\d{7}$/.test(formData.telephone)) {
+      setNotice({ type: 'error', text: 'Le numéro doit comporter 10 chiffres et commencer par 032 ou 037.' });
+      return;
+    }
+    if (situationChoice === 'Other' && !situationAutre.trim()) {
+      setNotice({ type: 'error', text: 'Veuillez préciser votre situation professionnelle.' });
+      return;
+    }
+    if (situationChoice === 'Etudiant' && (!formData.etablissement.trim() || !formData.filiere.trim())) {
+      setNotice({ type: 'error', text: 'Pour le statut étudiant, veuillez renseigner votre établissement et votre filière actuelle.' });
+      return;
+    }
+    if (!formData.conditions_acceptees) {
+      setNotice({ type: 'error', text: 'Veuillez lire et accepter les engagements de candidature.' });
+      return;
+    }
+
     setLoading(true);
     setNotice({ type: '', text: '' });
+    const candidatureData = {
+      ...formData,
+      situation_professionnelle: situationChoice === 'Other' ? situationAutre.trim() : situationChoice,
+      etablissement: situationChoice === 'Etudiant' ? formData.etablissement.trim() : '',
+      filiere: situationChoice === 'Etudiant' ? formData.filiere.trim() : ''
+    };
     try {
       if (editToken) {
-        await API.put('/candidats/candidature/modifier', formData, { params: { token: editToken } });
+        await API.put('/candidats/candidature/modifier', candidatureData, { params: { token: editToken } });
         setNotice({ type: 'success', text: 'Vos modifications ont été bien enregistrées.' });
       } else {
-        const res = await API.post('/candidats/postuler', { ...formData, id_formation });
+        const res = await API.post('/candidats/postuler', {
+          ...candidatureData,
+          id_formation,
+          frontend_url: window.location.origin
+        });
         setNotice({ type: 'success', text: res.data.message || 'Candidature envoyée ! Vérifiez votre boîte mail.' });
       }
     } catch (err) {
@@ -128,6 +225,13 @@ export default function Postuler() {
       )}
 
       <div className="mx-auto max-w-3xl">
+        <button
+          type="button"
+          onClick={() => navigate(window.history.length > 1 ? -1 : '/catalogue')}
+          className="mb-5 inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 shadow-sm transition hover:border-orange-500/40 hover:text-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:text-orange-400"
+        >
+          <ArrowLeft size={17} /> Retour
+        </button>
         
         {/* En-tête de la page */}
         <div className="mb-8 text-center sm:text-left">
@@ -182,7 +286,19 @@ export default function Postuler() {
 
               <div>
                 <label className={labelClass}>Téléphone</label>
-                <input name="telephone" placeholder="06 00 00 00 00" value={formData.telephone} onChange={handleChange} className={inputClass} />
+                <input
+                  type="tel"
+                  name="telephone"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  pattern="(032|037)[0-9]{7}"
+                  title="Entrez 10 chiffres en commençant par 032 ou 037."
+                  placeholder="0321234567 ou 0371234567"
+                  value={formData.telephone}
+                  onChange={handlePhoneChange}
+                  className={inputClass}
+                />
+                <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">10 chiffres maximum · commence par 032 ou 037</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -217,20 +333,49 @@ export default function Postuler() {
                 <input name="niveau_etude" placeholder="ex: Licence 3, Master..." value={formData.niveau_etude} onChange={handleChange} className={inputClass} />
               </div>
 
-              <div>
-                <label className={labelClass}>Situation actuelle</label>
-                <input name="situation_professionnelle" placeholder="ex: Étudiant, En recherche..." value={formData.situation_professionnelle} onChange={handleChange} className={inputClass} />
+              <div className={situationChoice === 'Etudiant' ? '' : 'sm:col-span-2'}>
+                <label htmlFor="situation-professionnelle" className={labelClass}>Situation actuelle *</label>
+                <select
+                  id="situation-professionnelle"
+                  required
+                  value={situationChoice}
+                  onChange={(event) => setSituationChoice(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="" disabled>Sélectionnez votre situation</option>
+                  {situationOptions.map((situation) => (
+                    <option key={situation} value={situation}>{situation === 'Other' ? 'Other' : situation}</option>
+                  ))}
+                </select>
               </div>
 
-              <div>
-                <label className={labelClass}>Établissement / Université</label>
-                <input name="etablissement" placeholder="Nom de votre école/fac" value={formData.etablissement} onChange={handleChange} className={inputClass} />
-              </div>
+              {situationChoice === 'Other' && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="situation-autre" className={labelClass}>Précisez votre situation *</label>
+                  <input
+                    id="situation-autre"
+                    required
+                    maxLength={150}
+                    value={situationAutre}
+                    onChange={(event) => setSituationAutre(event.target.value)}
+                    placeholder="Votre situation professionnelle"
+                    className={inputClass}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className={labelClass}>Filière d'origine</label>
-                <input name="filiere" placeholder="ex: Informatique, Gestion..." value={formData.filiere} onChange={handleChange} className={inputClass} />
-              </div>
+              {situationChoice === 'Etudiant' && (
+                <>
+                  <div>
+                    <label htmlFor="etablissement" className={labelClass}>Établissement actuel *</label>
+                    <input id="etablissement" name="etablissement" required value={formData.etablissement} onChange={handleChange} placeholder="Nom de votre école ou université" className={inputClass} />
+                  </div>
+                  <div>
+                    <label htmlFor="filiere" className={labelClass}>Filière actuelle *</label>
+                    <input id="filiere" name="filiere" required value={formData.filiere} onChange={handleChange} placeholder="Ex. Informatique, Gestion..." className={inputClass} />
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
@@ -264,19 +409,24 @@ export default function Postuler() {
 
           {/* Validation & Conditions */}
           <div className="space-y-6 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input 
-                type="checkbox" 
-                name="conditions_acceptees" 
-                required 
-                checked={formData.conditions_acceptees} 
-                onChange={handleChange} 
-                className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-orange-500 focus:ring-orange-500/20 accent-orange-500" 
-              />
-              <span className="text-xs text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition">
-                J'atteste de l'exactitude des informations fournies et j'accepte les conditions d'inscription au programme.
+            <div className="flex items-start gap-3">
+              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${formData.conditions_acceptees ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-300 text-transparent dark:border-zinc-700'}`}>
+                <CheckCircle2 size={14} />
               </span>
-            </label>
+              <div className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                <p>{formData.conditions_acceptees ? 'Vous avez accepté les engagements de candidature.' : 'La lecture et l’acceptation des engagements sont requises pour envoyer votre candidature.'}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConditionsConfirmed(formData.conditions_acceptees);
+                    setConditionsOpen(true);
+                  }}
+                  className="mt-1 font-bold text-orange-600 underline decoration-orange-500/40 underline-offset-2 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                >
+                  {formData.conditions_acceptees ? 'Consulter les conditions' : 'Lire et accepter les conditions'}
+                </button>
+              </div>
+            </div>
 
             <button 
               type="submit" 
@@ -296,6 +446,62 @@ export default function Postuler() {
 
         </form>
       </div>
+
+      {conditionsOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setConditionsOpen(false); }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="conditions-title" className="my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+            <header className="flex items-start justify-between gap-4 border-b border-zinc-100 bg-orange-500/[0.06] p-5 sm:p-6 dark:border-zinc-800">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-orange-700 dark:text-orange-400">
+                  <ClipboardCheck size={14} /> Engagements du candidat
+                </span>
+                <h2 id="conditions-title" className="mt-3 text-xl font-black">Conditions de candidature</h2>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Merci de lire attentivement ces engagements avant de les accepter.</p>
+              </div>
+              <button type="button" onClick={() => setConditionsOpen(false)} aria-label="Fermer les conditions" className="rounded-lg p-2 text-zinc-500 transition hover:bg-black/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white">
+                <X size={19} />
+              </button>
+            </header>
+            <div className="p-5 sm:p-6">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">En soumettant ma candidature, je m’engage à :</p>
+                <ol className="mt-4 space-y-4">
+                  {candidatureConditions.map((condition, index) => (
+                    <li key={condition} className="flex gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-200">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-black text-black">{index + 1}</span>
+                      <span className="pt-1">{condition}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-orange-500/20 bg-orange-500/[0.05] p-4">
+                <input
+                  type="checkbox"
+                  checked={conditionsConfirmed}
+                  onChange={(event) => setConditionsConfirmed(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-orange-500"
+                />
+                <span className="text-sm font-semibold leading-relaxed">Je reconnais avoir pris connaissance de ces engagements et les accepter.</span>
+              </label>
+              <button
+                type="button"
+                disabled={!conditionsConfirmed}
+                onClick={() => {
+                  setFormData((current) => ({ ...current, conditions_acceptees: true }));
+                  setConditionsOpen(false);
+                }}
+                className="mt-5 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                J’accepte les conditions
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

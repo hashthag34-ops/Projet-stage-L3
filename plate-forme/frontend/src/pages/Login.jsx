@@ -1,8 +1,9 @@
 // frontend/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { BookOpen, Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import API from '../services/api';
+import bglogin from '../assets/bglogin.jpg';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,13 +11,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
   const navigate = useNavigate();
 
+  // Synchronisation du mode sombre avec le reste de l'application
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
+    const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -52,120 +53,119 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen bg-white text-black transition-colors duration-300 dark:bg-black dark:text-white flex flex-col justify-between overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Import de la police Plus Jakarta Sans */}
+    <div 
+      className="relative w-full min-h-screen  flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat font-['Plus_Jakarta_Sans',sans-serif]"
+      style={{ backgroundImage: `url(${bglogin})` }}
+    >
+      {/* Importation de la police */}
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}
       </style>
 
-      {/* Halo d'ambiance en arrière-plan pour un effet de fusion */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl dark:bg-orange-500/15" />
+      {/* Superposition / Overlay adaptatif pour lisibilité (Sombre/Clair) */}
+      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[2px] dark:bg-black/60 transition-colors duration-300" />
 
-      {/* Section Principale (Formulaire Fusionné) */}
-      <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-sm space-y-6">
+      {/* Carte de Connexion Flottante */}
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/40 bg-white/80 p-8 shadow-2xl backdrop-blur-xl transition-all dark:border-zinc-800/80 dark:bg-zinc-950/80 sm:p-10">
+        
+        {/* En-tête de la Carte */}
+        <div className="mb-8 text-center space-y-2">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Connexion
+          </h1>
+          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+            Veuillez saisir vos identifiants pour accéder à votre compte
+          </p>
+        </div>
+
+        {/* Message d'erreur */}
+        {error && (
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Formulaire */}
+        <form onSubmit={handleLogin} className="space-y-5">
           
-          {/* Titre & Sous-titre */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-black tracking-tight text-black dark:text-white">
-              Bienvenue
-            </h1>
-            <p className="text-xs font-medium text-black/50 dark:text-white/50">
-              Connectez-vous pour accéder à votre espace formation
-            </p>
+          {/* Champ Email */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 ml-1">
+              Adresse Email
+            </label>
+            <div className="relative">
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="votre.email@exemple.com"
+                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 py-3.5 pl-11 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900"
+              />
+            </div>
           </div>
 
-          {/* Message d'erreur */}
-          {error && (
-            <div className="flex items-center gap-3 rounded-2xl bg-orange-500/10 p-3.5 text-xs font-semibold text-orange-700 dark:text-orange-400 backdrop-blur-sm border border-orange-500/20">
-              <AlertCircle size={16} className="shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Formulaire sans conteneur rigide */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            
-            {/* Champ Email */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 ml-1">
-                Adresse Email
-              </label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre.email@exemple.com"
-                  className="w-full rounded-2xl bg-black/5 dark:bg-white/5 pl-11 pr-4 py-3.5 text-sm font-medium focus:bg-black/[0.08] dark:focus:bg-white/10 focus:outline-none ring-2 ring-transparent focus:ring-orange-500/50 transition-all placeholder:text-black/30 dark:placeholder:text-white/30"
-                />
-              </div>
-            </div>
-
-            {/* Champ Mot de passe */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 ml-1">
+          {/* Champ Mot de passe */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
                 Mot de passe
               </label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={motDePasse}
-                  onChange={(e) => setMotDePasse(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl bg-black/5 dark:bg-white/5 pl-11 pr-11 py-3.5 text-sm font-medium focus:bg-black/[0.08] dark:focus:bg-white/10 focus:outline-none ring-2 ring-transparent focus:ring-orange-500/50 transition-all placeholder:text-black/30 dark:placeholder:text-white/30"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 hover:text-black dark:text-white/30 dark:hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
             </div>
-
-            {/* Bouton de Soumission */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="pt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-sm font-bold text-black shadow-lg shadow-orange-500/25 hover:bg-orange-400 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  <span>Connexion en cours...</span>
-                </>
-              ) : (
-                <>
-                  <span>Se connecter</span>
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Lien de redirection */}
-          <div className="pt-2 text-center text-xs font-medium text-black/50 dark:text-white/50">
-            Pas encore inscrit ?{' '}
-            <Link 
-              to="/" 
-              className="font-bold text-orange-500 hover:underline"
-            >
-              Consulter nos formations
-            </Link>
+            <div className="relative">
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={motDePasse}
+                onChange={(e) => setMotDePasse(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 py-3.5 pl-11 pr-11 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
-        </div>
-      </main>
 
-      {/* Footer minimaliste sans bordure supérieure */}
-      <footer className="relative z-10 py-6 text-center text-xs text-black/30 dark:text-white/30 font-medium">
-        &copy; {new Date().getFullYear()} Forma. Tous droits réservés.
-      </footer>
+          {/* Bouton de Soumission */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Connexion...</span>
+              </>
+            ) : (
+              <>
+                <span>Se connecter</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Lien de redirection secondaire */}
+        <div className="mt-8 text-center text-xs font-semibold text-slate-500 dark:text-zinc-400">
+          Nouveau sur la plateforme ?{' '}
+          <Link 
+            to="/" 
+            className="font-bold text-orange-600 hover:underline dark:text-orange-400"
+          >
+            Découvrir le catalogue
+          </Link>
+        </div>
+
+      </div>
     </div>
   );
 }

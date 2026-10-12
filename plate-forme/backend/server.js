@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
+const { startExpiryTasks } = require('./services/expiryService');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json()); // Support du JSON
 
 // Fichiers statiques
 app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars')));
+app.use('/uploads/formations', express.static(path.join(__dirname, 'uploads', 'formations')));
 
 // Route racine de test
 app.get('/', (req, res) => {
@@ -50,7 +52,16 @@ app.use('/api/admin', adminRoutes);
 
 // Démarrage du serveur sur 0.0.0.0 (Accessible depuis PC et Mobile)
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Serveur backend démarré sur http://localhost:${PORT}`);
-  console.log(`Aussi accessible sur le réseau via ton IP locale sur le port ${PORT}`);
+const startServer = async () => {
+  await startExpiryTasks();
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Serveur backend démarré sur http://localhost:${PORT}`);
+    console.log(`Aussi accessible sur le réseau via ton IP locale sur le port ${PORT}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Impossible de démarrer le serveur backend :', error);
+  process.exitCode = 1;
 });

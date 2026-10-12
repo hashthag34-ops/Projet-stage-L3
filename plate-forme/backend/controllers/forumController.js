@@ -39,7 +39,10 @@ const canAccessForum = async (req, forumId) => {
        FROM forum fo
        JOIN inscription i ON i.id_formation = fo.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       WHERE fo.id_forum = $1 AND a.id_utilisateur = $2`,
+       JOIN formation f ON f.id_formation = fo.id_formation
+       WHERE fo.id_forum = $1
+         AND a.id_utilisateur = $2
+         AND f.date_fin >= CURRENT_DATE`,
       [forumId, userId]
     );
     return result.rowCount > 0;

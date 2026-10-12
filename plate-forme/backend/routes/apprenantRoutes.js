@@ -15,6 +15,7 @@ router.get('/seances', apprenantController.getMesSeances);
 router.get('/evaluations', apprenantController.getMesEvaluations);
 router.get('/evaluations/:id', apprenantController.getEvaluationApprenant);
 router.post('/evaluations/:id/tentatives', apprenantController.startEvaluationAttempt);
+router.put('/evaluations/tentatives/:id_tentative/reponses', apprenantController.saveEvaluationAnswer);
 router.post('/evaluations/tentatives/:id_tentative/terminer', apprenantController.submitEvaluationAttempt);
 router.get('/forums', apprenantController.getMesForums);
 

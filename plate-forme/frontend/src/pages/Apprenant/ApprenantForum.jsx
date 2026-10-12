@@ -1,5 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
-import { ArrowLeft, BookOpen, Download, MessageCircle, Send, Paperclip } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft, BookOpen, Download, MessageCircle,
+  Search, Send, Users
+} from 'lucide-react';
 import API from '../../services/api';
 
 const formatFileSize = (bytes) => {
@@ -8,83 +11,108 @@ const formatFileSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 };
 
+const formatMessageDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+const getInitials = (firstName, lastName) => `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
+
 export default function ApprenantForum() {
   const [forums, setForums] = useState([]);
   const [selectedForum, setSelectedForum] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [downloading, setDownloading] = useState(null);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
-
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // 1. Charger les forums et les infos de l'utilisateur
   useEffect(() => {
+    let active = true;
     const fetchData = async () => {
-      try {
-        const [forumsRes, userRes] = await Promise.allSettled([
-          API.get('/apprenant/forums'),
-          API.get('/me')
-        ]);
+      const [forumsRes, userRes] = await Promise.allSettled([
+        API.get('/apprenant/forums'),
+        API.get('/me')
+      ]);
 
-        if (forumsRes.status === 'fulfilled') {
-          setForums(Array.isArray(forumsRes.value.data) ? forumsRes.value.data : []);
-        } else {
-          setError('Impossible de charger les forums.');
-        }
-
-        if (userRes.status === 'fulfilled') {
-          setCurrentUser(userRes.value.data);
-        }
-      } finally {
-        setLoading(false);
+      if (!active) return;
+      if (forumsRes.status === 'fulfilled') {
+        setForums(Array.isArray(forumsRes.value.data) ? forumsRes.value.data : []);
+      } else {
+        setError(forumsRes.reason.response?.data?.message || 'Impossible de charger les forums.');
       }
+      if (userRes.status === 'fulfilled') setCurrentUser(userRes.value.data);
+      setLoading(false);
     };
-
     fetchData();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!selectedForum) return undefined;
 
-  // 2. Charger les messages du forum sélectionné
-  const handleOpenForum = async (forum) => {
-    setSelectedForum(forum);
+    let active = true;
+    API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`)
+      .then((response) => {
+        if (active) setMessages(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.response?.data?.message || 'Impossible de charger les messages.');
+      })
+      .finally(() => {
+        if (active) setMessagesLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [selectedForum]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, selectedForum]);
+
+  const visibleForums = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return forums.filter((forum) => (
+      `${forum.nom} ${forum.titre_formation || ''} ${forum.description || ''}`.toLowerCase().includes(query)
+    ));
+  }, [forums, search]);
+
+  const groupedForums = useMemo(() => {
+    const groups = new Map();
+    visibleForums.forEach((forum) => {
+      const title = forum.titre_formation || 'Autres formations';
+      if (!groups.has(title)) groups.set(title, []);
+      groups.get(title).push(forum);
+    });
+    return [...groups.entries()];
+  }, [visibleForums]);
+
+  const openForum = (forum) => {
+    setMessages([]);
     setMessagesLoading(true);
     setError('');
-    try {
-      const res = await API.get(`/apprenant/forums/${forum.id_forum}/messages`);
-      setMessages(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger les messages.');
-    } finally {
-      setMessagesLoading(false);
-    }
+    setSelectedForum(forum);
   };
 
-  // 3. Envoyer un message
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
+  const handleSendMessage = async (event) => {
+    event.preventDefault();
     if (!newMessage.trim() || !selectedForum) return;
 
     setSending(true);
     setError('');
     try {
       await API.post(`/apprenant/forums/${selectedForum.id_forum}/messages`, { contenu: newMessage.trim() });
-      const res = await API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`);
-      setMessages(Array.isArray(res.data) ? res.data : []);
+      const response = await API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`);
+      setMessages(Array.isArray(response.data) ? response.data : []);
       setNewMessage('');
-    } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'envoi du message.");
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Erreur lors de l’envoi du message.');
     } finally {
       setSending(false);
     }
@@ -106,170 +134,251 @@ export default function ApprenantForum() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-    } catch {
-      setError('Impossible de télécharger ce fichier.');
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Impossible de télécharger ce fichier.');
     } finally {
       setDownloading(null);
     }
   };
 
-  if (loading) return <p className="py-8 text-sm text-black/50 dark:text-white/50">Chargement des espaces de discussion...</p>;
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="flex flex-col justify-between gap-3 border-b border-black/10 pb-5 sm:flex-row sm:items-end dark:border-white/10">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight">Forum & Discussions</h1>
-          <p className="mt-1 text-sm text-black/55 dark:text-white/55">Échangez en direct avec vos formateurs et collègues de promotion.</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight">Forum & discussions</h1>
+          <p className="mt-1 text-sm text-black/55 dark:text-white/55">Retrouvez vos groupes et échangez avec votre promotion.</p>
+        </div>
+        <div className="flex items-center gap-2 text-sm font-semibold text-black/55 dark:text-white/55">
+          <Users size={17} className="text-orange-500" /> {forums.length} espace(s) de discussion
         </div>
       </header>
 
-      {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
-
-      {!selectedForum ? (
-        /* VUE 1 : Liste des espaces de discussion */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {forums.length === 0 ? (
-            <div className="col-span-full border-y border-dashed border-black/15 py-14 text-center dark:border-white/15">
-              <MessageCircle size={36} className="mx-auto text-orange-500" />
-              <h2 className="mt-3 font-bold">Aucune discussion active</h2>
-              <p className="mt-1 text-sm text-black/50 dark:text-white/50">Les forums ouverts pour vos formations s'afficheront ici.</p>
-            </div>
-          ) : (
-            forums.map((f) => (
-              <article key={f.id_forum} className="flex flex-col justify-between border-b border-black/10 pb-5 dark:border-white/10">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">
-                    <BookOpen size={14} />
-                    {f.titre_formation || 'Formation'}
-                  </span>
-                  <h2 className="mt-2 text-lg font-bold">{f.nom}</h2>
-                  <p className="mt-1 line-clamp-2 text-sm text-black/55 dark:text-white/55">{f.description || 'Discussions et entraide au sein du groupe.'}</p>
-                </div>
-                
-                <button 
-                  type="button"
-                  onClick={() => handleOpenForum(f)}
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-orange-600 hover:underline dark:text-orange-400"
-                >
-                  <MessageCircle size={16} /> Rejoindre la conversation
-                </button>
-              </article>
-            ))
-          )}
-        </div>
-      ) : (
-        /* VUE 2 : Discussion façon Messagerie */
-        <div className="flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-hidden rounded-2xl border border-black/10 bg-black/[0.015] dark:border-white/10 dark:bg-white/[0.015]">
-          {/* Header conversation */}
-          <div className="flex items-center justify-between border-b border-black/10 bg-white/50 px-5 py-3.5 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/50">
-            <div className="flex items-center gap-3">
-              <button 
-                type="button"
-                onClick={() => setSelectedForum(null)}
-                className="rounded-lg p-1.5 text-black/60 hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/5"
-                title="Retour à la liste"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <div>
-                <h2 className="font-bold leading-tight">{selectedForum.nom}</h2>
-                <p className="text-xs text-black/50 dark:text-white/50">{selectedForum.titre_formation}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Zone de chat */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messagesLoading ? (
-              <p className="py-12 text-center text-sm text-black/50 dark:text-white/50">Chargement de la conversation...</p>
-            ) : messages.length === 0 ? (
-              <div className="py-16 text-center text-sm text-black/40 dark:text-white/40">
-                <MessageCircle size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="font-medium">Aucun message pour le moment.</p>
-                <p className="text-xs">Posez la première question à votre groupe !</p>
-              </div>
-            ) : (
-              messages.map((msg) => {
-                const isMe = currentUser && (msg.id_utilisateur === currentUser.id_utilisateur || msg.id_expediteur === currentUser.id_utilisateur);
-
-                return (
-                  <div key={msg.id_message} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    {!isMe && (
-                      <span className="mb-1 ml-1 text-[11px] font-semibold text-black/50 dark:text-white/50">
-                        {msg.prenom} {msg.nom_expediteur}
-                      </span>
-                    )}
-
-                    <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
-                      isMe 
-                        ? 'bg-orange-500 text-black font-medium rounded-br-xs' 
-                        : 'bg-white border border-black/10 dark:bg-zinc-900 dark:border-white/10 dark:text-white rounded-bl-xs shadow-xs'
-                    }`}>
-                      {msg.contenu && <p className="whitespace-pre-wrap leading-relaxed">{msg.contenu}</p>}
-
-                      {msg.chemin_fichier && (
-                        <div className={`mt-2 flex items-center justify-between gap-3 rounded-xl border p-2.5 ${
-                          isMe 
-                            ? 'border-black/10 bg-black/5 dark:border-black/20' 
-                            : 'border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5'
-                        }`}>
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-bold">{msg.nom_fichier}</p>
-                            <p className="text-[10px] opacity-70">
-                              {msg.type_fichier || 'Fichier'}{msg.taille_fichier ? ` · ${formatFileSize(Number(msg.taille_fichier))}` : ''}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDownload(msg)}
-                            disabled={downloading === msg.id_message}
-                            className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                              isMe 
-                                ? 'bg-black text-white hover:bg-black/80' 
-                                : 'bg-orange-500 text-black hover:bg-orange-400'
-                            } disabled:opacity-50`}
-                          >
-                            <Download size={13} />
-                            {downloading === msg.id_message ? '...' : 'Ouvrir'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <span className="mt-1 text-[10px] text-black/40 dark:text-white/40 px-1">
-                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Formulaire de saisie style Messenger */}
-          <form onSubmit={handleSendMessage} className="border-t border-black/10 bg-white/50 p-3 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/50">
-            <div className="flex items-center gap-2">
-              <input 
-                type="text"
-                placeholder="Écrivez un message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 rounded-full border border-black/15 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:bg-white dark:border-white/20 dark:bg-zinc-950/80 dark:focus:bg-zinc-950"
-              />
-              <button 
-                type="submit"
-                disabled={sending || !newMessage.trim()}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-black transition hover:bg-orange-400 disabled:opacity-40"
-                title="Envoyer"
-              >
-                <Send size={16} className={sending ? 'animate-pulse' : ''} />
-              </button>
-            </div>
-          </form>
-        </div>
+      {error && (
+        <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
+          {error}
+        </p>
       )}
+
+      <div className="grid min-h-[620px] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm lg:h-[calc(100vh-255px)] lg:min-h-[560px] lg:grid-cols-[290px_minmax(0,1fr)] dark:border-white/10 dark:bg-zinc-950">
+        <aside className={`${selectedForum ? 'hidden lg:flex' : 'flex'} min-h-0 flex-col border-b border-black/10 bg-black/[0.015] lg:border-b-0 lg:border-r dark:border-white/10 dark:bg-white/[0.015]`}>
+          <div className="border-b border-black/10 p-4 dark:border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-black">Vos discussions</h2>
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">Choisissez un forum de formation</p>
+              </div>
+              <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">{forums.length}</span>
+            </div>
+            <label className="relative mt-4 block">
+              <Search size={16} className="absolute left-3 top-3 text-black/40 dark:text-white/40" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Rechercher une discussion"
+                aria-label="Rechercher une discussion"
+                className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-black/40 focus:border-orange-500 dark:border-white/10 dark:bg-zinc-900 dark:placeholder:text-white/40"
+              />
+            </label>
+          </div>
+
+          <nav aria-label="Forums disponibles" className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
+            {loading ? (
+              <p className="p-3 text-sm text-black/50 dark:text-white/50">Chargement des forums...</p>
+            ) : groupedForums.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-black/15 p-5 text-center dark:border-white/15">
+                <MessageCircle size={23} className="mx-auto text-orange-500" />
+                <p className="mt-2 text-sm font-semibold">Aucune discussion trouvée</p>
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">Les forums de vos formations apparaîtront ici.</p>
+              </div>
+            ) : groupedForums.map(([formation, formationForums]) => (
+              <section key={formation}>
+                <h3 className="mb-2 flex items-center gap-2 px-2 text-[10px] font-black uppercase tracking-[0.15em] text-black/45 dark:text-white/45">
+                  <BookOpen size={13} className="text-orange-500" /> {formation}
+                </h3>
+                <div className="space-y-1">
+                  {formationForums.map((forum) => {
+                    const isSelected = selectedForum?.id_forum === forum.id_forum;
+                    return (
+                      <button
+                        type="button"
+                        key={forum.id_forum}
+                        onClick={() => openForum(forum)}
+                        aria-current={isSelected ? 'page' : undefined}
+                        className={`w-full rounded-xl border p-3 text-left transition ${
+                          isSelected
+                            ? 'border-orange-500/25 bg-orange-500/10'
+                            : 'border-transparent hover:border-black/5 hover:bg-black/[0.035] dark:hover:border-white/5 dark:hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <span className="flex items-start gap-3">
+                          <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isSelected ? 'bg-orange-500 text-black' : 'bg-black/[0.05] text-orange-600 dark:bg-white/[0.07] dark:text-orange-400'}`}>
+                            <MessageCircle size={17} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={`block truncate text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-300' : ''}`}>{forum.nom}</span>
+                            <span className="mt-1 block truncate text-xs text-black/50 dark:text-white/50">{forum.description || 'Discussions et entraide du groupe'}</span>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </nav>
+          <div className="hidden border-t border-black/10 p-4 text-xs text-black/45 dark:border-white/10 dark:text-white/45 sm:block">
+            <span className="font-semibold text-orange-600 dark:text-orange-400">Astuce</span>
+            <p className="mt-1">Restez courtois et partagez vos questions avec le groupe.</p>
+          </div>
+        </aside>
+
+        <section className={`${selectedForum ? 'flex' : 'hidden lg:flex'} min-h-0 min-w-0 flex-col`}>
+          {selectedForum ? (
+            <>
+              <header className="flex items-center gap-3 border-b border-black/10 px-4 py-4 sm:px-6 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setSelectedForum(null)}
+                  className="rounded-lg p-2 text-black/55 transition hover:bg-black/5 lg:hidden dark:text-white/55 dark:hover:bg-white/10"
+                  aria-label="Retour à la liste des forums"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+                  <MessageCircle size={19} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate font-black">{selectedForum.nom}</h2>
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-black/50 dark:text-white/50">
+                    <BookOpen size={13} className="shrink-0 text-orange-500" /> {selectedForum.titre_formation || 'Formation'}
+                  </p>
+                </div>
+                <span className="hidden items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-700 sm:inline-flex dark:text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Espace de discussion
+                </span>
+              </header>
+
+              {selectedForum.description && (
+                <div className="border-b border-black/5 bg-orange-500/[0.035] px-5 py-2.5 text-xs text-black/60 dark:border-white/5 dark:text-white/60">
+                  {selectedForum.description}
+                </div>
+              )}
+
+              <div className="flex-1 space-y-5 overflow-y-auto bg-black/[0.012] p-4 sm:p-6 dark:bg-white/[0.012]">
+                {messagesLoading ? (
+                  <p className="py-12 text-center text-sm text-black/50 dark:text-white/50">Chargement de la conversation...</p>
+                ) : messages.length === 0 ? (
+                  <div className="flex h-full min-h-60 flex-col items-center justify-center text-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+                      <MessageCircle size={26} />
+                    </span>
+                    <h3 className="mt-4 font-black">La discussion commence ici</h3>
+                    <p className="mt-1 max-w-xs text-sm text-black/50 dark:text-white/50">Posez la première question ou partagez une information avec votre groupe.</p>
+                  </div>
+                ) : (
+                  messages.map((message) => {
+                    const isMe = Boolean(currentUser && Number(message.id_utilisateur) === Number(currentUser.id_utilisateur));
+                    const firstName = message.prenom || '';
+                    const lastName = message.nom_expediteur || '';
+                    return (
+                      <article key={message.id_message} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
+                          isMe ? 'bg-orange-500 text-black' : 'border border-black/10 bg-white text-orange-700 dark:border-white/10 dark:bg-zinc-900 dark:text-orange-300'
+                        }`}>
+                          {getInitials(firstName, lastName)}
+                        </span>
+                        <div className={`min-w-0 max-w-[88%] sm:max-w-[75%] ${isMe ? 'text-right' : ''}`}>
+                          <div className={`mb-1 flex flex-wrap items-baseline gap-x-2 text-xs ${isMe ? 'justify-end' : ''}`}>
+                            <span className="font-black">{isMe ? 'Vous' : `${firstName} ${lastName}`.trim() || 'Membre du groupe'}</span>
+                            <time className="text-[10px] text-black/45 dark:text-white/45">{formatMessageDate(message.created_at)}</time>
+                          </div>
+                          <div className={`inline-block rounded-2xl border px-4 py-3 text-left text-sm shadow-sm ${
+                            isMe
+                              ? 'rounded-tr-sm border-orange-500/20 bg-orange-500 text-black'
+                              : 'rounded-tl-sm border-black/5 bg-white dark:border-white/10 dark:bg-zinc-900'
+                          }`}>
+                            {message.contenu && <p className="whitespace-pre-wrap break-words leading-relaxed">{message.contenu}</p>}
+                            {message.chemin_fichier && (
+                              <div className={`mt-2 flex items-center justify-between gap-3 rounded-xl border p-3 ${
+                                isMe ? 'border-black/10 bg-black/5' : 'border-black/10 bg-black/[0.025] dark:border-white/10 dark:bg-white/[0.04]'
+                              }`}>
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-bold">{message.nom_fichier}</p>
+                                  <p className="mt-0.5 text-[10px] opacity-65">
+                                    {message.type_fichier || 'Fichier'}{message.taille_fichier ? ` · ${formatFileSize(Number(message.taille_fichier))}` : ''}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownload(message)}
+                                  disabled={downloading === message.id_message}
+                                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                                    isMe ? 'bg-black text-white hover:bg-black/80' : 'bg-orange-500 text-black hover:bg-orange-400'
+                                  }`}
+                                >
+                                  <Download size={13} /> {downloading === message.id_message ? '...' : 'Ouvrir'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form onSubmit={handleSendMessage} className="border-t border-black/10 bg-white p-3 sm:p-4 dark:border-white/10 dark:bg-zinc-950">
+                <label htmlFor="forum-message" className="sr-only">Votre message</label>
+                <div className="flex items-end gap-2 rounded-2xl border border-black/10 bg-black/[0.025] p-2 focus-within:border-orange-500/60 dark:border-white/10 dark:bg-white/[0.025]">
+                  <textarea
+                    id="forum-message"
+                    rows={1}
+                    placeholder="Écrivez votre message au groupe..."
+                    value={newMessage}
+                    onChange={(event) => setNewMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        event.currentTarget.form?.requestSubmit();
+                      }
+                    }}
+                    disabled={sending || messagesLoading}
+                    className="max-h-32 min-h-10 min-w-0 flex-1 resize-y bg-transparent px-2 py-2 text-sm outline-none placeholder:text-black/40 disabled:opacity-60 dark:placeholder:text-white/40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || messagesLoading || !newMessage.trim()}
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-500 px-3.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-45"
+                    title="Envoyer le message"
+                  >
+                    <Send size={16} /> <span className="hidden sm:inline">{sending ? 'Envoi...' : 'Envoyer'}</span>
+                  </button>
+                </div>
+                <p className="mt-2 px-1 text-[10px] text-black/40 dark:text-white/40">Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne</p>
+              </form>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+                <MessageCircle size={30} />
+              </span>
+              <h2 className="mt-4 text-lg font-black">Bienvenue dans vos forums</h2>
+              <p className="mt-2 max-w-sm text-sm text-black/50 dark:text-white/50">
+                Sélectionnez une discussion dans la liste pour lire les messages et participer aux échanges.
+              </p>
+              {forums.length === 0 && !loading && (
+                <p className="mt-4 rounded-xl bg-black/[0.03] px-4 py-3 text-xs text-black/50 dark:bg-white/[0.04] dark:text-white/50">
+                  Aucun forum actif n’est associé à vos formations pour le moment.
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

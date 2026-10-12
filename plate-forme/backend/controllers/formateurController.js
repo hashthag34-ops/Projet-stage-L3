@@ -215,6 +215,195 @@ exports.getStudents = async (req, res) => {
   }
 };
 
+exports.getStudentDetails = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    if (!formateurId) return res.status(403).json({ message: 'Profil formateur introuvable.' });
+
+    const { id_apprenant: studentId, id_formation: formationId } = req.params;
+    if (!await ensureAssignedFormation(formateurId, formationId)) {
+      return res.status(403).json({ message: 'Formation non affectée à ce formateur.' });
+    }
+
+    const studentResult = await db.query(
+      `SELECT a.id_apprenant, u.nom, u.prenom, u.email, u.telephone,
+              f.id_formation, f.titre AS formation_titre
+       FROM apprenant a
+       JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+       JOIN inscription i ON i.id_candidat = a.id_candidat
+       JOIN formation f ON f.id_formation = i.id_formation
+       WHERE a.id_apprenant = $1 AND f.id_formation = $2 AND i.statut = 'ACCEPTEE'`,
+      [studentId, formationId]
+    );
+    const student = studentResult.rows[0];
+    if (!student) return res.status(404).json({ message: 'Apprenant inscrit à cette formation introuvable.' });
+
+    const [gradesResult, attendanceResult] = await Promise.all([
+      db.query(
+        `SELECT e.id_evaluation AS id_note, e.type_evaluation, e.note,
+                e.date_evaluation, e.commentaire, 'MANUELLE' AS origine
+         FROM evaluation e
+         WHERE e.id_apprenant = $1 AND e.id_formation = $2 AND e.note IS NOT NULL
+         UNION ALL
+         SELECT et.id_tentative AS id_note, es.titre AS type_evaluation, et.note,
+                et.date_fin::date AS date_evaluation, NULL::text AS commentaire,
+                'ÉVALUATION' AS origine
+         FROM evaluation_tentative et
+         JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+         WHERE et.id_apprenant = $1 AND es.id_formation = $2 AND et.note IS NOT NULL
+         ORDER BY date_evaluation DESC NULLS LAST, id_note DESC`,
+        [studentId, formationId]
+      ),
+      db.query(
+        `SELECT COUNT(p.id_presence)::INTEGER AS total,
+                COUNT(p.id_presence) FILTER (WHERE p.statut IN ('PRESENT', 'RETARD'))::INTEGER AS present,
+                COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absent
+         FROM presence p
+         JOIN seance s ON s.id_seance = p.id_seance
+         WHERE p.id_apprenant = $1 AND s.id_formation = $2`,
+        [studentId, formationId]
+      )
+    ]);
+
+    const grades = gradesResult.rows;
+    const average = grades.length
+      ? grades.reduce((total, grade) => total + Number(grade.note), 0) / grades.length
+      : null;
+    const attendance = attendanceResult.rows[0];
+    const totalPresence = Number(attendance.total);
+    const present = Number(attendance.present);
+
+    res.json({
+      student,
+      grades,
+      average,
+      attendance: {
+        total: totalPresence,
+        present,
+        absent: Number(attendance.absent),
+        rate: totalPresence ? (present / totalPresence) * 100 : null
+      }
+    });
+  } catch (error) {
+    console.error('Erreur détails apprenant formateur :', error);
+    res.status(500).json({ message: 'Erreur lors du chargement des détails de l’apprenant.' });
+  }
+};
+
+exports.addStudentGrade = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    if (!formateurId) return res.status(403).json({ message: 'Profil formateur introuvable.' });
+
+    const { id_apprenant: studentId, id_formation: formationId } = req.params;
+    const typeEvaluation = typeof req.body.type_evaluation === 'string' ? req.body.type_evaluation.trim() : '';
+    const note = Number(req.body.note);
+    const commentaire = typeof req.body.commentaire === 'string' ? req.body.commentaire.trim() : '';
+
+    if (!typeEvaluation || typeEvaluation.length > 150) {
+      return res.status(400).json({ message: 'Le type de note est obligatoire (150 caractères maximum).' });
+    }
+    if (req.body.note === '' || req.body.note === undefined || !Number.isFinite(note) || note < 0 || note > 20) {
+      return res.status(400).json({ message: 'La note doit être comprise entre 0 et 20.' });
+    }
+    if (commentaire.length > 2000) {
+      return res.status(400).json({ message: 'Le commentaire ne peut pas dépasser 2000 caractères.' });
+    }
+
+    if (!await ensureAssignedFormation(formateurId, formationId)) {
+      return res.status(403).json({ message: 'Formation non affectée à ce formateur.' });
+    }
+    const enrollment = await db.query(
+      `SELECT 1 FROM apprenant a
+       JOIN inscription i ON i.id_candidat = a.id_candidat
+       WHERE a.id_apprenant = $1 AND i.id_formation = $2 AND i.statut = 'ACCEPTEE'`,
+      [studentId, formationId]
+    );
+    if (!enrollment.rowCount) {
+      return res.status(404).json({ message: 'Apprenant inscrit à cette formation introuvable.' });
+    }
+
+    const { rows } = await db.query(
+      `INSERT INTO evaluation (id_apprenant, id_formation, id_formateur, type_evaluation, note, commentaire)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id_evaluation AS id_note, type_evaluation, note, date_evaluation, commentaire`,
+      [studentId, formationId, formateurId, typeEvaluation, note, commentaire || null]
+    );
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Erreur ajout note apprenant :', error);
+    res.status(500).json({ message: 'Erreur lors de l’enregistrement de la note.' });
+  }
+};
+
+exports.getStudentStatistics = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    if (!formateurId) return res.status(403).json({ message: 'Profil formateur introuvable.' });
+
+    const { rows } = await db.query(
+      `WITH formations AS (
+         SELECT f.id_formation, f.titre
+         FROM formation f
+         JOIN formation_formateur ff ON ff.id_formation = f.id_formation
+         WHERE ff.id_formateur = $1
+       ),
+       notes AS (
+         SELECT e.id_formation, e.id_apprenant, e.note
+         FROM evaluation e
+         JOIN formations f ON f.id_formation = e.id_formation
+         WHERE e.note IS NOT NULL
+         UNION ALL
+         SELECT es.id_formation, et.id_apprenant, et.note
+         FROM evaluation_tentative et
+         JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+         JOIN formations f ON f.id_formation = es.id_formation
+         WHERE et.note IS NOT NULL
+       ),
+       moyennes AS (
+         SELECT id_formation, id_apprenant, AVG(note) AS moyenne
+         FROM notes
+         GROUP BY id_formation, id_apprenant
+       ),
+       resultats AS (
+         SELECT id_formation,
+                ROUND(100.0 * COUNT(*) FILTER (WHERE moyenne >= 10)
+                  / NULLIF(COUNT(*), 0), 1) AS taux_reussite
+         FROM moyennes
+         GROUP BY id_formation
+       ),
+       presences AS (
+         SELECT s.id_formation,
+                COUNT(p.id_presence)::INTEGER AS total,
+                COUNT(p.id_presence) FILTER (WHERE p.statut IN ('PRESENT', 'RETARD'))::INTEGER AS presents,
+                COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absents
+         FROM seance s
+         JOIN formations f ON f.id_formation = s.id_formation
+         LEFT JOIN presence p ON p.id_seance = s.id_seance
+         GROUP BY s.id_formation
+       )
+       SELECT f.id_formation, f.titre AS formation_titre,
+              COALESCE(r.taux_reussite, 0)::NUMERIC AS taux_reussite,
+              COALESCE(p.total, 0)::INTEGER AS total_presences,
+              COALESCE(p.presents, 0)::INTEGER AS presents,
+              COALESCE(p.absents, 0)::INTEGER AS absents,
+              CASE WHEN COALESCE(p.total, 0) = 0 THEN 0
+                ELSE ROUND(100.0 * p.presents / p.total, 1) END AS taux_presence,
+              CASE WHEN COALESCE(p.total, 0) = 0 THEN 0
+                ELSE ROUND(100.0 * p.absents / p.total, 1) END AS taux_absence
+       FROM formations f
+       LEFT JOIN resultats r ON r.id_formation = f.id_formation
+       LEFT JOIN presences p ON p.id_formation = f.id_formation
+       ORDER BY f.titre`,
+      [formateurId]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur statistiques apprenants formateur :', error);
+    res.status(500).json({ message: 'Erreur lors du chargement des statistiques.' });
+  }
+};
+
 exports.getEvaluations = async (req, res) => {
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
@@ -224,6 +413,7 @@ exports.getEvaluations = async (req, res) => {
       `SELECT es.id_evaluation_sujet, es.id_formation, es.titre, es.description,
               es.duree_minutes, es.obligatoire, es.statut, es.total_points,
               es.date_creation, es.date_publication, f.titre AS formation_titre,
+              to_char(es.date_publication, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_publication_utc,
               COUNT(DISTINCT eq.id_question)::INTEGER AS questions_count,
               COUNT(DISTINCT et.id_tentative)::INTEGER AS tentatives_count
        FROM evaluation_sujet es
@@ -245,6 +435,10 @@ exports.getEvaluations = async (req, res) => {
 
 exports.createEvaluation = async (req, res) => {
   const { id_formation, titre, description, duree_minutes, obligatoire } = req.body;
+  const duration = Number(duree_minutes);
+  if (!Number.isInteger(duration) || duration < 1) {
+    return res.status(400).json({ message: 'La durée doit être un nombre entier de minutes supérieur à zéro.' });
+  }
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     const formation = await ensureAssignedFormation(formateurId, id_formation);
@@ -255,7 +449,7 @@ exports.createEvaluation = async (req, res) => {
        (id_formation, id_formateur, titre, description, duree_minutes, obligatoire)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [id_formation, formateurId, titre, description || null, duree_minutes || null, obligatoire !== false]
+      [id_formation, formateurId, titre, description || null, duration, obligatoire !== false]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
@@ -269,7 +463,8 @@ exports.getEvaluation = async (req, res) => {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     const { id } = req.params;
     const sujet = await db.query(
-      `SELECT es.*, f.titre AS formation_titre
+      `SELECT es.*, f.titre AS formation_titre,
+              to_char(es.date_publication, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_publication_utc
        FROM evaluation_sujet es
        JOIN formation f ON f.id_formation = es.id_formation
        WHERE es.id_evaluation_sujet = $1 AND es.id_formateur = $2`,
@@ -305,10 +500,12 @@ exports.addQuestion = async (req, res) => {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     const { id } = req.params;
     const subject = await db.query(
-      'SELECT id_evaluation_sujet FROM evaluation_sujet WHERE id_evaluation_sujet = $1 AND id_formateur = $2',
+      `SELECT id_evaluation_sujet
+       FROM evaluation_sujet
+       WHERE id_evaluation_sujet = $1 AND id_formateur = $2 AND statut = 'BROUILLON'`,
       [id, formateurId]
     );
-    if (!subject.rows[0]) return res.status(404).json({ message: 'Évaluation introuvable.' });
+    if (!subject.rows[0]) return res.status(409).json({ message: 'Seules les évaluations en brouillon peuvent être modifiées.' });
     if (!Array.isArray(choix) || choix.length < 2 || choix.filter((item) => item.est_correct).length !== 1) {
       return res.status(400).json({ message: 'Ajoutez au moins deux choix et une seule bonne réponse.' });
     }
@@ -337,16 +534,58 @@ exports.addQuestion = async (req, res) => {
 };
 
 exports.updateEvaluationStatus = async (req, res) => {
-  const { statut } = req.body;
+  const { statut, date_publication } = req.body;
+  if (date_publication !== undefined) {
+    const publicationTime = new Date(date_publication).getTime();
+    if (
+      statut !== 'BROUILLON' ||
+      typeof date_publication !== 'string' ||
+      !Number.isFinite(publicationTime) ||
+      publicationTime <= Date.now()
+    ) {
+      return res.status(400).json({ message: 'Choisissez une date et une heure de publication futures.' });
+    }
+  } else if (!['PUBLIEE', 'FERMEE'].includes(statut)) {
+    return res.status(400).json({ message: 'Statut de publication invalide.' });
+  }
+
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const publicationUtc = date_publication
+      ? new Date(date_publication).toISOString().slice(0, 23).replace('T', ' ')
+      : null;
     const { rows } = await db.query(
-      `UPDATE evaluation_sujet SET statut = $1
-       WHERE id_evaluation_sujet = $2 AND id_formateur = $3
+      `UPDATE evaluation_sujet
+       SET statut = CASE WHEN $4::TIMESTAMP IS NOT NULL THEN 'BROUILLON'::statut_evaluation ELSE $1::statut_evaluation END,
+           date_publication = CASE
+             WHEN $4::TIMESTAMP IS NOT NULL THEN $4::TIMESTAMP
+             WHEN $1 = 'PUBLIEE' THEN CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+             ELSE date_publication
+           END,
+           date_modification = CURRENT_TIMESTAMP
+       WHERE id_evaluation_sujet = $2
+         AND id_formateur = $3
+         AND (
+           ($4::TIMESTAMP IS NOT NULL AND statut = 'BROUILLON'
+             AND NOT EXISTS (
+               SELECT 1 FROM evaluation_tentative et
+               WHERE et.id_evaluation_sujet = evaluation_sujet.id_evaluation_sujet
+             ))
+           OR ($4::TIMESTAMP IS NULL AND $1 = 'PUBLIEE' AND statut = 'BROUILLON'
+             AND NOT EXISTS (
+               SELECT 1 FROM evaluation_tentative et
+               WHERE et.id_evaluation_sujet = evaluation_sujet.id_evaluation_sujet
+             )
+             AND EXISTS (
+               SELECT 1 FROM evaluation_question eq
+               WHERE eq.id_evaluation_sujet = evaluation_sujet.id_evaluation_sujet
+             ))
+           OR ($4::TIMESTAMP IS NULL AND $1 = 'FERMEE' AND statut = 'PUBLIEE')
+         )
        RETURNING *`,
-      [statut, req.params.id, formateurId]
+      [statut, req.params.id, formateurId, publicationUtc]
     );
-    if (!rows[0]) return res.status(404).json({ message: 'Évaluation introuvable.' });
+    if (!rows[0]) return res.status(409).json({ message: 'Évaluation introuvable ou déjà publiée/utilisée.' });
     res.json(rows[0]);
   } catch (error) {
     console.error('Erreur publication évaluation :', error);
@@ -361,7 +600,8 @@ exports.deleteQuestion = async (req, res) => {
       `DELETE FROM evaluation_question eq
        USING evaluation_sujet es
        WHERE eq.id_question = $1 AND eq.id_evaluation_sujet = es.id_evaluation_sujet
-         AND es.id_formateur = $2`,
+         AND es.id_formateur = $2
+         AND es.statut = 'BROUILLON'`,
       [req.params.questionId, formateurId]
     );
     if (!result.rowCount) return res.status(404).json({ message: 'Question introuvable.' });

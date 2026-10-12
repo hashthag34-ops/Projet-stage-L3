@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Bj0yacNcvHYsr2aYcVYT5GOgti3vp15PWyIkQKbfPuLPRwozbS9fa7vLJbz82rv
+\restrict ciSHbhxJu0dglv07wgaU212NUZTDlvs7ZP2jPh86RihqJC6iWxKu6I5ZplyCdKb
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -1308,6 +1308,7 @@ COPY public.certification (id_certification, id_apprenant, id_formation, date_ce
 --
 
 COPY public.evaluation (id_evaluation, id_apprenant, id_formation, id_formateur, id_evaluation_sujet, type_evaluation, note, date_evaluation, commentaire) FROM stdin;
+1	3	3	1	\N	Travaux pratiques	15.00	2026-10-12	tres bien joué
 \.
 
 
@@ -1346,6 +1347,25 @@ COPY public.evaluation_choix (id_choix, id_question, libelle, est_correct, ordre
 31	12	mille oiseaux	f	2
 32	12	Bankai	t	3
 33	12	maduken	f	4
+34	13	ca va bien	f	1
+35	13	poffffff	t	2
+36	14	Mort de rire	t	1
+37	14	mon doux roudodo	f	2
+38	15	uzumaki	f	1
+39	15	uchiha	f	2
+40	15	hatake	t	3
+41	16	sasuke	f	1
+42	16	naruto	t	2
+43	16	lee	f	3
+44	17	fgd	t	1
+45	17	gfd	f	2
+46	17	gfd	f	3
+47	18	gfd	f	1
+48	18	fgd	t	2
+49	19	cjv	t	1
+50	19	da	f	2
+51	20	asdsa	t	1
+52	20	adsa	f	2
 \.
 
 
@@ -1365,6 +1385,14 @@ COPY public.evaluation_question (id_question, id_evaluation_sujet, numero_questi
 9	2	2	a quel espece appartient Rukia ?	5.00	2026-10-01 15:17:53.293241
 11	2	3	comment s'appele la copine du perso principale ?	5.00	2026-10-01 15:21:22.70281
 12	2	4	quel est la techinque iconique dans bleach ?	8.00	2026-10-01 15:22:42.907328
+13	3	1	comment ca va ?	5.00	2026-10-07 08:36:43.111953
+14	3	2	mdr	5.00	2026-10-07 08:37:11.132037
+15	3	3	nom de famille de kakashi	5.00	2026-10-07 08:38:11.857464
+16	3	4	qui est le pere de boruto	5.00	2026-10-07 08:38:43.095461
+17	4	1	gfxhchg	5.00	2026-10-12 08:06:32.550241
+18	4	2	fgdhgdf	5.00	2026-10-12 08:06:43.396717
+19	4	3	gfdhg	5.00	2026-10-12 08:06:51.825618
+20	4	4	dadsad	5.00	2026-10-12 08:06:58.046246
 \.
 
 
@@ -1381,6 +1409,28 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 6	2	9	22	5.00
 7	2	11	29	5.00
 8	2	12	32	8.00
+9	3	1	1	0.00
+10	3	2	3	5.00
+11	3	3	6	2.00
+12	3	4	7	2.00
+13	3	5	10	3.00
+14	3	6	12	2.00
+15	3	7	16	1.00
+16	4	13	35	5.00
+17	4	14	37	0.00
+18	4	15	40	5.00
+19	4	16	42	5.00
+20	5	1	2	5.00
+21	5	2	3	5.00
+22	5	3	6	2.00
+23	5	5	10	3.00
+24	5	4	8	0.00
+25	5	6	13	0.00
+26	5	7	14	0.00
+27	6	17	46	0.00
+28	6	18	48	5.00
+29	6	19	49	5.00
+30	6	20	52	0.00
 \.
 
 
@@ -1389,8 +1439,10 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 --
 
 COPY public.evaluation_sujet (id_evaluation_sujet, id_formation, id_formateur, titre, description, duree_minutes, obligatoire, statut, total_points, date_creation, date_modification, date_publication) FROM stdin;
-1	1	1	exam	bla	20	t	BROUILLON	20.00	2026-09-19 07:50:04.889609	2026-09-19 08:13:03.574565	\N
 2	3	1	Q	Quiz Bleach	20	t	PUBLIEE	20.00	2026-10-01 15:15:27.008985	2026-10-01 15:24:24.528683	2026-10-01 15:24:24.528683
+1	1	1	exam	bla	20	t	PUBLIEE	20.00	2026-09-19 07:50:04.889609	2026-10-07 08:31:04.359483	2026-10-07 08:31:04.359483
+3	3	1	question au piff	bla bla	2	t	PUBLIEE	20.00	2026-10-07 08:36:05.756265	2026-10-07 08:39:04.671957	2026-10-07 08:39:04.671957
+4	1	1	fc	\N	10	t	PUBLIEE	20.00	2026-10-12 08:06:07.625201	2026-10-12 08:09:07.156098	2026-10-12 08:09:07.156098
 \.
 
 
@@ -1401,6 +1453,10 @@ COPY public.evaluation_sujet (id_evaluation_sujet, id_formation, id_formateur, t
 COPY public.evaluation_tentative (id_tentative, id_evaluation_sujet, id_apprenant, date_debut, date_fin, note, statut) FROM stdin;
 1	2	3	2026-10-01 16:40:25.189662	2026-10-01 16:40:44.960525	7.00	TERMINEE
 2	2	3	2026-10-02 06:09:24.840535	2026-10-02 06:09:46.783371	20.00	TERMINEE
+3	1	2	2026-10-07 08:32:17.566196	2026-10-07 08:34:27.825069	15.00	TERMINEE
+4	3	3	2026-10-07 08:39:51.392889	2026-10-07 08:41:51.392	15.00	TERMINEE
+5	1	3	2026-10-07 08:42:07.023061	2026-10-07 08:42:26.988505	15.00	TERMINEE
+6	4	3	2026-10-12 08:10:29.521859	2026-10-12 08:10:39.596064	10.00	TERMINEE
 \.
 
 
@@ -1418,9 +1474,13 @@ COPY public.formateur (id_formateur, id_utilisateur, specialite, biographie, dat
 --
 
 COPY public.formation (id_formation, titre, description, image_url, date_debut, date_fin, date_limite_inscription, capacite_max, statut, date_creation, date_modification) FROM stdin;
-1	dev peronnel	formation sur le développement personnel et la metrise de ses emotions	\N	2026-12-21	2026-12-25	2026-12-01	40	OUVERTE	2026-09-19 07:31:18.251346	\N
-4	BG	test	https://www.image2url.com/r2/default/images/1790869531856-58644133-4d23-4ec9-8346-888a40073654.png	2026-08-01	2026-08-05	2026-07-28	20	TERMINEE	2026-10-01 16:46:18.181844	2026-10-01 16:49:35.687782
-3	Bleach	formation special sur bleach	https://www.image2url.com/r2/default/images/1790862885121-c7a24334-5f16-468b-bed9-3a4f570c7835.jpg	2026-10-01	2026-10-04	2026-10-01	20	OUVERTE	2026-10-01 14:56:12.050024	2026-10-04 17:01:44.850066
+11	Le fer aiguise le fer	formation sur des citation et des truc du genres	/uploads/formations/7d190904fa4e3e889a742bf739bcc0f6.jpg	2026-11-22	2026-11-25	2026-11-19	15	OUVERTE	2026-10-12 07:33:03.164727	2026-10-12 16:33:03.093234
+10	Sigma boy	formation pour devenir un vrai sigma boy	/uploads/formations/d741d7a58ae9eecc574e7c522be55633.jpg	2026-11-15	2026-11-18	2026-11-12	10	OUVERTE	2026-10-12 07:30:41.73863	2026-10-12 16:33:17.923875
+9	BDG	formation pour devenir un vrai BDG	/uploads/formations/b08761527e58f3c40d9587fd05cdf3db.jpg	2026-11-08	2026-11-11	2026-11-05	10	OUVERTE	2026-10-12 07:28:41.963612	2026-10-12 16:33:45.322648
+8	Miaou	formation sur les  chats	/uploads/formations/137b50fafc234230cec27c9b4da47d18.jpg	2026-10-25	2026-10-27	2026-10-22	10	OUVERTE	2026-10-12 07:25:34.372538	2026-10-12 16:34:02.44484
+4	BG	formation pour devenir BG, soit pas timide mon chou, mouaaa	/uploads/formations/bcec4f31c8ff3c628ecbb7a8578faf0a.jpg	2026-07-30	2026-08-03	2026-07-26	20	TERMINEE	2026-10-01 16:46:18.181844	2026-10-12 16:34:46.824809
+3	Bleach	formation special sur bleach	/uploads/formations/044d50a256b5a2e8f26feab5624b0cb4.jpg	2026-09-29	2026-10-02	2026-09-29	20	TERMINEE	2026-10-01 14:56:12.050024	2026-10-12 16:35:10.204557
+1	dev peronnel	formation sur le développement personnel et la metrise de ses emotions	/uploads/formations/3f6b2c678075373be8ea856bb60ac20b.jpg	2026-12-17	2026-12-21	2026-11-27	40	OUVERTE	2026-09-19 07:31:18.251346	2026-10-12 16:35:39.242336
 \.
 
 
@@ -1429,6 +1489,7 @@ COPY public.formation (id_formation, titre, description, image_url, date_debut, 
 --
 
 COPY public.formation_avis (id_avis, id_formation, id_apprenant, note, commentaire, date_creation) FROM stdin;
+1	3	3	4	un tres bon suivie de formation, j'ai bien aimé, de plus les responsables sont très accueillants	2026-10-12 07:14:18.968157
 \.
 
 
@@ -1451,6 +1512,10 @@ COPY public.forum (id_forum, id_formation, nom, description, date_creation) FROM
 1	1	Forum dev peronnel	Espace de discussion pour la formation dev peronnel.	2026-10-02 06:20:52.765007
 2	3	Forum Bleach	Espace de discussion pour la formation Bleach.	2026-10-02 06:20:52.765007
 3	4	Forum BG	Espace de discussion pour la formation BG.	2026-10-02 06:20:52.765007
+5	8	Forum Miaou	Espace de discussion pour la formation Miaou.	2026-10-12 07:25:34.372538
+6	9	Forum BDG	Espace de discussion pour la formation BDG.	2026-10-12 07:28:41.963612
+7	10	Forum Sigma boy	Espace de discussion pour la formation Sigma boy.	2026-10-12 07:30:41.73863
+8	11	Forum Le fer aiguise le fer	Espace de discussion pour la formation Le fer aiguise le fer.	2026-10-12 07:33:03.164727
 \.
 
 
@@ -1474,6 +1539,8 @@ COPY public.message (id_message, id_forum, id_utilisateur, contenu, date_envoi, 
 2	2	6	Kaiza bro	2026-10-02 06:23:16.439669	\N	\N
 3	2	3	__FORUM_ATTACHMENT_V1__:{"contenu":"ito de ianaro le note","nom_fichier":"Princess Mononoke - Main Theme [Fingerstyle].pdf","chemin_fichier":"ba743650-06a5-4a39-aca9-f64edc6c4b72.pdf","type_fichier":"application/pdf","taille_fichier":70466}	2026-10-02 06:29:53.523401	\N	\N
 4	2	6	Ok	2026-10-02 06:30:21.106933	\N	\N
+5	2	3	gg	2026-10-12 07:11:38.23131	\N	\N
+6	1	6	salut a tous	2026-10-12 16:40:59.438678	\N	\N
 \.
 
 
@@ -1484,6 +1551,7 @@ COPY public.message (id_message, id_forum, id_utilisateur, contenu, date_envoi, 
 COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, commentaire) FROM stdin;
 1	3	4	2026-10-02 06:26:03.594912	PRESENT	\N
 2	3	5	2026-10-02 09:10:40.222211	PRESENT	\N
+5	3	6	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 \.
 
 
@@ -1507,6 +1575,34 @@ COPY public.seance (id_seance, id_formation, titre, description, date_seance, he
 4	3	Cours Magistral - Bleach		2026-10-02	08:00:00	12:00:00	Cours Magistral	odc
 5	3	Cours Magistral - Bleach		2026-10-02	13:00:00	15:00:00	Cours Magistral	odc
 6	3	Cours Magistral - Bleach		2026-10-03	08:00:00	10:00:00	Cours Magistral	salle odc
+7	1	Travaux Pratiques (TP) - dev peronnel		2026-12-22	17:02:00	18:00:00	Travaux Pratiques (TP)	salle odc
+8	1	Travaux Pratiques (TP) - dev peronnel		2026-12-22	13:00:00	16:00:00	Travaux Pratiques (TP)	salle odc
+10	1	Cours Magistral - dev peronnel		2026-12-19	08:00:00	10:00:00	Cours Magistral	odc
+11	1	Cours Magistral - dev peronnel		2026-12-20	08:00:00	12:00:00	Cours Magistral	salle odc
+15	11	Cours Magistral - Le fer aiguise le fer	citation d'obito	2026-11-25	08:00:00	10:00:00	Cours Magistral	salle odc
+16	11	Cours Magistral - Le fer aiguise le fer	bkj	2026-11-26	08:00:00	10:00:00	Cours Magistral	
+18	11	Cours Magistral - Le fer aiguise le fer	citation itachi	2026-11-23	08:00:00	10:00:00	Cours Magistral	odc club
+19	9	Cours Magistral - BDG		2026-11-08	08:00:00	12:00:00	Cours Magistral	salle odc
+20	9	Cours Magistral - BDG		2026-11-08	14:00:00	16:00:00	Cours Magistral	salle odc
+21	9	Cours Magistral - BDG		2026-11-09	09:00:00	12:00:00	Cours Magistral	salle odc
+22	9	Cours Magistral - BDG		2026-11-09	14:00:00	16:00:00	Cours Magistral	salle odc
+23	9	Cours Magistral - BDG		2026-11-10	10:00:00	12:00:00	Cours Magistral	salle odc
+24	9	Cours Magistral - BDG		2026-11-10	14:00:00	16:00:00	Cours Magistral	salle odc
+25	10	Cours Magistral - Sigma boy		2026-11-15	08:00:00	10:00:00	Cours Magistral	salle odc
+26	10	Cours Magistral - Sigma boy		2026-11-16	08:00:00	10:00:00	Cours Magistral	salle odc
+27	10	Cours Magistral - Sigma boy		2026-11-17	08:00:00	10:00:00	Cours Magistral	salle odc
+28	10	Cours Magistral - Sigma boy		2026-11-18	08:00:00	10:00:00	Cours Magistral	salle odc
+29	9	Cours Magistral - BDG		2026-11-11	08:00:00	10:00:00	Cours Magistral	salle odc
+30	8	Cours Magistral - Miaou		2026-10-25	08:00:00	10:00:00	Cours Magistral	salle odc
+31	8	Cours Magistral - Miaou		2026-10-26	08:00:00	10:00:00	Cours Magistral	salle odc
+32	8	Cours Magistral - Miaou		2026-10-27	08:00:00	10:00:00	Cours Magistral	salle odc
+33	4	Cours Magistral - BG		2026-07-30	08:00:00	10:00:00	Cours Magistral	salle odc
+34	4	Cours Magistral - BG		2026-07-31	08:00:00	10:00:00	Cours Magistral	salle odc
+35	4	Cours Magistral - BG		2026-08-01	08:00:00	10:00:00	Cours Magistral	salle odc
+36	4	Cours Magistral - BG		2026-08-02	08:00:00	10:00:00	Cours Magistral	salle odc
+37	4	Cours Magistral - BG		2026-08-03	08:00:00	10:00:00	Cours Magistral	salle odc
+38	1	Cours Magistral - dev peronnel		2026-12-17	08:00:00	10:00:00	Cours Magistral	salle odc
+39	1	Cours Magistral - dev peronnel		2026-12-18	08:00:00	10:00:00	Cours Magistral	salle odc
 \.
 
 
@@ -1523,11 +1619,11 @@ COPY public.support_cours (id_support, id_formation, id_formateur, nom_fichier, 
 --
 
 COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion) FROM stdin;
-3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-04 17:08:44.312471
-2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-04 17:10:57.076369
-1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-04 17:12:18.111562
-5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	032 28 188 26	19	avatar-anon-1789808617351-96626445.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-09-25 04:31:06.751228
-6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-04 15:14:19.185919
+3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-12 16:37:16.209519
+6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-12 16:39:59.111652
+2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-12 16:44:11.972209
+5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	032 28 188 26	19	avatar-5-1791784509387-747449665.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-12 07:14:47.630143
+1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-12 08:01:34.926371
 \.
 
 
@@ -1563,42 +1659,42 @@ SELECT pg_catalog.setval('public.certification_id_certification_seq', 1, false);
 -- Name: evaluation_choix_id_choix_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 33, true);
+SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 52, true);
 
 
 --
 -- Name: evaluation_id_evaluation_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_id_evaluation_seq', 1, false);
+SELECT pg_catalog.setval('public.evaluation_id_evaluation_seq', 1, true);
 
 
 --
 -- Name: evaluation_question_id_question_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 12, true);
+SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 20, true);
 
 
 --
 -- Name: evaluation_reponse_id_reponse_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 8, true);
+SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 30, true);
 
 
 --
 -- Name: evaluation_sujet_id_evaluation_sujet_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 2, true);
+SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 4, true);
 
 
 --
 -- Name: evaluation_tentative_id_tentative_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 2, true);
+SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 6, true);
 
 
 --
@@ -1612,21 +1708,21 @@ SELECT pg_catalog.setval('public.formateur_id_formateur_seq', 1, true);
 -- Name: formation_avis_id_avis_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.formation_avis_id_avis_seq', 1, false);
+SELECT pg_catalog.setval('public.formation_avis_id_avis_seq', 1, true);
 
 
 --
 -- Name: formation_id_formation_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.formation_id_formation_seq', 4, true);
+SELECT pg_catalog.setval('public.formation_id_formation_seq', 11, true);
 
 
 --
 -- Name: forum_id_forum_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.forum_id_forum_seq', 3, true);
+SELECT pg_catalog.setval('public.forum_id_forum_seq', 8, true);
 
 
 --
@@ -1640,14 +1736,14 @@ SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 3, true);
 -- Name: message_id_message_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.message_id_message_seq', 4, true);
+SELECT pg_catalog.setval('public.message_id_message_seq', 6, true);
 
 
 --
 -- Name: presence_id_presence_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.presence_id_presence_seq', 2, true);
+SELECT pg_catalog.setval('public.presence_id_presence_seq', 6959, true);
 
 
 --
@@ -1661,7 +1757,7 @@ SELECT pg_catalog.setval('public.responsable_id_responsable_seq', 1, true);
 -- Name: seance_id_seance_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.seance_id_seance_seq', 6, true);
+SELECT pg_catalog.setval('public.seance_id_seance_seq', 39, true);
 
 
 --
@@ -2506,5 +2602,5 @@ ALTER TABLE ONLY public.evaluation_tentative
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Bj0yacNcvHYsr2aYcVYT5GOgti3vp15PWyIkQKbfPuLPRwozbS9fa7vLJbz82rv
+\unrestrict ciSHbhxJu0dglv07wgaU212NUZTDlvs7ZP2jPh86RihqJC6iWxKu6I5ZplyCdKb
 

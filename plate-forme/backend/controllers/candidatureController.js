@@ -3,7 +3,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const getFrontendBaseUrl = require('../utils/frontendUrl');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -13,12 +13,82 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-exports.validerCandidature = async (req, res) => {
-  const { id_inscription } = req.params;
-  const client = await db.connect();
+const verifyEmailTransport = async () => {
+  try {
+    await transporter.verify();
+  } catch (error) {
+    console.error('Connexion au service e-mail impossible :', error);
+    const deliveryError = new Error('Validation annulée : le service e-mail est indisponible. Aucune candidature n’a été validée.');
+    deliveryError.code = 'EMAIL_SERVICE_UNAVAILABLE';
+    throw deliveryError;
+  }
+};
+
+const sendAcceptanceEmail = async (candidate, frontendBaseUrl) => {
+  const configLink = `${frontendBaseUrl}/setup-account?email=${encodeURIComponent(candidate.email)}`;
+  const subject = candidate.isExistingUser
+    ? `🎉 Candidature acceptée pour ${candidate.formation_titre} !`
+    : '🎉 Candidature acceptée - Activez votre compte & votre Badge';
+  const bodyHtml = candidate.isExistingUser
+    ? `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Bonjour ${candidate.prenom} ${candidate.nom},</h2>
+        <p>Félicitations ! Votre candidature pour la formation <strong>${candidate.formation_titre}</strong> a été acceptée.</p>
+        <p>Vous pouvez dès à présent vous connecter avec vos identifiants habituels pour accéder à vos nouvelles sessions.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <h3>Votre Badge d'accès :</h3>
+        <p>Voici votre QR Code personnel à jour à conserver pour vos cours :</p>
+        <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
+      </div>
+    `
+    : `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Bonjour ${candidate.prenom} ${candidate.nom},</h2>
+        <p>Félicitations ! Votre candidature pour <strong>${candidate.formation_titre}</strong> a été acceptée.</p>
+        <p>Pour configurer votre mot de passe et finaliser votre compte :</p>
+        <p style="margin: 20px 0;">
+          <a href="${configLink}" style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Configurer mon compte
+          </a>
+        </p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <h3>Votre Badge d'accès :</h3>
+        <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
+        <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
+      </div>
+    `;
 
   try {
+    await transporter.sendMail({
+      from: '"Plateforme Formations" <no-reply@formation.com>',
+      to: candidate.email,
+      subject,
+      html: bodyHtml,
+      attachments: [{
+        filename: 'badge-qrcode.png',
+        path: candidate.qrCodeDataURL,
+        cid: 'qrcode_badge'
+      }]
+    });
+  } catch (error) {
+    console.error(`Erreur d'envoi du mail à ${candidate.email} :`, error);
+    const deliveryError = new Error(`Validation annulée : l’e-mail destiné à ${candidate.email} n’a pas pu être envoyé. Aucune candidature n’a été validée.`);
+    deliveryError.code = 'EMAIL_DELIVERY_FAILED';
+    throw deliveryError;
+  }
+};
+
+exports.validerCandidature = async (req, res) => {
+  const { id_inscription } = req.params;
+  let client;
+  let transactionStarted = false;
+
+  try {
+    const frontendBaseUrl = getFrontendBaseUrl(req);
+    await verifyEmailTransport();
+    client = await db.connect();
     await client.query('BEGIN');
+    transactionStarted = true;
 
     // 1. Récupérer les détails de l'inscription et du candidat
     const resInscription = await client.query(
@@ -95,70 +165,42 @@ exports.validerCandidature = async (req, res) => {
       [qrCodeDataURL, id_utilisateur]
     );
 
+    await sendAcceptanceEmail({
+      email: cand.email,
+      nom: cand.nom,
+      prenom: cand.prenom,
+      formation_titre: cand.formation_titre,
+      isExistingUser,
+      qrCodeDataURL
+    }, frontendBaseUrl);
+
     await client.query('COMMIT');
+    transactionStarted = false;
 
-    // 7. Personnalisation et Envoi de l'email
-    const configLink = `${FRONTEND_URL}/setup-account?email=${encodeURIComponent(cand.email)}`;
-
-    const subject = isExistingUser 
-      ? `🎉 Candidature acceptée pour ${cand.formation_titre} !`
-      : `🎉 Candidature acceptée - Activez votre compte & votre Badge`;
-
-    const bodyHtml = isExistingUser
-      ? `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2>Bonjour ${cand.prenom} ${cand.nom},</h2>
-          <p>Félicitations ! Votre candidature pour la formation <strong>${cand.formation_titre}</strong> a été acceptée.</p>
-          <p>Vous pouvez dès à présent vous connecter avec vos identifiants habituels pour accéder à vos nouvelles sessions.</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <h3>Votre Badge d'accès :</h3>
-          <p>Voici votre QR Code personnel à jour à conserver pour vos cours :</p>
-          <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
-        </div>
-      `
-      : `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2>Bonjour ${cand.prenom} ${cand.nom},</h2>
-          <p>Félicitations ! Votre candidature pour <strong>${cand.formation_titre}</strong> a été acceptée.</p>
-          <p>Pour configurer votre mot de passe et finaliser votre compte :</p>
-          <p style="margin: 20px 0;">
-            <a href="${configLink}" style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
-              Configurer mon compte
-            </a>
-          </p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <h3>Votre Badge d'accès :</h3>
-          <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
-          <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
-        </div>
-      `;
-
-    const mailOptions = {
-      from: '"Plateforme Formations" <no-reply@formation.com>',
-      to: cand.email,
-      subject: subject,
-      html: bodyHtml,
-      attachments: [
-        {
-          filename: 'badge-qrcode.png',
-          path: qrCodeDataURL,
-          cid: 'qrcode_badge'
-        }
-      ]
-    };
-
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) console.error("Erreur d'envoi du mail :", err);
+    res.json({
+      message: 'Candidature acceptée et e-mail envoyé avec succès.'
     });
-
-    res.json({ message: "Candidature acceptée et QR code enregistré dans le compte utilisateur." });
-
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (transactionStarted && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Erreur lors de l’annulation de la validation :', rollbackError);
+      }
+    }
     console.error("Erreur lors de la validation :", err);
-    res.status(500).json({ message: "Erreur serveur lors de la validation." });
+    const status = ['EMAIL_SERVICE_UNAVAILABLE', 'EMAIL_DELIVERY_FAILED'].includes(err.code)
+      ? 503
+      : err.code === 'INVALID_FRONTEND_URL' ? 400 : 500;
+    res.status(status).json({
+      message: err.code === 'EMAIL_SERVICE_UNAVAILABLE' || err.code === 'EMAIL_DELIVERY_FAILED'
+        ? err.message
+        : err.code === 'INVALID_FRONTEND_URL'
+          ? err.message
+          : 'Erreur serveur lors de la validation.'
+    });
   } finally {
-    client.release();
+    client?.release();
   }
 };
 
@@ -211,10 +253,15 @@ exports.getCandidatures = async (req, res) => {
 
 exports.validerPromotion = async (req, res) => {
   const { id_formation } = req.params;
-  const client = await db.connect();
+  let client;
+  let transactionStarted = false;
 
   try {
+    const frontendBaseUrl = getFrontendBaseUrl(req);
+    await verifyEmailTransport();
+    client = await db.connect();
     await client.query('BEGIN');
+    transactionStarted = true;
 
     const resFormation = await client.query(
       `SELECT capacite_max FROM formation WHERE id_formation = $1 FOR UPDATE`,
@@ -322,76 +369,37 @@ exports.validerPromotion = async (req, res) => {
       });
     }
 
-    await client.query('COMMIT');
-
-    const frontendBaseUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
-
     for (const item of candidatsTraites) {
-      const configLink = `${frontendBaseUrl}/setup-account?email=${encodeURIComponent(item.email)}`;
-
-      const subject = item.isExistingUser
-        ? `🎉 Candidature acceptée pour ${item.formation_titre} !`
-        : `🎉 Candidature acceptée - Activez votre compte & votre Badge`;
-
-      const bodyHtml = item.isExistingUser
-        ? `
-          <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-            <h2>Bonjour ${item.prenom} ${item.nom},</h2>
-            <p>Félicitations ! Votre candidature pour la formation <strong>${item.formation_titre}</strong> a été acceptée.</p>
-            <p>Vous pouvez dès à présent vous connecter avec vos identifiants habituels pour accéder à vos nouvelles sessions.</p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-            <h3>Votre Badge d'accès :</h3>
-            <p>Voici votre QR Code personnel à jour à conserver pour vos cours :</p>
-            <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
-          </div>
-        `
-        : `
-          <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-            <h2>Bonjour ${item.prenom} ${item.nom},</h2>
-            <p>Félicitations ! Votre candidature pour <strong>${item.formation_titre}</strong> a été acceptée.</p>
-            <p>Pour configurer votre mot de passe et finaliser votre compte :</p>
-            <p style="margin: 20px 0;">
-              <a href="${configLink}" style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
-                Configurer mon compte
-              </a>
-            </p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-            <h3>Votre Badge d'accès :</h3>
-            <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
-            <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
-          </div>
-        `;
-
-      const mailOptions = {
-        from: '"Plateforme Formations" <no-reply@formation.com>',
-        to: item.email,
-        subject: subject,
-        html: bodyHtml,
-        attachments: [
-          {
-            filename: 'badge-qrcode.png',
-            path: item.qrCodeDataURL,
-            cid: 'qrcode_badge'
-          }
-        ]
-      };
-
-      transporter.sendMail(mailOptions, (err) => {
-        if (err) console.error(`Erreur d'envoi du mail à ${item.email} :`, err);
-      });
+      await sendAcceptanceEmail(item, frontendBaseUrl);
     }
 
-    res.json({ 
-      message: `Validation réussie ! ${candidatsTraites.length} candidatures traitées et emails envoyés.`,
+    await client.query('COMMIT');
+    transactionStarted = false;
+
+    res.json({
+      message: `Validation réussie ! ${candidatsTraites.length} candidatures traitées et e-mails envoyés.`,
       totalTraites: candidatsTraites.length 
     });
 
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (transactionStarted && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Erreur lors de l’annulation de la validation globale :', rollbackError);
+      }
+    }
     console.error("Erreur lors de la validation globale :", err);
-    res.status(500).json({ message: "Erreur serveur lors de la validation globale." });
+    const status = ['EMAIL_SERVICE_UNAVAILABLE', 'EMAIL_DELIVERY_FAILED'].includes(err.code)
+      ? 503
+      : err.code === 'INVALID_FRONTEND_URL' ? 400 : 500;
+    res.status(status).json({
+      message: ['EMAIL_SERVICE_UNAVAILABLE', 'EMAIL_DELIVERY_FAILED', 'INVALID_FRONTEND_URL'].includes(err.code)
+        ? err.message
+        : 'Erreur serveur lors de la validation globale.'
+    });
   } finally {
-    client.release();
+    client?.release();
   }
 };
 

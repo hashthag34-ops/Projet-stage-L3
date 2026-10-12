@@ -16,14 +16,10 @@ import {
   Image as ImageIcon, 
   Upload, 
   Link as LinkIcon, 
-  UserCheck, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Archive,
-  ArrowUpDown
+  ArrowUpDown,
+  RefreshCw
 } from 'lucide-react';
-import API from '../../services/api';
+import API, { getFormationImageUrl } from '../../services/api';
 
 const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
@@ -57,10 +53,11 @@ function FormationDetailsModal({ formation, onClose }) {
         <div className="relative h-48 w-full bg-slate-100 dark:bg-zinc-800">
           {formation.image_url ? (
             <img 
-              src={formation.image_url} 
+              src={getFormationImageUrl(formation.image_url)}
               alt={formation.titre} 
               className="h-full w-full object-cover"
-              onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              onLoad={(e) => { e.currentTarget.style.display = ''; }}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-slate-400 dark:text-zinc-500">
@@ -96,7 +93,7 @@ function FormationDetailsModal({ formation, onClose }) {
             <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
               <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
               <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-zinc-200">
-                {new Date(formation.date_debut).toLocaleDateString('fr-FR')} ➔ {new Date(formation.date_fin).toLocaleDateString('fr-FR')}
+                {formation.date_debut ? new Date(formation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {formation.date_fin ? new Date(formation.date_fin).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
 
@@ -111,7 +108,7 @@ function FormationDetailsModal({ formation, onClose }) {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-orange-700 dark:text-orange-400">Capacité d'accueil</span>
                 <span className="rounded-lg bg-orange-500/20 px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-300">
-                  {formation.capacite_max} places max
+                  {formation.capacite_max || 0} places max
                 </span>
               </div>
             </div>
@@ -250,7 +247,7 @@ function FormateurAssignModal({ formation, onClose }) {
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Sélectionner un formateur</label>
               <select 
-                value={selectedFormateur} 
+                value={selectedFormateur || ''} 
                 onChange={(e) => setSelectedFormateur(e.target.value)}
                 className={inputClass}
                 required
@@ -269,7 +266,7 @@ function FormateurAssignModal({ formation, onClose }) {
               <input 
                 type="text" 
                 placeholder="Ex: Formateur Principal, Intervenant..." 
-                value={role}
+                value={role || ''}
                 onChange={(e) => setRole(e.target.value)}
                 className={inputClass}
               />
@@ -305,8 +302,10 @@ export default function ResponsableFormations() {
   const [mobileIndex, setMobileIndex] = useState(0);
   const [imageInputType, setImageInputType] = useState('url'); // 'url' ou 'file'
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Sécurisation : aucune propriété ne doit être null/undefined
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
@@ -323,7 +322,7 @@ export default function ResponsableFormations() {
       const res = await API.get('/formations');
       setFormations(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Erreur fetchFormations:", err);
     } finally {
       setLoading(false);
     }
@@ -334,21 +333,27 @@ export default function ResponsableFormations() {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value ?? '' });
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (imagePreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       setSelectedFile(file);
-      const localPreviewUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, image_url: localPreviewUrl }));
+      setImagePreviewUrl(URL.createObjectURL(file));
     }
   };
 
   const handleOpenCreate = () => {
+    if (imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
     setEditingId(null);
     setSelectedFile(null);
+    setImagePreviewUrl('');
     setImageInputType('url');
     setFormData({
       titre: '',
@@ -364,18 +369,23 @@ export default function ResponsableFormations() {
   };
 
   const handleOpenEdit = (f) => {
+    if (imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
     setEditingId(f.id_formation);
     setSelectedFile(null);
+    setImagePreviewUrl('');
     setImageInputType('url');
+    // Remplacement explicite des valeurs potentielles 'null' par des chaînes vides
     setFormData({
-      titre: f.titre,
-      description: f.description,
-      image_url: f.image_url || '',
+      titre: f.titre ?? '',
+      description: f.description ?? '',
+      image_url: f.image_url ?? '',
       date_debut: f.date_debut ? f.date_debut.split('T')[0] : '',
       date_fin: f.date_fin ? f.date_fin.split('T')[0] : '',
       date_limite_inscription: f.date_limite_inscription ? f.date_limite_inscription.split('T')[0] : '',
-      capacite_max: f.capacite_max,
-      statut: f.statut
+      capacite_max: f.capacite_max ?? 20,
+      statut: f.statut ?? 'BROUILLON'
     });
     setShowModal(true);
   };
@@ -387,14 +397,16 @@ export default function ResponsableFormations() {
     try {
       let finalImageUrl = formData.image_url;
 
+      // Si l'option d'upload fichier est activée et qu'un fichier est présent
       if (imageInputType === 'file' && selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', selectedFile);
 
-        const uploadRes = await API.post('/upload', uploadFormData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        finalImageUrl = uploadRes.data.url;
+        const uploadRes = await API.post('/formations/upload', uploadFormData);
+        finalImageUrl = uploadRes.data?.url;
+        if (!finalImageUrl) {
+          throw new Error("L'API n'a pas renvoyé l'URL de l'image téléversée.");
+        }
       }
 
       const payload = { ...formData, image_url: finalImageUrl };
@@ -406,9 +418,15 @@ export default function ResponsableFormations() {
       }
 
       setShowModal(false);
+      if (imagePreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setImagePreviewUrl('');
+      setSelectedFile(null);
       fetchFormations();
     } catch (err) {
-      alert("Erreur lors de l'enregistrement de la formation");
+      console.error("Erreur handleSubmit:", err);
+      alert(err.response?.data?.message || "Erreur lors du téléversement ou de l'enregistrement de la formation");
     } finally {
       setUploadingImage(false);
     }
@@ -425,7 +443,6 @@ export default function ResponsableFormations() {
     }
   };
 
-  // Filtrage et tri
   const filteredFormations = useMemo(() => {
     return formations
       .filter((f) => {
@@ -472,12 +489,47 @@ export default function ResponsableFormations() {
         </button>
       </header>
 
+      {/* Cartes KPI */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-semibold text-slate-400">Total Formations</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-slate-900 dark:text-white">{formations.length}</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">+12%</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-semibold text-slate-400">Formations Ouvertes</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-emerald-600">{formations.filter(f => f.statut === 'OUVERTE').length}</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Active</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-semibold text-slate-400">En Cours</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-blue-600">{formations.filter(f => f.statut === 'EN_COURS').length}</span>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">En session</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-semibold text-slate-400">Brouillons</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-amber-600">{formations.filter(f => f.statut === 'BROUILLON').length}</span>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Attente</span>
+          </div>
+        </div>
+      </div>
+
       {/* Filtres & Recherche */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3.5 top-3.5 text-slate-400 dark:text-zinc-500" />
           <input 
-            value={searchTerm} 
+            value={searchTerm || ''} 
             onChange={(e) => { setSearchTerm(e.target.value); setMobileIndex(0); }} 
             placeholder="Rechercher par titre, description ou statut..." 
             className={`${inputClass} pl-10`} 
@@ -485,7 +537,7 @@ export default function ResponsableFormations() {
         </div>
         <div className="relative sm:w-56">
           <select 
-            value={sort} 
+            value={sort || 'recent'} 
             onChange={(e) => setSort(e.target.value)} 
             className={`${inputClass} cursor-pointer appearance-none pr-8`}
           >
@@ -510,7 +562,7 @@ export default function ResponsableFormations() {
         </div>
       ) : (
         <>
-          {/* Vue Desktop : Tableau */}
+          {/* Vue Desktop */}
           <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -533,9 +585,11 @@ export default function ResponsableFormations() {
                         <div className="flex items-center gap-3">
                           {f.image_url ? (
                             <img 
-                              src={f.image_url} 
+                              src={getFormationImageUrl(f.image_url)}
                               alt="" 
                               className="h-10 w-10 rounded-xl object-cover ring-2 ring-orange-500/20" 
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              onLoad={(e) => { e.currentTarget.style.display = ''; }}
                             />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
@@ -558,16 +612,15 @@ export default function ResponsableFormations() {
                         </span>
                       </td>
                       <td className="p-4 whitespace-nowrap text-[11px] font-semibold text-slate-600 dark:text-zinc-300">
-                        {new Date(f.date_debut).toLocaleDateString('fr-FR')} 
+                        {f.date_debut ? new Date(f.date_debut).toLocaleDateString('fr-FR') : '-'} 
                         <span className="mx-1 text-orange-500">➔</span> 
-                        {new Date(f.date_fin).toLocaleDateString('fr-FR')}
+                        {f.date_fin ? new Date(f.date_fin).toLocaleDateString('fr-FR') : '-'}
                       </td>
                       <td className="p-4 whitespace-nowrap font-medium text-slate-600 dark:text-zinc-400">
                         <span className="font-bold text-slate-900 dark:text-white">{f.capacite_max}</span> places
                       </td>
                       <td className="p-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
-                          {/* Info */}
                           <button 
                             onClick={() => setSelectedFormationForDetails(f)}
                             className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
@@ -576,7 +629,6 @@ export default function ResponsableFormations() {
                             <Info size={17} />
                           </button>
 
-                          {/* Assignation Formateurs */}
                           <button 
                             onClick={() => setSelectedFormationForFormateurs(f)}
                             className={`inline-flex items-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-50 px-2.5 py-1.5 text-[11px] font-bold text-orange-700 transition hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:hover:bg-orange-500/20 ${focusRing}`}
@@ -585,7 +637,6 @@ export default function ResponsableFormations() {
                             <span>Formateurs</span>
                           </button>
 
-                          {/* Édition */}
                           <button 
                             onClick={() => handleOpenEdit(f)} 
                             className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
@@ -594,7 +645,6 @@ export default function ResponsableFormations() {
                             <Edit3 size={16} />
                           </button>
 
-                          {/* Suppression */}
                           <button 
                             onClick={() => handleDelete(f.id_formation)} 
                             className={`rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`}
@@ -611,7 +661,7 @@ export default function ResponsableFormations() {
             </div>
           </div>
 
-          {/* Vue Mobile : Fiche Carrousel */}
+          {/* Vue Mobile */}
           <div className="md:hidden">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
               <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
@@ -639,9 +689,11 @@ export default function ResponsableFormations() {
                   <div className="flex flex-col items-center text-center">
                     {currentFormation.image_url ? (
                       <img 
-                        src={currentFormation.image_url} 
+                        src={getFormationImageUrl(currentFormation.image_url)}
                         alt="" 
                         className="h-20 w-20 rounded-2xl object-cover ring-2 ring-orange-500/30" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        onLoad={(e) => { e.currentTarget.style.display = ''; }}
                       />
                     ) : (
                       <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
@@ -663,7 +715,7 @@ export default function ResponsableFormations() {
                     <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
                       <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
                       <strong className="mt-0.5 block truncate text-slate-700 dark:text-zinc-300">
-                        {new Date(currentFormation.date_debut).toLocaleDateString('fr-FR')} ➔ {new Date(currentFormation.date_fin).toLocaleDateString('fr-FR')}
+                        {currentFormation.date_debut ? new Date(currentFormation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {currentFormation.date_fin ? new Date(currentFormation.date_fin).toLocaleDateString('fr-FR') : '-'}
                       </strong>
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
@@ -736,7 +788,7 @@ export default function ResponsableFormations() {
                   type="text" 
                   name="titre" 
                   required 
-                  value={formData.titre} 
+                  value={formData.titre ?? ''} 
                   onChange={handleChange}
                   placeholder="Ex: Devenir Développeur Full-Stack"
                   className={inputClass} 
@@ -749,7 +801,7 @@ export default function ResponsableFormations() {
                   name="description" 
                   required 
                   rows="3"
-                  value={formData.description} 
+                  value={formData.description ?? ''} 
                   onChange={handleChange}
                   placeholder="Présentation générale des objectifs..."
                   className={`${inputClass} resize-none`} 
@@ -763,7 +815,14 @@ export default function ResponsableFormations() {
                   <div className="flex space-x-1 rounded-lg bg-slate-200/60 p-0.5 dark:bg-zinc-800">
                     <button
                       type="button"
-                      onClick={() => setImageInputType('url')}
+                      onClick={() => {
+                        if (imagePreviewUrl.startsWith('blob:')) {
+                          URL.revokeObjectURL(imagePreviewUrl);
+                        }
+                        setSelectedFile(null);
+                        setImagePreviewUrl('');
+                        setImageInputType('url');
+                      }}
                       className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
                     >
                       <LinkIcon size={12} />
@@ -784,7 +843,7 @@ export default function ResponsableFormations() {
                   <input 
                     type="url" 
                     name="image_url" 
-                    value={formData.image_url} 
+                    value={formData.image_url ?? ''} 
                     onChange={handleChange}
                     placeholder="https://images.unsplash.com/photo-..."
                     className={inputClass} 
@@ -798,11 +857,18 @@ export default function ResponsableFormations() {
                   />
                 )}
 
-                {formData.image_url && (
+                {/* Prévisualisation sécurisée */}
+                {imagePreviewUrl || formData.image_url ? (
                   <div className="relative mt-2 h-24 w-full overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-800">
-                    <img src={formData.image_url} alt="Aperçu" className="h-full w-full object-cover" />
+                    <img
+                      src={getFormationImageUrl(imagePreviewUrl || formData.image_url)}
+                      alt="Aperçu"
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      onLoad={(e) => { e.currentTarget.style.display = ''; }}
+                    />
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -812,7 +878,7 @@ export default function ResponsableFormations() {
                     type="date" 
                     name="date_debut" 
                     required 
-                    value={formData.date_debut} 
+                    value={formData.date_debut ?? ''} 
                     onChange={handleChange}
                     className={inputClass} 
                   />
@@ -823,7 +889,7 @@ export default function ResponsableFormations() {
                     type="date" 
                     name="date_fin" 
                     required 
-                    value={formData.date_fin} 
+                    value={formData.date_fin ?? ''} 
                     onChange={handleChange}
                     className={inputClass} 
                   />
@@ -837,7 +903,7 @@ export default function ResponsableFormations() {
                     type="date" 
                     name="date_limite_inscription" 
                     required 
-                    value={formData.date_limite_inscription} 
+                    value={formData.date_limite_inscription ?? ''} 
                     onChange={handleChange}
                     className={inputClass} 
                   />
@@ -848,7 +914,7 @@ export default function ResponsableFormations() {
                     type="number" 
                     name="capacite_max" 
                     required 
-                    value={formData.capacite_max} 
+                    value={formData.capacite_max ?? 20} 
                     onChange={handleChange}
                     className={inputClass} 
                   />
@@ -859,7 +925,7 @@ export default function ResponsableFormations() {
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-300">Statut</label>
                 <select 
                   name="statut" 
-                  value={formData.statut} 
+                  value={formData.statut ?? 'BROUILLON'} 
                   onChange={handleChange}
                   className={inputClass}
                 >
@@ -874,9 +940,10 @@ export default function ResponsableFormations() {
               <button 
                 type="submit" 
                 disabled={uploadingImage}
-                className={`mt-2 w-full rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+                className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
               >
-                {uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}
+                {uploadingImage && <RefreshCw size={14} className="animate-spin" />}
+                <span>{uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}</span>
               </button>
             </form>
           </div>

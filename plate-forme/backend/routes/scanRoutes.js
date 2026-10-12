@@ -44,6 +44,7 @@ router.post('/scan', async (req, res) => {
       VALUES ($1, $2, NOW(), 'PRESENT')
       ON CONFLICT (id_apprenant, id_seance) 
       DO UPDATE SET 
+        -- Un scan tardif corrige aussi l'absence créée automatiquement.
         statut = 'PRESENT',
         date_scan = NOW()
       RETURNING *;

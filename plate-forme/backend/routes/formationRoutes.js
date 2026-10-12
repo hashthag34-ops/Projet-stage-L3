@@ -4,9 +4,19 @@ const router = express.Router();
 const authOptional = require('../middleware/authOptional');
 const verifyToken = require('../middleware/authMiddleware');
 const formationController = require('../controllers/formationController');
+const uploadFormationImage = require('../middleware/formationUpload');
 
 
 // Routes publiques
+router.post('/upload', (req, res, next) => {
+  uploadFormationImage.single('image')(req, res, (error) => {
+    if (error) {
+      const status = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      return res.status(status).json({ message: error.message });
+    }
+    next();
+  });
+}, formationController.uploadFormationImage);
 router.get('/publiques', formationController.getFormationsPubliques);
 router.get('/catalogue', authOptional.authOptional, formationController.getCatalogue);
 router.get('/:id/avis', formationController.getFormationAvis);

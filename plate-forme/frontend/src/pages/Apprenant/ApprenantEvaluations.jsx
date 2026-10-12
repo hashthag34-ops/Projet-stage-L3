@@ -23,6 +23,7 @@ export default function ApprenantEvaluations() {
   const [openingId, setOpeningId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [terminationReason, setTerminationReason] = useState(null);
   
   // Timer state
   const [timeLeft, setTimeLeft] = useState(null);
@@ -31,6 +32,11 @@ export default function ApprenantEvaluations() {
   const answersRef = useRef(answers);
   const attemptRef = useRef(attempt);
   const submittingRef = useRef(submitting);
+  const answerSaveQueue = useRef(Promise.resolve());
+  const answerSaveErrors = useRef(new Set());
+  const serverClockOffset = useRef(0);
+  const tabSwitchTriggered = useRef(false);
+  const timeoutSubmitTriggered = useRef(false);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -58,53 +64,70 @@ export default function ApprenantEvaluations() {
     return () => window.clearTimeout(loadTimer);
   }, []);
 
-  const submitAttempt = useCallback(async (isAutoSubmit = false) => {
+  const submitAttempt = useCallback(async (isAutoSubmit = false, reason = null) => {
     const currentAttempt = attemptRef.current;
     if (!currentAttempt || submittingRef.current) return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     setError('');
 
     try {
-      const response = await API.post(`/apprenant/evaluations/tentatives/${currentAttempt.id_tentative}/terminer`, {
-        reponses: Object.entries(answersRef.current).map(([id_question, id_choix]) => ({ id_question, id_choix }))
-      });
+      await answerSaveQueue.current;
+      if (answerSaveErrors.current.size > 0 && !isAutoSubmit) {
+        setError('Une réponse n’a pas pu être sauvegardée. Vérifiez votre connexion puis réessayez.');
+        return;
+      }
+      const response = await API.post(`/apprenant/evaluations/tentatives/${currentAttempt.id_tentative}/terminer`, {});
       setResult(response.data);
       setAttempt(null);
+      attemptRef.current = null;
       setTimeLeft(null);
+      setTerminationReason(reason);
       await loadEvaluations();
     } catch (submitError) {
       setError(submitError.response?.data?.message || 'Impossible d’enregistrer vos réponses.');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }, []);
 
   // Timer Countdown Logic
   useEffect(() => {
-    if (!detail || !detail.duree_minutes || !attempt) {
-      setTimeLeft(null);
-      return;
-    }
+    if (!attempt || !attempt.deadline_epoch_ms) return;
 
-    // Calculation based on duration
-    const initialTime = detail.duree_minutes * 60;
-    setTimeLeft(initialTime);
+    const deadline = Number(attempt.deadline_epoch_ms);
+    if (!Number.isFinite(deadline)) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(timer);
-          submitAttempt(true); // Automatic submit on timeout
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    serverClockOffset.current = Number(attempt.server_now_epoch_ms) - Date.now();
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.ceil((deadline - (Date.now() + serverClockOffset.current)) / 1000));
+      setTimeLeft(remaining);
+      if (remaining === 0 && !timeoutSubmitTriggered.current) {
+        timeoutSubmitTriggered.current = true;
+        submitAttempt(true, 'temps');
+      }
+    };
+    updateTimer();
+    const timer = setInterval(updateTimer, 250);
 
     return () => clearInterval(timer);
-  }, [detail, attempt, submitAttempt]);
+  }, [attempt, submitAttempt]);
+
+  useEffect(() => {
+    if (!detail || !attempt || result) return undefined;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && !tabSwitchTriggered.current) {
+        tabSwitchTriggered.current = true;
+        submitAttempt(true, 'onglet');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [detail, attempt, result, submitAttempt]);
 
   const openEvaluation = async (evaluation) => {
     if (evaluation.tentative_statut === 'TERMINEE') return; // Double protection
@@ -112,6 +135,7 @@ export default function ApprenantEvaluations() {
     setOpeningId(evaluation.id_evaluation_sujet);
     setError('');
     setResult(null);
+    setTerminationReason(null);
     setAnswers({});
     try {
       const [detailResponse, attemptResponse] = await Promise.all([
@@ -120,11 +144,42 @@ export default function ApprenantEvaluations() {
       ]);
       setDetail(detailResponse.data);
       setAttempt(attemptResponse.data);
+      attemptRef.current = attemptResponse.data;
+      const savedAnswers = Object.fromEntries(
+        (attemptResponse.data.reponses || []).map((answer) => [answer.id_question, answer.id_choix])
+      );
+      answersRef.current = savedAnswers;
+      setAnswers(savedAnswers);
+      answerSaveQueue.current = Promise.resolve();
+      answerSaveErrors.current.clear();
+      tabSwitchTriggered.current = false;
+      timeoutSubmitTriggered.current = false;
     } catch (openError) {
       setError(openError.response?.data?.message || 'Impossible d’ouvrir cette évaluation.');
     } finally {
       setOpeningId(null);
     }
+  };
+
+  const saveAnswer = (questionId, choiceId) => {
+    const attemptId = attemptRef.current?.id_tentative;
+    if (!attemptId) return;
+
+    const updatedAnswers = { ...answersRef.current, [questionId]: choiceId };
+    answersRef.current = updatedAnswers;
+    setAnswers(updatedAnswers);
+    answerSaveQueue.current = answerSaveQueue.current.then(async () => {
+      try {
+        await API.put(`/apprenant/evaluations/tentatives/${attemptId}/reponses`, {
+          id_question: questionId,
+          id_choix: choiceId
+        });
+        answerSaveErrors.current.delete(questionId);
+      } catch (saveError) {
+        answerSaveErrors.current.add(questionId);
+        setError(saveError.response?.data?.message || 'Impossible de sauvegarder votre réponse.');
+      }
+    });
   };
 
   const handleSubmitForm = (event) => {
@@ -135,9 +190,16 @@ export default function ApprenantEvaluations() {
   const leaveEvaluation = () => {
     setDetail(null);
     setAttempt(null);
+    attemptRef.current = null;
     setAnswers({});
     setResult(null);
     setTimeLeft(null);
+    setTerminationReason(null);
+    answersRef.current = {};
+    answerSaveQueue.current = Promise.resolve();
+    answerSaveErrors.current.clear();
+    tabSwitchTriggered.current = false;
+    timeoutSubmitTriggered.current = false;
     setError('');
   };
 
@@ -170,6 +232,8 @@ export default function ApprenantEvaluations() {
               <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">Évaluation terminée</p>
               <h2 className="mt-2 text-2xl font-black">{detail.titre}</h2>
               <p className="mt-3 text-4xl font-black">{result.note} <span className="text-lg text-black/40 dark:text-white/40">/ 20</span></p>
+              {terminationReason === 'onglet' && <p role="alert" className="mt-4 text-sm font-semibold text-red-600 dark:text-red-400">La tentative a été terminée automatiquement car l’onglet de l’évaluation a été quitté.</p>}
+              {terminationReason === 'temps' && <p className="mt-4 text-sm font-semibold text-red-600 dark:text-red-400">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
               <button type="button" onClick={leaveEvaluation} className="mt-6 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-orange-400">Retour à la liste</button>
             </div>
           ) : (
@@ -180,6 +244,7 @@ export default function ApprenantEvaluations() {
                   <h2 className="mt-1 text-2xl font-black">{detail.titre}</h2>
                   {detail.description && <p className="mt-2 text-sm text-black/55 dark:text-white/55">{detail.description}</p>}
                   <p className="mt-3 text-xs font-semibold text-black/50 dark:text-white/50">{detail.questions.length} questions · {detail.total_points}/20 points</p>
+                  <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">Quitter cet onglet terminera immédiatement l’évaluation.</p>
                 </div>
                 
                 {detail.duree_minutes && (
@@ -195,7 +260,7 @@ export default function ApprenantEvaluations() {
               </div>
 
               {detail.questions.map((question) => (
-                <fieldset key={question.id_question} className="border-b border-black/10 pb-5 dark:border-white/10">
+                <fieldset key={question.id_question} disabled={submitting} className="border-b border-black/10 pb-5 dark:border-white/10">
                   <legend className="w-full pb-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Question {question.numero_question} · {question.points} points</span>
                     <span className="mt-1 block font-semibold">{question.enonce}</span>
@@ -208,7 +273,7 @@ export default function ApprenantEvaluations() {
                           name={`question-${question.id_question}`}
                           value={choice.id_choix}
                           checked={Number(answers[question.id_question]) === choice.id_choix}
-                          onChange={() => setAnswers((current) => ({ ...current, [question.id_question]: choice.id_choix }))}
+                          onChange={() => saveAnswer(question.id_question, choice.id_choix)}
                           className="mt-0.5 accent-orange-500"
                         />
                         <span>{choice.libelle}</span>
