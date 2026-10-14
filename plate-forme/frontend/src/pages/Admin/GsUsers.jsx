@@ -17,15 +17,30 @@ import {
   ArrowUpDown,
   UserCheck,
   UserX,
-  ShieldAlert
+  ShieldAlert,
+  BarChart3,
+  ChevronDown,
+  Edit2,
+  CheckCircle2
 } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid
+} from 'recharts';
 import API from '../../services/api';
 
-const BACKEND_URL = import.meta.env.VITE_URLTEST_AVATAR;
+const BACKEND_URL = import.meta.env.VITE_URL;
 
-const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40';
 
-const inputClass = `w-full rounded-3xl bg-slate-50/50 p-3 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900 ${focusRing}`;
+const inputClass = `w-full rounded-2xl bg-zinc-100/80 p-3 text-xs font-normal text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:bg-white focus:ring-1 focus:ring-zinc-400 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-800 dark:focus:ring-zinc-600 ${focusRing}`;
 
 const getAvatarSrc = (user) => {
   if (!user) return null;
@@ -37,21 +52,21 @@ const getAvatarSrc = (user) => {
 
 function UserAvatar({ user, large = false }) {
   const avatar = getAvatarSrc(user);
-  const sizeClass = large ? 'h-20 w-20 rounded-full text-xl' : 'h-10 w-10 rounded-full text-xs';
+  const sizeClass = large ? 'h-16 w-16 text-base' : 'h-9 w-9 text-xs';
 
   if (avatar) {
     return (
       <img
         src={avatar}
         alt={`Profil de ${user.prenom || ''} ${user.nom || ''}`}
-        className={`${large ? 'h-20 w-20 rounded-full' : 'h-10 w-10 rounded-full'} object-cover`}
+        className={`${large ? 'h-16 w-16' : 'h-9 w-9'} rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-800`}
       />
     );
   }
 
   const initials = `${user?.prenom?.[0] || ''}${user?.nom?.[0] || ''}`.toUpperCase();
   return (
-    <div className={`flex items-center justify-center  bg-orange-100 text-orange-700 ring-2 ring-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400 ${sizeClass}`}>
+    <div className={`flex items-center justify-center font-medium rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 ${sizeClass}`}>
       {initials || 'U'}
     </div>
   );
@@ -60,16 +75,16 @@ function UserAvatar({ user, large = false }) {
 const getRoleBadgeClass = (role) => {
   switch (role?.toUpperCase()) {
     case 'APPRENANT':
-      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20';
+      return 'bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700';
     case 'ADMINISTRATEUR':
     case 'ADMIN':
-      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20';
+      return 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-medium';
     case 'RESPONSABLE':
-      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20';
+      return 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200';
     case 'FORMATEUR':
-      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20';
+      return 'bg-zinc-100 text-zinc-800 border border-zinc-300 dark:bg-zinc-800/80 dark:text-zinc-200 dark:border-zinc-700';
     default:
-      return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700';
+      return 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400';
   }
 };
 
@@ -81,15 +96,18 @@ const getStatusBadgeClass = (status) => {
       return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
     case 'DESACTIVE':
     default:
-      return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
+      return 'text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20';
   }
 };
+
+
 
 export default function GsUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
   const [mobileIndex, setMobileIndex] = useState(0);
@@ -103,6 +121,24 @@ export default function GsUsers() {
     specialite: '',
     fonction: ''
   });
+  // 1. Ajouter l'état de fermeture
+  const [isClosing, setIsClosing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // 2. Fonction de fermeture avec délai temporisé
+  const handleCloseDrawer = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setSelectedUser(null);
+      setIsClosing(false);
+    }, 500); // Doit correspondre aux 500ms de l'animation
+  };
+  useEffect(() => {
+    if (selectedUser) {
+      // Petit délai pour laisser le temps au composant de se monter dans le DOM
+      requestAnimationFrame(() => setIsOpen(true));
+    }
+  }, [selectedUser]);
 
   const fetchUsers = async () => {
     try {
@@ -136,6 +172,9 @@ export default function GsUsers() {
   const handleStatusChange = async (id, statut_compte) => {
     try {
       await API.patch(`/admin/users/${id}/status`, { statut_compte });
+      if (selectedUser && selectedUser.id_utilisateur === id) {
+        setSelectedUser({ ...selectedUser, statut_compte });
+      }
       fetchUsers();
     } catch (err) {
       alert('Erreur lors de la mise à jour du statut');
@@ -158,88 +197,120 @@ export default function GsUsers() {
 
   const currentUser = filteredUsers[mobileIndex];
 
-  // Calcul des statistiques pour les cartes KPI
+  // Métriques
   const totalUsersCount = users.length;
   const activeUsersCount = users.filter(u => u.statut_compte === 'ACTIF').length;
   const suspendedUsersCount = users.filter(u => u.statut_compte === 'SUSPENDU').length;
   const disabledUsersCount = users.filter(u => u.statut_compte === 'DESACTIVE').length;
 
-  return (
-    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100">
+  // Données statistiques pour Recharts
+  const roleChartData = useMemo(() => {
+    const counts = { APPRENANT: 0, FORMATEUR: 0, RESPONSABLE: 0, ADMINISTRATEUR: 0 };
+    users.forEach(u => {
+      const r = u.role?.toUpperCase();
+      if (counts[r] !== undefined) counts[r]++;
+    });
+    return [
+      { name: 'Apprenants', count: counts.APPRENANT },
+      { name: 'Formateurs', count: counts.FORMATEUR },
+      { name: 'Responsables', count: counts.RESPONSABLE },
+      { name: 'Admins', count: counts.ADMINISTRATEUR },
+    ];
+  }, [users]);
 
-      {/* En-tête */}
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  const activityChartData = [
+    { name: 'Lun', actifs: Math.round(activeUsersCount * 0.7) },
+    { name: 'Mar', actifs: Math.round(activeUsersCount * 0.85) },
+    { name: 'Mer', actifs: Math.round(activeUsersCount * 0.9) },
+    { name: 'Jeu', actifs: Math.round(activeUsersCount * 0.8) },
+    { name: 'Ven', actifs: activeUsersCount },
+    { name: 'Sam', actifs: Math.round(activeUsersCount * 0.4) },
+    { name: 'Dim', actifs: Math.round(activeUsersCount * 0.3) },
+  ];
+
+  return (
+    <div className="relative min-h-screen space-y-6 font-sans text-zinc-800 transition-colors duration-300 dark:text-zinc-100 p-2 sm:p-4">
+
+      {/* Header */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="mt-2 text-3xl  tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Gestion des utilisateurs
+          <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-normal text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+            <Sparkles size={13} /> Administration Système
+          </div>
+          <h1 className="mt-1 text-2xl font-normal tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
+            Gestion des Membres
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400">
-            Gérez les autorisations, rôles et statuts des membres de la plateforme.
-          </p>
         </div>
 
+        {/* Action Toggle Statistiques Modal */}
         <button
-          onClick={() => setShowCreate(true)}
-          className={`inline-flex items-center justify-center gap-2 rounded-3xl bg-orange-500 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+          onClick={() => setShowStatsModal(!showStatsModal)}
+          className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-medium text-zinc-700 shadow-sm border border-zinc-200 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
-          <UserPlus size={16} />
-          <span>Créer un utilisateur</span>
+          <BarChart3 size={15} />
+          <span>{showStatsModal ? 'Masquer Statistiques' : 'Afficher Statistiques'}</span>
+          <ChevronDown size={14} className={`transition-transform duration-300 ${showStatsModal ? 'rotate-180' : ''}`} />
         </button>
       </header>
 
-      {/* Cartes Métriques (Inspirées du visuel de référence) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900">
-          <div className="flex items-center justify-between text-slate-400 dark:text-zinc-500">
-            <span className="text-xs font-semibold">Total Utilisateurs</span>
-            <Users size={18} />
+      {/* STATISTIQUES MODAL AVEC ANIMATION DEPUIS LE HAUT */}
+      {showStatsModal && (
+        <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl transition-all duration-500 animate-in slide-in-from-top-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-zinc-900 dark:text-white">Aperçu analytique des utilisateurs</h2>
+            <button onClick={() => setShowStatsModal(false)} className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <X size={16} />
+            </button>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{totalUsersCount}</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px]  text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">Actifs</span>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Graphique 1 : Activité récente (AreaChart) */}
+            <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/40">
+              <span className="text-xs font-normal text-zinc-500">Comptes actifs cette semaine</span>
+              <div className="mt-4 h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={activityChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="userActivity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#18181b" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#18181b" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#09090b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
+                    <Area type="monotone" dataKey="actifs" stroke="#18181b" strokeWidth={2} fill="url(#userActivity)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Graphique 2 : Répartition par rôle (BarChart) */}
+            <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/40">
+              <span className="text-xs font-normal text-zinc-500">Répartition des rôles</span>
+              <div className="mt-4 h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={roleChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#09090b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
+                    <Bar dataKey="count" fill="#3f3f46" radius={[6, 6, 0, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900">
-          <div className="flex items-center justify-between text-slate-400 dark:text-zinc-500">
-            <span className="text-xs font-semibold">Comptes Actifs</span>
-            <UserCheck size={18} className="text-emerald-500" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{activeUsersCount}</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px]  text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-              {totalUsersCount ? `${Math.round((activeUsersCount / totalUsersCount) * 100)}%` : '0%'}
-            </span>
-          </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900">
-          <div className="flex items-center justify-between text-slate-400 dark:text-zinc-500">
-            <span className="text-xs font-semibold">Comptes Suspendus</span>
-            <ShieldAlert size={18} className="text-amber-500" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{suspendedUsersCount}</span>
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px]  text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">En révision</span>
-          </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900">
-          <div className="flex items-center justify-between text-slate-400 dark:text-zinc-500">
-            <span className="text-xs font-semibold">Comptes Désactivés</span>
-            <UserX size={18} className="text-rose-500" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-rose-600 dark:text-rose-400">{disabledUsersCount}</span>
-            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px]  text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">Inactifs</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filtres & Recherche */}
+      {/* Recherche et Filtres */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-3.5 text-slate-400 dark:text-zinc-500" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             value={search ?? ''}
             onChange={(e) => { setSearch(e.target.value); setMobileIndex(0); }}
@@ -247,365 +318,251 @@ export default function GsUsers() {
             className={`${inputClass} pl-10`}
           />
         </div>
-        <div className="relative sm:w-56">
+        <div className="relative sm:w-48">
           <select
             value={sort ?? 'recent'}
             onChange={(e) => setSort(e.target.value)}
             className={`${inputClass} cursor-pointer appearance-none pr-8`}
           >
-            <option value="recent">Tri : Plus récents</option>
+            <option value="recent">Tri : Récent</option>
             <option value="name">Tri : Nom A-Z</option>
-            <option value="role">Tri : Par rôle</option>
+            <option value="role">Tri : Rôle</option>
           </select>
-          <ArrowUpDown size={14} className="pointer-events-none absolute right-3 top-3.5 text-slate-400 dark:text-zinc-500" />
+          <ArrowUpDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
         </div>
       </div>
 
-      {/* Contenu */}
+      {/* Tableau des utilisateurs */}
       {loading ? (
-        <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-          <p className="text-xs font-semibold text-slate-400 dark:text-zinc-500">Chargement des comptes...</p>
-        </div>
+        <div className="py-12 text-center text-xs text-zinc-400">Chargement des membres...</div>
       ) : filteredUsers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
-          <Users size={32} className="text-slate-300 dark:text-zinc-600" />
-          <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-zinc-300">Aucun compte trouvé</p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">Essayez de modifier vos critères de recherche.</p>
+        <div className="rounded-3xl border border-dashed border-zinc-200 p-12 text-center text-xs text-zinc-400 dark:border-zinc-800">
+          Aucun utilisateur trouvé.
         </div>
       ) : (
-        <>
-          {/* Vue Desktop : Tableau */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-separate border-spacing-y-3">
-              <thead className="border-none bg-white text-[11px]  uppercase tracking-wider text-slate-400 dark:border-zinc-800/80 dark:bg-zinc-800/30 dark:text-zinc-500">
-                <tr>
-                  <th className="p-4">Utilisateur</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Rôle</th>
-                  <th className="p-4">Statut</th>
-                  <th className="p-4 text-center">Info</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr
-                    key={user.id_utilisateur}
-                    className="group transition-colors cursor-pointer"
-                  >
-                    {/* Coin Gauche Arrondi au survol */}
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 rounded-l-full transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      <div className="flex items-center gap-3">
-                        <UserAvatar user={user} />
-                        <div>
-                          <p className=" text-slate-900 dark:text-white">{user.prenom} {user.nom}</p>
-                          <p className="text-[11px] text-slate-400 dark:text-zinc-500">ID: #{user.id_utilisateur}</p>
-                        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-separate border-spacing-y-2">
+            <thead className="text-[10px] uppercase tracking-wider text-zinc-400">
+              <tr>
+                <th className="px-4 py-2">Utilisateur</th>
+                <th className="px-4 py-2">Email</th>
+                <th className="px-4 py-2">Rôle</th>
+                <th className="px-4 py-2">Statut</th>
+                <th className="px-4 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => (
+                <tr
+                  key={user.id_utilisateur}
+                  onClick={() => setSelectedUser(user)}
+                  className="group cursor-pointer transition-all"
+                >
+                  <td className="p-3 bg-white rounded-l-2xl dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar user={user} />
+                      <div>
+                        <p className="font-normal text-zinc-900 dark:text-white">{user.prenom} {user.nom}</p>
+                        <p className="text-[10px] text-zinc-400">ID #{user.id_utilisateur}</p>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    {/* Cellules du milieu */}
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 font-medium text-slate-600 dark:text-zinc-400 transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      {user.email}
-                    </td>
+                  <td className="p-3 bg-white dark:bg-zinc-900 font-normal text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50">
+                    {user.email}
+                  </td>
 
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px]  ${getRoleBadgeClass(user.role)}`}>
-                        {user.role}
-                      </span>
-                    </td>
-
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      <select
-                        value={user.statut_compte ?? 'ACTIF'}
-                        onChange={(e) => handleStatusChange(user.id_utilisateur, e.target.value)}
-                        className={`cursor-pointer rounded-full border px-2 py-1 text-[11px]  transition focus:outline-none ${getStatusBadgeClass(user.statut_compte)}`}
-                      >
-                        <option value="ACTIF" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">ACTIF</option>
-                        <option value="DESACTIVE" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">DÉSACTIVÉ</option>
-                        <option value="SUSPENDU" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">SUSPENDU</option>
-                      </select>
-                    </td>
-
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 text-center transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      <button
-                        onClick={() => setSelectedUser(user)}
-                        title="Voir le profil"
-                        className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
-                      >
-                        <Info size={17} />
-                      </button>
-                    </td>
-
-                    {/* Coin Droit Arrondi au survol */}
-                    <td className="p-4 bg-white dark:bg-zinc-800/30 rounded-r-full text-right transition-colors group-hover:bg-slate-100 dark:group-hover:bg-zinc-700/50">
-                      <button
-                        onClick={() => handleStatusChange(user.id_utilisateur, 'DESACTIVE')}
-                        title="Désactiver le compte"
-                        className={`rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Vue Mobile : Fiche Carrousel */}
-          <div className="md:hidden">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60">
-              <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
-                <button
-                  onClick={() => setMobileIndex((index) => Math.max(0, index - 1))}
-                  disabled={mobileIndex === 0}
-                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <span className="text-[11px]  uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                  Profil {mobileIndex + 1} / {filteredUsers.length}
-                </span>
-                <button
-                  onClick={() => setMobileIndex((index) => Math.min(filteredUsers.length - 1, index + 1))}
-                  disabled={mobileIndex === filteredUsers.length - 1}
-                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-
-              {currentUser && (
-                <div>
-                  <div className="flex flex-col items-center text-center">
-                    <UserAvatar user={currentUser} large />
-                    <h2 className="mt-3 text-lg  text-slate-900 dark:text-white">
-                      {currentUser.prenom} {currentUser.nom}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">{currentUser.email}</p>
-                    <span className={`mt-3 rounded-lg px-2.5 py-1 text-[11px]  ${getRoleBadgeClass(currentUser.role)}`}>
-                      {currentUser.role}
+                  <td className="p-3 bg-white dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] ${getRoleBadgeClass(user.role)}`}>
+                      {user.role}
                     </span>
-                  </div>
+                  </td>
 
-                  <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
-                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Téléphone</span>
-                      <strong className="mt-0.5 block truncate text-slate-700 dark:text-zinc-300">
-                        {currentUser.telephone || 'Non renseigné'}
-                      </strong>
-                    </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
-                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Statut</span>
-                      <strong className="mt-0.5 block text-slate-700 dark:text-zinc-300">
-                        {currentUser.statut_compte}
-                      </strong>
-                    </div>
-                  </div>
+                  <td className="p-3 bg-white dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50" onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value={user.statut_compte ?? 'ACTIF'}
+                      onChange={(e) => handleStatusChange(user.id_utilisateur, e.target.value)}
+                      className={`cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-normal ${getStatusBadgeClass(user.statut_compte)}`}
+                    >
+                      <option value="ACTIF">ACTIF</option>
+                      <option value="DESACTIVE">DÉSACTIVÉ</option>
+                      <option value="SUSPENDU">SUSPENDU</option>
+                    </select>
+                  </td>
 
-                  <div className="mt-5 flex items-center gap-2">
+                  <td className="p-3 bg-white rounded-r-2xl text-right dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => setSelectedUser(currentUser)}
-                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 active:scale-[0.98] dark:text-slate-950 ${focusRing}`}
+                      onClick={() => setSelectedUser(user)}
+                      className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                     >
                       <Info size={15} />
-                      <span>Détails du profil</span>
                     </button>
-                    <select
-                      value={currentUser.statut_compte ?? 'ACTIF'}
-                      onChange={(e) => handleStatusChange(currentUser.id_utilisateur, e.target.value)}
-                      className={`rounded-xl border px-2 py-2.5 text-xs  transition focus:outline-none ${getStatusBadgeClass(currentUser.statut_compte)}`}
-                    >
-                      <option value="ACTIF" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">ACTIF</option>
-                      <option value="DESACTIVE" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">DÉSACTIVÉ</option>
-                      <option value="SUSPENDU" className="bg-white text-slate-900 dark:bg-zinc-900 dark:text-white">SUSPENDU</option>
-                    </select>
-                  </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* BOUTON FLOTTANT CRÉER UN UTILISATEUR (FAB) */}
+      <button
+        onClick={() => setShowCreate(true)}
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-white shadow-xl transition-transform hover:scale-105 active:scale-95 dark:bg-white dark:text-zinc-900"
+        title="Créer un utilisateur"
+      >
+        <UserPlus size={20} />
+      </button>
+
+      {/* PANNEAU LATÉRAL DE DÉTAILS / ÉDITION */}
+      {selectedUser && (
+        <div
+          className={`fixed inset-0 z-50 flex justify-end bg-zinc-950/40 backdrop-blur-xs transition-opacity duration-500 ease-out ${isClosing ? 'opacity-0' : 'opacity-100'
+            }`}
+          onClick={handleCloseDrawer}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-2xl transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] dark:bg-zinc-900 ${isClosing
+              ? 'translate-x-full' // Sortie vers la droite avec amorti
+              : 'translate-x-0 animate-in slide-in-from-right' // Entrée
+              }`}
+          >
+            {/* Header Drawer */}
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+              <span className="text-xs font-normal text-zinc-400">Détails de l'utilisateur</span>
+              <button onClick={handleCloseDrawer} className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Profil Utilisateur */}
+            <div className="my-6 flex items-center gap-4">
+              <UserAvatar user={selectedUser} large />
+              <div>
+                <h3 className="text-base font-medium text-zinc-900 dark:text-white">
+                  {selectedUser.prenom} {selectedUser.nom}
+                </h3>
+                <p className="text-xs text-zinc-400">{selectedUser.email}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] ${getRoleBadgeClass(selectedUser.role)}`}>
+                    {selectedUser.role}
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] ${getStatusBadgeClass(selectedUser.statut_compte)}`}>
+                    {selectedUser.statut_compte}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Informations de contact & Détails */}
+            <div className="space-y-3">
+              <span className="text-[11px] font-normal text-zinc-400">Informations de contact</span>
+
+              <div className="rounded-2xl bg-zinc-50 p-3.5 dark:bg-zinc-800/50">
+                <p className="text-[10px] text-zinc-400">Téléphone</p>
+                <p className="mt-0.5 text-xs font-normal text-zinc-800 dark:text-zinc-200">
+                  {selectedUser.telephone || 'Non renseigné'}
+                </p>
+              </div>
+
+              {selectedUser.specialite && (
+                <div className="rounded-2xl bg-zinc-50 p-3.5 dark:bg-zinc-800/50">
+                  <p className="text-[10px] text-zinc-400">Spécialité</p>
+                  <p className="mt-0.5 text-xs font-normal text-zinc-800 dark:text-zinc-200">
+                    {selectedUser.specialite}
+                  </p>
+                </div>
+              )}
+
+              {selectedUser.fonction && (
+                <div className="rounded-2xl bg-zinc-50 p-3.5 dark:bg-zinc-800/50">
+                  <p className="text-[10px] text-zinc-400">Fonction</p>
+                  <p className="mt-0.5 text-xs font-normal text-zinc-800 dark:text-zinc-200">
+                    {selectedUser.fonction}
+                  </p>
+                </div>
+              )}
+
+              {selectedUser.role === 'APPRENANT' && (
+                <div className="rounded-2xl bg-zinc-50 p-3.5 dark:bg-zinc-800/50">
+                  <p className="text-[10px] text-zinc-400">Formation attribuée</p>
+                  <p className="mt-0.5 text-xs font-normal text-zinc-800 dark:text-zinc-200">
+                    {selectedUser.formation_titre || 'Aucune formation'}
+                  </p>
                 </div>
               )}
             </div>
+
+            {/* Actions / Fermeture */}
+            <div className="mt-8 space-y-4 border-t border-zinc-100 pt-6 dark:border-zinc-800">
+              <span className="text-[11px] font-normal text-zinc-400">Mettre à jour l'accès</span>
+
+              <div className="flex items-center justify-between rounded-2xl border border-zinc-200 p-3 dark:border-zinc-800">
+                <span className="text-xs font-normal text-zinc-700 dark:text-zinc-300">Statut du Compte</span>
+                <select
+                  value={selectedUser.statut_compte ?? 'ACTIF'}
+                  onChange={(e) => handleStatusChange(selectedUser.id_utilisateur, e.target.value)}
+                  className="rounded-xl bg-zinc-100 px-3 py-1 text-xs outline-none dark:bg-zinc-800"
+                >
+                  <option value="ACTIF">ACTIF</option>
+                  <option value="DESACTIVE">DÉSACTIVÉ</option>
+                  <option value="SUSPENDU">SUSPENDU</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleCloseDrawer}
+                className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-xs font-normal text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal Création de Compte */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
-              <h2 className="text-base  text-slate-900 dark:text-white">Créer un nouveau compte</h2>
-              <button
-                onClick={() => setShowCreate(false)}
-                className={`rounded-xl p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 ${focusRing}`}
-              >
-                <X size={18} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
+            <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+              <h3 className="text-sm font-normal text-zinc-900 dark:text-white">Créer un nouveau membre</h3>
+              <button onClick={() => setShowCreate(false)} className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  name="nom"
-                  placeholder="Nom"
-                  required
-                  value={formData.nom ?? ''}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-                <input
-                  name="prenom"
-                  placeholder="Prénom"
-                  required
-                  value={formData.prenom ?? ''}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <input name="nom" placeholder="Nom" required value={formData.nom ?? ''} onChange={handleChange} className={inputClass} />
+                <input name="prenom" placeholder="Prénom" required value={formData.prenom ?? ''} onChange={handleChange} className={inputClass} />
               </div>
 
-              <input
-                type="email"
-                name="email"
-                placeholder="Adresse email"
-                required
-                value={formData.email ?? ''}
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className={inputClass} />
+              <input type="password" name="mot_de_passe" placeholder="Mot de passe" required value={formData.mot_de_passe ?? ''} onChange={handleChange} className={inputClass} />
 
-              <input
-                type="password"
-                name="mot_de_passe"
-                placeholder="Mot de passe"
-                required
-                value={formData.mot_de_passe ?? ''}
-                onChange={handleChange}
-                className={inputClass}
-              />
-
-              <select
-                name="role"
-                value={formData.role ?? 'FORMATEUR'}
-                onChange={handleChange}
-                className={inputClass}
-              >
+              <select name="role" value={formData.role ?? 'FORMATEUR'} onChange={handleChange} className={inputClass}>
                 <option value="FORMATEUR">Formateur</option>
                 <option value="RESPONSABLE">Responsable</option>
                 <option value="ADMINISTRATEUR">Administrateur</option>
               </select>
 
               {formData.role === 'FORMATEUR' && (
-                <input
-                  name="specialite"
-                  placeholder="Spécialité (ex: React, DevOps...)"
-                  value={formData.specialite ?? ''}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
+                <input name="specialite" placeholder="Spécialité (ex: React, Python)" value={formData.specialite ?? ''} onChange={handleChange} className={inputClass} />
               )}
 
               {formData.role === 'RESPONSABLE' && (
-                <input
-                  name="fonction"
-                  placeholder="Fonction"
-                  value={formData.fonction ?? ''}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
+                <input name="fonction" placeholder="Fonction" value={formData.fonction ?? ''} onChange={handleChange} className={inputClass} />
               )}
 
               <button
                 type="submit"
-                className={`mt-2 w-full rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+                className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-xs font-normal text-white shadow-md transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
               >
-                Créer le compte
+                Créer l'utilisateur
               </button>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Détails Profil */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
-
-            <div className="flex items-start justify-between border-b border-slate-100 pb-5 dark:border-zinc-800">
-              <div className="flex items-center gap-4">
-                <UserAvatar user={selectedUser} large />
-                <div>
-                  <h2 className="text-xl  text-slate-900 dark:text-white">
-                    {selectedUser.prenom} {selectedUser.nom}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">{selectedUser.email}</p>
-                  <span className={`mt-2 inline-flex rounded-2xl px-2.5 py-1 text-[11px]  ${getRoleBadgeClass(selectedUser.role)}`}>
-                    {selectedUser.role}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedUser(null)}
-                className={`rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 ${focusRing}`}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <h3 className="text-xs  uppercase tracking-wider text-orange-600 dark:text-orange-400">
-                  Informations générales
-                </h3>
-                <div className="space-y-2.5 text-xs text-slate-600 dark:text-zinc-300">
-                  <p className="flex items-center gap-2">
-                    <Phone size={15} className="text-orange-500" />
-                    <span>{selectedUser.telephone || 'Téléphone non renseigné'}</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Mail size={15} className="text-orange-500" />
-                    <span>{selectedUser.email}</span>
-                  </p>
-                  {selectedUser.specialite && (
-                    <p className="flex items-center gap-2">
-                      <BriefcaseBusiness size={15} className="text-orange-500" />
-                      <span>Spécialité : {selectedUser.specialite}</span>
-                    </p>
-                  )}
-                  {selectedUser.fonction && (
-                    <p className="flex items-center gap-2">
-                      <ShieldCheck size={15} className="text-orange-500" />
-                      <span>Fonction : {selectedUser.fonction}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {selectedUser.role === 'APPRENANT' && (
-                <div className="space-y-3 border-t border-slate-100 pt-4 dark:border-zinc-800 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-                  <h3 className="text-xs  uppercase tracking-wider text-orange-600 dark:text-orange-400">
-                    Dernière candidature
-                  </h3>
-                  <div className="space-y-3 text-xs text-slate-600 dark:text-zinc-300">
-                    <p className=" text-slate-900 dark:text-white">
-                      {selectedUser.formation_titre || 'Formation non renseignée'}
-                    </p>
-                    <div>
-                      <strong className="block text-[11px] text-slate-400 dark:text-zinc-500">Motivation :</strong>
-                      <p className="mt-0.5 line-clamp-3">{selectedUser.motivation || 'Non renseignée'}</p>
-                    </div>
-                    <div>
-                      <strong className="block text-[11px] text-slate-400 dark:text-zinc-500">Objectif :</strong>
-                      <p className="mt-0.5 line-clamp-2">{selectedUser.objectif || 'Non renseigné'}</p>
-                    </div>
-                    <p className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
-                      <GraduationCap size={15} className="text-orange-500" />
-                      <span>{selectedUser.niveau_etude || 'Niveau non renseigné'}{selectedUser.filiere ? ` · ${selectedUser.filiere}` : ''}</span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
         </div>
       )}

@@ -9,7 +9,7 @@ import {
   TrendingUp, 
   GraduationCap, 
   CheckCircle2, 
-  BarChart3,
+  BookOpen,
   PieChart as PieChartIcon
 } from 'lucide-react';
 import {
@@ -25,20 +25,18 @@ import {
   PieChart,
   Pie,
   Cell,
-  RadialBarChart,
-  RadialBar,
   Legend
 } from 'recharts';
 import API from '../../services/api';
 
-const COLOR_PALETTE = [
+const ORANGE_PALETTE = [
   '#f97316', // Orange principal ODC
-  '#3b82f6', // Bleu
-  '#10b981', // Émeraude
-  '#f59e0b', // Ambre
-  '#8b5cf6', // Violet
-  '#ec4899', // Rose
-  '#14b8a6', // Teal
+  '#fb923c', // Orange clair
+  '#ea580c', // Orange foncé
+  '#c2410c', // Orange très foncé
+  '#fdba74', // Orange doux
+  '#71717a', // Zinc neutre
+  '#27272a', // Zinc sombre
 ];
 
 const monthName = (month) =>
@@ -46,17 +44,17 @@ const monthName = (month) =>
 
 const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
-// Tooltip sur-mesure stylé dark/light
+// Tooltip sur-mesure stylé Noir / Blanc / Orange
 const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95">
-        {label && <p className="mb-1 text-xs font-bold text-slate-700 dark:text-zinc-300">{label}</p>}
+      <div className="rounded-2xl border border-slate-200 bg-white/95 p-3.5 shadow-xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95">
+        {label && <p className="mb-1.5 text-xs font-bold text-slate-900 dark:text-white">{label}</p>}
         {payload.map((entry, index) => (
           <div key={`item-${index}`} className="flex items-center gap-2 text-xs font-semibold">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
             <span className="text-slate-500 dark:text-zinc-400">{entry.name}:</span>
-            <span className="text-slate-900 dark:text-white">
+            <span className="font-extrabold text-orange-600 dark:text-orange-400">
               {entry.value} {suffix}
             </span>
           </div>
@@ -67,35 +65,35 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
   return null;
 };
 
-function StatCard({ label, value, detail, icon: Icon, colorClass, bgClass }) {
+function StatCard({ label, value, detail, icon: Icon }) {
   return (
-    <article className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_12px_32px_-8px_rgba(249,115,22,0.12)] dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-orange-500/30">
+    <article className="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">{label}</p>
-          <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white">
+          <p className="text-xs font-bold text-slate-400">{label}</p>
+          <p className="mt-2 text-2xl font-black text-slate-900 tabular-nums dark:text-white">
             {value ?? 0}
           </p>
         </div>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bgClass}`}>
-          <Icon size={20} className={colorClass} />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+          <Icon size={18} />
         </div>
       </div>
-      <p className="mt-3 text-xs font-medium text-slate-400 dark:text-zinc-500">{detail}</p>
+      <p className="mt-3 text-[11px] font-semibold text-slate-500 dark:text-zinc-400">{detail}</p>
     </article>
   );
 }
 
 function ChartPanel({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all dark:border-zinc-800 dark:bg-zinc-900/60">
+    <section className="flex flex-col rounded-3xl bg-white p-6 shadow-sm transition-all dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
-            {Icon && <Icon size={18} className="text-orange-500" />}
+          <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+            {Icon && <Icon size={16} className="text-orange-500" />}
             {title}
           </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{subtitle}</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">{subtitle}</p>
         </div>
       </div>
       <div className="flex-1">{children}</div>
@@ -163,27 +161,23 @@ export default function AdminStats() {
       .filter((item) => Number(item.tentatives) > 0)
       .map((item, idx) => ({
         ...item,
-        fill: COLOR_PALETTE[idx % COLOR_PALETTE.length],
+        fill: ORANGE_PALETTE[idx % ORANGE_PALETTE.length],
       })),
     [statistics]
   );
 
   return (
-    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100">
+    <div className="space-y-8 p-2 sm:p-4 font-sans text-slate-800 dark:text-zinc-100 transition-colors duration-300">
       
       {/* En-tête principal */}
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
-            <Sparkles size={14} />
-            <span>Panneau Administration</span>
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+            <Sparkles size={13} /> Panneau Administration
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Vue statistique
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            Vue statistique globale
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400">
-            Aperçu global de l'activité des formations, des candidatures et du taux de réussite.
-          </p>
         </div>
 
         <button
@@ -192,9 +186,9 @@ export default function AdminStats() {
           disabled={loading}
           aria-label="Actualiser les statistiques"
           title="Actualiser"
-          className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 active:scale-[0.98] disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-orange-500 dark:hover:text-orange-400 ${focusRing}`}
+          className={`inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 ${focusRing}`}
         >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={15} className={loading ? 'animate-spin text-orange-500' : 'text-orange-500'} />
           <span>Actualiser</span>
         </button>
       </header>
@@ -203,7 +197,7 @@ export default function AdminStats() {
       {error && (
         <div
           role="alert"
-          className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+          className="rounded-2xl bg-red-50 p-4 text-xs font-bold text-red-600 dark:bg-red-500/10 dark:text-red-400"
         >
           {error}
         </div>
@@ -214,12 +208,12 @@ export default function AdminStats() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
+              <div key={i} className="h-28 animate-pulse rounded-3xl bg-slate-200/60 dark:bg-zinc-800/50" />
             ))}
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="h-80 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
-            <div className="h-80 animate-pulse rounded-2xl bg-slate-200/60 dark:bg-zinc-800/50" />
+            <div className="h-80 animate-pulse rounded-3xl bg-slate-200/60 dark:bg-zinc-800/50" />
+            <div className="h-80 animate-pulse rounded-3xl bg-slate-200/60 dark:bg-zinc-800/50" />
           </div>
         </div>
       ) : statistics && (
@@ -231,69 +225,61 @@ export default function AdminStats() {
               value={overview.utilisateurs}
               detail={`${overview.apprenants || 0} apprenants inscrits`}
               icon={Users}
-              colorClass="text-orange-600 dark:text-orange-400"
-              bgClass="bg-orange-50 dark:bg-orange-500/10"
             />
             <StatCard
               label="Formateurs & Staff"
               value={overview.formateurs}
               detail={`${overview.responsables || 0} responsables ODC`}
               icon={GraduationCap}
-              colorClass="text-blue-600 dark:text-blue-400"
-              bgClass="bg-blue-50 dark:bg-blue-500/10"
             />
             <StatCard
               label="Total Candidatures"
               value={applicationData.reduce((sum, item) => sum + Number(item.candidatures), 0)}
               detail={`${overview.administrateurs || 0} administrateurs`}
               icon={Award}
-              colorClass="text-emerald-600 dark:text-emerald-400"
-              bgClass="bg-emerald-50 dark:bg-emerald-500/10"
             />
             <StatCard
               label="Avis Formations"
               value={totalReviews}
               detail={
                 weightedRating === null
-                  ? 'Aucune note pour le moment'
-                  : `Moyenne globale : ${weightedRating.toFixed(1)} / 5`
+                  ? 'Aucune note disponible'
+                  : `Moyenne : ${weightedRating.toFixed(1)} / 5 ★`
               }
               icon={Star}
-              colorClass="text-amber-500"
-              bgClass="bg-amber-50 dark:bg-amber-500/10"
             />
           </section>
 
-          {/* Grille de Graphiques Stylés */}
+          {/* Grille de Graphiques Stylés (Même style Recharts animé du Dashboard) */}
           <div className="grid gap-6 lg:grid-cols-2">
             
-            {/* 1. AreaChart : Formations créées */}
+            {/* 1. AreaChart : Formations créées (Identique au Dashboard) */}
             <ChartPanel
               title="Formations créées"
               subtitle="Évolution chronologique sur les 12 derniers mois"
               icon={TrendingUp}
             >
-              <div className="h-72 w-full pt-2">
+              <div className="h-64 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                     <defs>
-                      <linearGradient id="colorOrange" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="colorOrangeStats" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#f97316" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
                     <XAxis
                       dataKey="libelle"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11, fill: '#888' }}
+                      tick={{ fontSize: 10, fill: '#94a3b8' }}
                     />
                     <YAxis
                       allowDecimals={false}
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11, fill: '#888' }}
+                      tick={{ fontSize: 10, fill: '#94a3b8' }}
                     />
                     <Tooltip content={<CustomTooltip suffix="formation(s)" />} />
                     <Area
@@ -303,7 +289,9 @@ export default function AdminStats() {
                       stroke="#f97316"
                       strokeWidth={3}
                       fillOpacity={1}
-                      fill="url(#colorOrange)"
+                      fill="url(#colorOrangeStats)"
+                      isAnimationActive={true}
+                      animationDuration={1500}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -317,11 +305,11 @@ export default function AdminStats() {
               icon={PieChartIcon}
             >
               {applicationData.length === 0 ? (
-                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                <div className="flex h-64 items-center justify-center text-xs text-slate-400">
                   Aucune donnée disponible.
                 </div>
               ) : (
-                <div className="h-72 w-full">
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -330,15 +318,16 @@ export default function AdminStats() {
                         nameKey="titre"
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={95}
+                        innerRadius={55}
+                        outerRadius={85}
                         paddingAngle={4}
                         cornerRadius={6}
+                        isAnimationActive={true}
                       >
                         {applicationData.map((_, index) => (
                           <Cell
                             key={`cell-${index}`}
-                            fill={COLOR_PALETTE[index % COLOR_PALETTE.length]}
+                            fill={ORANGE_PALETTE[index % ORANGE_PALETTE.length]}
                             stroke="transparent"
                           />
                         ))}
@@ -350,7 +339,7 @@ export default function AdminStats() {
                         align="center"
                         iconType="circle"
                         formatter={(value) => (
-                          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-400">
+                          <span className="text-[10px] font-semibold text-slate-600 dark:text-zinc-400">
                             {value.length > 18 ? `${value.substring(0, 18)}…` : value}
                           </span>
                         )}
@@ -368,19 +357,19 @@ export default function AdminStats() {
               icon={CheckCircle2}
             >
               {successData.length === 0 ? (
-                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                <div className="flex h-64 items-center justify-center text-xs text-slate-400">
                   Aucune évaluation terminée.
                 </div>
               ) : (
-                <div className="h-72 w-full pt-2">
+                <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
                       <XAxis
                         dataKey="titre"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: '#888' }}
+                        tick={{ fontSize: 10, fill: '#94a3b8' }}
                         interval={0}
                         tickFormatter={(v) => (v.length > 12 ? `${v.substring(0, 10)}...` : v)}
                       />
@@ -389,13 +378,16 @@ export default function AdminStats() {
                         tickFormatter={(v) => `${v}%`}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11, fill: '#888' }}
+                        tick={{ fontSize: 10, fill: '#94a3b8' }}
                       />
                       <Tooltip content={<CustomTooltip suffix="%" />} />
                       <Bar
                         dataKey="taux_reussite"
                         name="Taux de réussite"
-                        radius={[8, 8, 0, 0]}
+                        radius={[6, 6, 0, 0]}
+                        barSize={24}
+                        isAnimationActive={true}
+                        animationDuration={1500}
                       >
                         {successData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -414,40 +406,42 @@ export default function AdminStats() {
               icon={Star}
             >
               {averageRating.length === 0 ? (
-                <div className="flex h-72 items-center justify-center text-xs text-slate-400 dark:text-zinc-500">
+                <div className="flex h-64 items-center justify-center text-xs text-slate-400">
                   Aucun avis publié pour le moment.
                 </div>
               ) : (
-                <div className="h-72 w-full pt-2">
+                <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       layout="vertical"
                       data={averageRating}
                       margin={{ top: 5, right: 20, bottom: 5, left: 30 }}
                     >
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
                       <XAxis
                         type="number"
                         domain={[0, 5]}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11, fill: '#888' }}
+                        tick={{ fontSize: 10, fill: '#94a3b8' }}
                       />
                       <YAxis
                         dataKey="titre"
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11, fill: '#888' }}
+                        tick={{ fontSize: 10, fill: '#94a3b8' }}
                         tickFormatter={(v) => (v.length > 14 ? `${v.substring(0, 12)}…` : v)}
                       />
                       <Tooltip content={<CustomTooltip suffix="/ 5" />} />
                       <Bar
                         dataKey="note_moyenne"
                         name="Note moyenne"
-                        fill="#f59e0b"
-                        radius={[0, 8, 8, 0]}
+                        fill="#f97316"
+                        radius={[0, 6, 6, 0]}
                         barSize={18}
+                        isAnimationActive={true}
+                        animationDuration={1500}
                       />
                     </BarChart>
                   </ResponsiveContainer>
