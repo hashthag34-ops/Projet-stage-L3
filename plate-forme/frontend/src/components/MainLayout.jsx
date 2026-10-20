@@ -1,61 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { getAuthUser, logout as logoutService } from '../services/authService';
-import { 
-  BookOpen, 
-  FileText, 
-  Calendar, 
-  QrCode, 
-  MessageSquare, 
-  User, 
-  LogOut, 
-  Sun,
-  Moon,
-  Users,
-  LayoutDashboard,
-  GraduationCap,
-  ClipboardCheck,
-  Activity,
-  Bell,
-  Search,
-  Settings
-} from 'lucide-react';
 import sitelogo from '../assets/logo.png';
 
 const API_AVATARS = import.meta.env.VITE_URL;
 
 const NAV_CONFIG = {
   visiteur: [
-    { path: '/catalogue', label: 'Catalogue', icon: BookOpen },
+    { path: '/catalogue', label: 'Catalogue', icon: 'bi-book' },
   ],
   apprenant: [
-    { path: '/apprenant/catalogue', label: 'Catalogue', icon: BookOpen },
-    { path: '/apprenant/planning', label: 'Mon Planning', icon: Calendar },
-    { path: '/apprenant/evaluations', label: 'Évaluations', icon: ClipboardCheck },
-    { path: '/apprenant/forum', label: 'Forum', icon: MessageSquare },
+    { path: '/apprenant/catalogue', label: 'Catalogue', icon: 'bi-book' },
+    { path: '/apprenant/planning', label: 'Planning', icon: 'bi-calendar-event' },
+    { path: '/apprenant/evaluations', label: 'Évaluations', icon: 'bi-clipboard-check' },
+    { path: '/apprenant/forum', label: 'Forum', icon: 'bi-chat-square-text' },
   ],
   admin: [
-    { path: '/Admin/dashboard', label: 'Statistiques', icon: Activity },
-    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
+    { path: '/Admin/dashboard', label: 'Stats', icon: 'bi-activity' },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
   ],
   administrateur: [
-    { path: '/Admin/dashboard', label: 'Statistiques', icon: Activity },
-    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
+    { path: '/Admin/dashboard', label: 'Stats', icon: 'bi-activity' },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
   ],
   responsable: [
-    { path: '/Responsable/GsFormation', label: 'Formations', icon: BookOpen },
-    { path: '/Responsable/Candidature', label: 'Candidatures', icon: FileText },
-    { path: '/Responsable/Planning', label: 'Planning', icon: Calendar },
-    { path: '/Responsable/Scan', label: 'Scan Presence', icon: QrCode },
-    { path: '/Responsable/Catalogue', label: 'Catalogue', icon: MessageSquare },
+    { path: '/Responsable/GsFormation', label: 'Formations', icon: 'bi-book' },
+    { path: '/Responsable/Candidature', label: 'Candidatures', icon: 'bi-file-text' },
+    { path: '/Responsable/Planning', label: 'Planning', icon: 'bi-calendar-event' },
+    { path: '/Responsable/Scan', label: 'Scan', icon: 'bi-qr-code' },
+    { path: '/Responsable/Catalogue', label: 'Catalogue', icon: 'bi-chat-square-text' },
   ],
   formateur: [
-    { path: '/Formateur', label: 'Tableau de bord', icon: LayoutDashboard },
-    { path: '/Formateur/Planning', label: 'Planning', icon: Calendar },
-    { path: '/Formateur/Apprenants', label: 'Apprenants', icon: GraduationCap },
-    { path: '/Formateur/Evaluations', label: 'Évaluations', icon: ClipboardCheck },
-    { path: '/Formateur/Forum', label: 'Forum', icon: MessageSquare },
-    { path: '/Formateur/Catalogue', label: 'Catalogue', icon: BookOpen },
+    { path: '/Formateur', label: 'Dashboard', icon: 'bi-speedometer2' },
+    { path: '/Formateur/Planning', label: 'Planning', icon: 'bi-calendar-event' },
+    { path: '/Formateur/Apprenants', label: 'Apprenants', icon: 'bi-mortarboard' },
+    { path: '/Formateur/Evaluations', label: 'Évaluations', icon: 'bi-clipboard-check' },
+    { path: '/Formateur/Forum', label: 'Forum', icon: 'bi-chat-square-text' },
   ]
 };
 
@@ -74,12 +54,17 @@ export default function MainLayout() {
   const [user, setUser] = useState(() => getAuthUser());
   const isAuthenticated = !!user;
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  // État PC pour dérouler/fermer la sidebar
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Menu déroulant de profil (PC et Mobile)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   useEffect(() => {
     setUser(getAuthUser());
-    setIsDropdownOpen(false);
+    setIsProfileMenuOpen(false);
   }, [location]);
 
   // Mode Sombre / Clair
@@ -104,8 +89,11 @@ export default function MainLayout() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+      if (
+        profileMenuRef.current && !profileMenuRef.current.contains(event.target) &&
+        mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)
+      ) {
+        setIsProfileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -124,152 +112,212 @@ export default function MainLayout() {
   const initials = user ? `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase() : '';
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f0f2f5] p-4 font-sans text-slate-800 transition-colors duration-300 dark:bg-[#0b0c10] dark:text-zinc-100">
+    <div className="flex h-screen w-full overflow-hidden bg-[#f0f2f5] p-3 font-sans text-slate-800 transition-colors duration-300 dark:bg-[#0b0c10] dark:text-zinc-100">
       
-      {/* SECTEUR GAUCHE : Affiché UNIQUEMENT si l'utilisateur est connecté */}
+      {/* ========================================================= */}
+      {/* SIDEBAR DESKTOP (PC)                                      */}
+      {/* ========================================================= */}
       {isAuthenticated && (
-        <aside className="flex flex-col items-center gap-6 mr-4 shrink-0">
-          
-          {/* LOGO EN HAUT À GAUCHE */}
-          <Link 
-            to="/" 
-            className="flex h-12 w-12 items-center justify-center"
-          >
-            <img src={sitelogo} alt="Logo" className="h-7 w-7 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-          </Link>
+        <aside className={`hidden md:flex relative flex-col justify-between transition-all duration-300 py-6 px-3 my-1 rounded-[2.5rem] shadow-xl z-50 
+          bg-white text-slate-800 border border-slate-200/60
+          dark:bg-slate-950 dark:text-white dark:border-none
+          ${isExpanded ? 'w-64' : 'w-20'}`}
+        >
+          {/* SECTION HAUTE : Logo cliquable */}
+          <div className="flex flex-col gap-6">
+            <button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-3 w-full focus:outline-none px-1"
+              title="Dérouler / Fermer le menu"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-800 dark:bg-white/10 dark:text-white shadow-inner transition-colors">
+                <img src={sitelogo} alt="Logo" className="h-6 w-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+              </div>
+              {isExpanded && (
+                <span className="font-bold text-lg tracking-wide truncate capitalize text-slate-900 dark:text-zinc-100">
+                  {user?.role || 'Admin'}
+                </span>
+              )}
+            </button>
 
-          {/* SIDEBAR GAUCHE */}
-          <div className="flex flex-1 flex-col items-center justify-between rounded-full bg-white/80 py-3 px-2 shadow-sm backdrop-blur-md dark:bg-zinc-900/80">
-            
-            {/* Liens de navigation avec Tooltip au survol */}
-            <nav className="flex flex-col items-center gap-3">
+            {/* LIENS DE NAVIGATION PC */}
+            <nav className="flex flex-col gap-2 mt-4">
               {navLinks.map((link) => {
-                const Icon = link.icon;
                 const isActive = location.pathname === link.path;
                 return (
-                  <div key={link.path} className="group relative flex items-center">
-                    <Link
-                      to={link.path}
-                      className={`flex h-10 w-10 items-center justify-center rounded-bl-full rounded-tl-full rounded-tr-full transition-all duration-200 ${
-                        isActive
-                          ? 'bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900'
-                          : 'text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      <Icon size={18} className={isActive ? 'text-orange-500' : ''} />
-                    </Link>
-
-                    {/* Nom affiché uniquement au survol (Tooltip) */}
-                    <span className="pointer-events-none absolute left-14 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-zinc-100 dark:text-slate-900">
-                      {link.label}
-                    </span>
-                  </div>
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`flex items-center gap-4 px-3.5 py-3 rounded-2xl transition-all duration-200 ${
+                      isActive 
+                        ? 'bg-slate-900 text-white font-semibold shadow-md dark:bg-white dark:text-slate-900' 
+                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
+                    }`}
+                  >
+                    <i className={`${link.icon} text-xl shrink-0 ${isActive ? 'text-orange-500' : ''}`}></i>
+                    {isExpanded && <span className="text-sm truncate font-medium">{link.label}</span>}
+                  </Link>
                 );
               })}
             </nav>
+          </div>
 
-            {/* Icone Paramètres en bas */}
-            <div className="group relative flex items-center">
-              <Link
-                to="/profil"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                <Settings size={18} />
-              </Link>
-              <span className="pointer-events-none absolute left-14 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-zinc-100 dark:text-slate-900">
-                Paramètres
-              </span>
-            </div>
+          {/* SECTION BASSE : Photo de profil & Pop-up Menu PC */}
+          <div className="relative" ref={profileMenuRef}>
+            {isProfileMenuOpen && (
+              <div className="absolute bottom-16 left-0 w-60 rounded-2xl bg-white p-2 text-slate-800 shadow-2xl dark:bg-zinc-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 animate-fadeIn z-50">
+                <div className="px-3 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                  <p className="text-xs font-bold truncate">{user?.prenom} {user?.nom}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                </div>
 
+                <Link 
+                  to="/profil" 
+                  className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                >
+                  <i className="bi bi-person text-base"></i> Mon Profil
+                </Link>
+
+                <button 
+                  onClick={toggleDarkMode} 
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                >
+                  <span className="flex items-center gap-3">
+                    <i className={`bi ${darkMode ? 'bi-moon text-orange-400' : 'bi-sun text-amber-500'} text-base`}></i> 
+                    Mode {darkMode ? 'Sombre' : 'Clair'}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-200 text-slate-700'}`}>
+                    {darkMode ? 'Dark' : 'Light'}
+                  </span>
+                </button>
+
+                <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
+
+                <button 
+                  onClick={handleLogout} 
+                  className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+                >
+                  <i className="bi bi-box-arrow-right text-base"></i> Déconnexion
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="flex items-center gap-3 w-full p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 transition focus:outline-none"
+            >
+              {getAvatarSrc(user) ? (
+                <img src={getAvatarSrc(user)} alt="Profil" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-orange-500/50" />
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white text-xs font-bold">
+                  {initials || <i className="bi bi-person"></i>}
+                </div>
+              )}
+              {isExpanded && (
+                <div className="flex flex-col text-left truncate">
+                  <span className="text-xs font-bold truncate text-slate-900 dark:text-white">{user?.prenom} {user?.nom}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 capitalize truncate">{user?.role}</span>
+                </div>
+              )}
+            </button>
           </div>
         </aside>
       )}
 
-      {/* ZONE PRINCIPALE DU CONTENU */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        
-        {/* BARRE SUPÉRIEURE (Top Bar - Sans Background) */}
-        <header className="flex h-14 shrink-0 items-center justify-between px-2">
-          
-          <div className="flex items-center gap-3">
-            {/* Si déconnecté, afficher le logo dans le header pour garder l'identité visuelle */}
-            {!isAuthenticated && (
-              <Link to="/" className="flex items-center gap-2 mr-2">
-                <img src={sitelogo} alt="Logo" className="h-7 w-7 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-              </Link>
-            )}
-
-            {/* Recherche globale */}
-            <div className="relative w-64 sm:w-80">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search users, queries, content..."
-                className="w-full rounded-full bg-white/70 py-2 pl-9 pr-4 text-xs font-medium text-slate-800 outline-none backdrop-blur-sm transition focus:bg-white focus:ring-1 focus:ring-orange-500 dark:bg-zinc-900/70 dark:text-zinc-200 dark:focus:bg-zinc-900"
-              />
-            </div>
-          </div>
-
-          {/* Actions Droite (Dark mode, Notifs, Profil) */}
-          <div className="flex items-center gap-3">
-            
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition hover:bg-slate-100 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              {darkMode ? <Moon size={15} className="text-orange-400" /> : <Sun size={15} className="text-amber-500" />}
-            </button>
-
-            {/* Notifications */}
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm hover:bg-slate-100 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
-              <Bell size={15} />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-orange-500"></span>
-            </button>
-
-            {/* Menu Utilisateur */}
-            {isAuthenticated ? (
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 rounded-full bg-white p-1.5 shadow-sm hover:opacity-90 dark:bg-zinc-900"
-                >
-                  {getAvatarSrc(user) ? (
-                    <img src={getAvatarSrc(user)} alt="Profil" className="h-7 w-7 rounded-full object-cover ring-2 ring-orange-500/30" />
-                  ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-xs text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
-                      {initials || <User size={14} />}
-                    </div>
-                  )}
-                  <div className="hidden px-1 text-left sm:block">
-                    <p className="text-xs leading-tight text-slate-900 dark:text-white">{user?.prenom} {user?.nom}</p>
-                    <p className="text-[10px] text-slate-400 capitalize">{user?.role}</p>
-                  </div>
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="absolute right-0 z-50 mt-2 w-48 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-                    <Link to="/profil" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
-                      <User size={15} /> Mon Profil
-                    </Link>
-                    <button onClick={handleLogout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">
-                      <LogOut size={15} /> Déconnexion
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link to="/login" className="rounded-full bg-orange-500 px-4 py-2 text-xs text-white shadow-sm hover:bg-orange-600">Se connecter</Link>
-            )}
-
-          </div>
-        </header>
-
-        {/* CONTENU DE LA PAGE */}
+      {/* CONTENU PRINCIPAL */}
+      <div className="flex flex-1 flex-col overflow-hidden pb-20 md:pb-0">
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>
+
+      {/* ========================================================= */}
+      {/* NAVBAR MOBILE / TABLETTE                                  */}
+      {/* ========================================================= */}
+      {isAuthenticated && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 md:hidden z-50 w-[92%] max-w-md" ref={mobileMenuRef}>
+          
+          {/* Menu déroulant Profil sur Mobile (avec le bouton Dark/Light inclus) */}
+          {isProfileMenuOpen && (
+            <div className="absolute bottom-20 right-0 w-60 rounded-3xl bg-white p-3 text-slate-800 shadow-2xl dark:bg-zinc-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 animate-fadeIn z-50">
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                <p className="text-xs font-bold truncate">{user?.prenom} {user?.nom}</p>
+                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+              </div>
+
+              <Link 
+                to="/profil" 
+                onClick={() => setIsProfileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+              >
+                <i className="bi bi-person text-base"></i> Mon Profil
+              </Link>
+
+              {/* Bouton Dark / Light Mode Mobile */}
+              <button 
+                onClick={toggleDarkMode} 
+                className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-medium rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+              >
+                <span className="flex items-center gap-3">
+                  <i className={`bi ${darkMode ? 'bi-moon text-orange-400' : 'bi-sun text-amber-500'} text-base`}></i> 
+                  Mode {darkMode ? 'Sombre' : 'Clair'}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-200 text-slate-700'}`}>
+                  {darkMode ? 'Dark' : 'Light'}
+                </span>
+              </button>
+
+              <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
+
+              <button 
+                onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }} 
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+              >
+                <i className="bi bi-box-arrow-right text-base"></i> Déconnexion
+              </button>
+            </div>
+          )}
+
+          {/* Capsule Flottante Arrondie Mobile */}
+          <nav className="flex items-center justify-between bg-black text-white p-2 rounded-full shadow-2xl transition-colors duration-300 dark:bg-zinc-900 border border-white/10">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className={`flex items-center gap-2 py-2.5 transition-all duration-300 rounded-full ${
+                    isActive 
+                      ? 'bg-zinc-800 text-white px-4 font-semibold shadow-inner dark:bg-zinc-800' 
+                      : 'text-zinc-400 hover:text-white px-3'
+                  }`}
+                >
+                  <i className={`${link.icon} text-lg ${isActive ? 'text-orange-400' : ''}`}></i>
+                  {isActive && <span className="text-xs tracking-wide animate-fadeIn">{link.label}</span>}
+                </Link>
+              );
+            })}
+
+            {/* Onglet Profil sur Mobile */}
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className={`flex items-center gap-2 py-2.5 transition-all duration-300 rounded-full ${
+                isProfileMenuOpen 
+                  ? 'bg-zinc-800 text-white px-4 font-semibold' 
+                  : 'text-zinc-400 hover:text-white px-3'
+              }`}
+            >
+              {getAvatarSrc(user) ? (
+                <img src={getAvatarSrc(user)} alt="Profil" className="h-6 w-6 rounded-full object-cover ring-1 ring-orange-500/50 shrink-0" />
+              ) : (
+                <i className="bi bi-person text-lg"></i>
+              )}
+              {isProfileMenuOpen && <span className="text-xs tracking-wide animate-fadeIn">Profil</span>}
+            </button>
+          </nav>
+        </div>
+      )}
 
     </div>
   );

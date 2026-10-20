@@ -1,9 +1,7 @@
 // frontend/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import API from '../services/api';
-import bglogin from '../assets/bglogin.jpg';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -13,7 +11,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Synchronisation du mode sombre avec le reste de l'application
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
     document.documentElement.classList.toggle('dark', isDark);
@@ -27,13 +24,11 @@ export default function Login() {
     try {
       const res = await API.post('/auth/login', { email, mot_de_passe: motDePasse });
 
-      // Stockage de la session
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
 
       const role = res.data.user.role;
 
-      // Redirection dynamique selon le rôle
       if (role === 'APPRENANT') {
         navigate('/apprenant/catalogue');
       } else if (role === 'RESPONSABLE') {
@@ -53,115 +48,120 @@ export default function Login() {
   };
 
   return (
-    <div 
-      className="relative w-full min-h-screen  flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat font-['Plus_Jakarta_Sans',sans-serif]"
-      style={{ backgroundImage: `url(${bglogin})` }}
-    >
-      {/* Importation de la police */}
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}
-      </style>
-
-      {/* Superposition / Overlay adaptatif pour lisibilité (Sombre/Clair) */}
-      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[2px] dark:bg-black/60 transition-colors duration-300" />
-
-      {/* Carte de Connexion Flottante */}
-      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/40 bg-white/80 p-8 shadow-2xl backdrop-blur-xl transition-all dark:border-zinc-800/80 dark:bg-zinc-950/80 sm:p-10">
+    <div className="relative w-full min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-[#0b0c10] font-sans transition-colors duration-300">
+      
+      {/* Carte de Connexion Style Maquette */}
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 sm:p-10 shadow-sm text-slate-800 dark:text-zinc-100 transition-all">
         
-        {/* En-tête de la Carte */}
-        <div className="mb-8 text-center space-y-2">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Connexion
+        {/* En-tête */}
+        <div className="text-center space-y-1 mb-6">
+          <h1 className="text-2xl text-slate-900 dark:text-white tracking-tight">
+            Welcome Back
           </h1>
-          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-            Veuillez saisir vos identifiants pour accéder à votre compte
+          <p className="text-xs text-slate-400 dark:text-zinc-400">
+            Welcome Back , Please enter Your details
           </p>
+        </div>
+
+        {/* Onglets (Sign In / Mot de passe oublié) */}
+        <div className="flex bg-slate-100 dark:bg-zinc-950 p-1 rounded-2xl mb-6 border border-slate-200/50 dark:border-zinc-800">
+          <button 
+            type="button" 
+            className="flex-1 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-zinc-900 rounded-xl shadow-sm transition"
+          >
+            Sign In
+          </button>
+          <Link 
+            to="/mot-de-passe-oublie" 
+            className="flex-1 py-2 text-xs text-center text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 transition"
+          >
+            Mot de passe oublié
+          </Link>
         </div>
 
         {/* Message d'erreur */}
         {error && (
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
-            <AlertCircle size={16} className="shrink-0" />
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-400">
+            <i className="bi bi-exclamation-circle text-sm shrink-0"></i>
             <span>{error}</span>
           </div>
         )}
 
         {/* Formulaire */}
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           
           {/* Champ Email */}
-          <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 ml-1">
-              Adresse Email
-            </label>
-            <div className="relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+          <div className="relative flex items-center rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3.5 py-2.5 focus-within:border-orange-500 transition">
+            <div className="pr-3 border-r border-slate-200 dark:border-zinc-800 text-slate-400">
+              <i className="bi bi-envelope text-sm"></i>
+            </div>
+            <div className="flex-1 pl-3">
+              <label className="block text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                Email Address
+              </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre.email@exemple.com"
-                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 py-3.5 pl-11 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900"
+                className="w-full bg-transparent text-xs text-slate-900 dark:text-white outline-none placeholder:text-slate-400"
               />
             </div>
+            {email && (
+              <i className="bi bi-check-circle-fill text-emerald-500 text-sm pl-2"></i>
+            )}
           </div>
 
           {/* Champ Mot de passe */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between px-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                Mot de passe
-              </label>
+          <div className="relative flex items-center rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3.5 py-2.5 focus-within:border-orange-500 transition">
+            <div className="pr-3 border-r border-slate-200 dark:border-zinc-800 text-slate-400">
+              <i className="bi bi-lock text-sm"></i>
             </div>
-            <div className="relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+            <div className="flex-1 pl-3">
+              <label className="block text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                Password
+              </label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={motDePasse}
                 onChange={(e) => setMotDePasse(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 py-3.5 pl-11 pr-11 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-orange-500 dark:focus:bg-zinc-900"
+                className="w-full bg-transparent text-xs text-slate-900 dark:text-white outline-none placeholder:text-slate-400"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 transition-colors"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition pl-2"
+            >
+              <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'} text-sm`}></i>
+            </button>
           </div>
 
           {/* Bouton de Soumission */}
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400"
+            className="w-full mt-2 rounded-2xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
+                <i className="bi bi-arrow-repeat animate-spin text-sm"></i>
                 <span>Connexion...</span>
               </>
             ) : (
-              <>
-                <span>Se connecter</span>
-                <ArrowRight size={16} />
-              </>
+              <span>Continue</span>
             )}
           </button>
         </form>
 
-        {/* Lien de redirection secondaire */}
-        <div className="mt-8 text-center text-xs font-semibold text-slate-500 dark:text-zinc-400">
-          Nouveau sur la plateforme ?{' '}
-          <Link 
-            to="/" 
-            className="font-bold text-orange-600 hover:underline dark:text-orange-400"
-          >
-            Découvrir le catalogue
+        {/* Lien vers le catalogue en bas du bouton */}
+        <div className="mt-6 text-center text-xs text-slate-400 dark:text-zinc-500">
+          Envie d'explorer ?{' '}
+          <Link to="/" className="text-orange-600 dark:text-orange-400 hover:underline">
+            Voir le catalogue
           </Link>
         </div>
 

@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Download, Paperclip, Send, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import API from '../../services/api';
 
 const formatFileSize = (bytes) => {
@@ -19,6 +18,8 @@ export default function FormateurForum() {
   const [sending, setSending] = useState(false);
   const [downloading, setDownloading] = useState(null);
   const [error, setError] = useState('');
+  
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     API.get('/formateur/forums')
@@ -53,6 +54,10 @@ export default function FormateurForum() {
 
     return () => { active = false; };
   }, [selected]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const send = async (event) => {
     event.preventDefault();
@@ -100,107 +105,153 @@ export default function FormateurForum() {
     }
   };
 
-  if (loading) return <div className="p-6 text-sm text-black/50 dark:text-white/50">Chargement des forums...</div>;
+  if (loading) return <div className="p-6 text-xs text-slate-400">Chargement des forums...</div>;
 
   return (
-    <div className="space-y-7">
-      <header className="border-b border-black/10 pb-6 dark:border-white/10">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
-        <h1 className="mt-2 text-3xl font-black">Messagerie</h1>
-        <p className="mt-2 text-sm text-black/55 dark:text-white/55">Échangez avec les apprenants de vos formations.</p>
-      </header>
+    <div className="flex flex-col h-[calc(100vh-90px)] p-2 sm:p-4 text-slate-800 dark:text-zinc-100 font-sans transition-colors duration-300">
+      
+      {/* En-tête */}
+      <div className="flex flex-col gap-1 border-b border-slate-200 dark:border-zinc-800 pb-3 shrink-0">
+        <p className="text-xs uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
+        <h1 className="text-xl tracking-tight text-slate-900 dark:text-white">Messagerie & Forums</h1>
+      </div>
 
-      {error && <p role="alert" className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-3 text-sm text-orange-700 dark:text-orange-400">{error}</p>}
+      {error && (
+        <p role="alert" className="my-2 rounded-xl border border-orange-500/30 bg-orange-500/10 p-2 text-xs text-orange-700 dark:text-orange-400 shrink-0">
+          {error}
+        </p>
+      )}
 
-      <div className="grid min-h-[520px] gap-4 lg:grid-cols-[280px_1fr]">
-        <aside className="rounded-2xl border border-black/10 bg-white p-3 dark:border-white/10 dark:bg-zinc-950">
-          <h2 className="px-3 py-2 text-sm font-black">Forums</h2>
-          {forums.map((forum) => (
-            <button
-              key={forum.id_forum}
-              onClick={() => setSelected(forum)}
-              className={`w-full rounded-xl p-3 text-left transition ${selected?.id_forum === forum.id_forum ? 'bg-orange-500 text-black' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
-            >
-              <strong className="block text-sm">{forum.nom}</strong>
-              <span className="text-xs opacity-60">{forum.formation_titre}</span>
-            </button>
-          ))}
-          {!forums.length && <p className="p-3 text-sm text-black/50">Aucun forum associé.</p>}
+      {/* CONTENEUR PRINCIPAL AVEC LARGEUR DE COLONNE GAUCHE RÉDUITE (240px) */}
+      <div className="mt-3 grid flex-1 min-h-0 grid-cols-1 md:grid-cols-[240px_1fr] gap-4 overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        
+        {/* PANNEAU GAUCHE : LISTE DES FORUMS (PLUS ÉTROIT) */}
+        <aside className="flex flex-col min-h-0 border-r border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 p-3">
+          <h2 className="px-3 py-2 text-xs text-slate-400 uppercase tracking-wider shrink-0">Forums</h2>
+          
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+            {forums.map((forum) => {
+              const isSelected = selected?.id_forum === forum.id_forum;
+              return (
+                <button
+                  key={forum.id_forum}
+                  onClick={() => setSelected(forum)}
+                  className={`w-full rounded-2xl p-2.5 text-left transition ${
+                    isSelected 
+                      ? 'bg-orange-500 text-white' 
+                      : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                  }`}
+                >
+                  <span className="block text-xs truncate">{forum.nom}</span>
+                  <span className={`text-[10px] block truncate ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>
+                    {forum.formation_titre}
+                  </span>
+                </button>
+              );
+            })}
+            {!forums.length && <p className="p-3 text-xs text-slate-400">Aucun forum associé.</p>}
+          </div>
         </aside>
 
-        <section className="flex min-h-[520px] flex-col rounded-2xl border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-950">
-          <div className="border-b border-black/10 p-5 dark:border-white/10">
-            <h2 className="font-black">{selected?.nom || 'Sélectionnez un forum'}</h2>
-            <p className="mt-1 text-xs text-black/50 dark:text-white/50">{selected?.formation_titre}</p>
-          </div>
-
-          <div className="flex-1 space-y-3 overflow-y-auto p-5">
-            {messagesLoading ? <p className="py-8 text-center text-sm text-black/50">Chargement des messages...</p> : (
-              <>
-                {messages.map((message) => (
-                  <article key={message.id_message} className="rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
-                    <p className="text-xs font-bold text-orange-600 dark:text-orange-400">
-                      {message.prenom} {message.nom_expediteur} · {new Date(message.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                    </p>
-                    {message.contenu && <p className="mt-1 whitespace-pre-wrap text-sm">{message.contenu}</p>}
-                    {message.chemin_fichier && (
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-black/10 bg-white/70 p-3 dark:border-white/10 dark:bg-black/20">
-                        <div className="min-w-0">
-                          <p className="break-all text-sm font-semibold">{message.nom_fichier}</p>
-                          <p className="mt-0.5 text-xs text-black/50 dark:text-white/50">
-                            {message.type_fichier || 'Fichier'}{message.taille_fichier ? ` · ${formatFileSize(Number(message.taille_fichier))}` : ''}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => download(message)}
-                          disabled={downloading === message.id_message}
-                          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-black transition hover:bg-orange-400 disabled:opacity-50"
-                        >
-                          <Download size={15} />
-                          {downloading === message.id_message ? 'Téléchargement...' : 'Télécharger'}
-                        </button>
-                      </div>
-                    )}
-                  </article>
-                ))}
-                {!messages.length && <p className="py-8 text-center text-sm text-black/50">Aucun message pour le moment.</p>}
-              </>
-            )}
-          </div>
-
-          <form onSubmit={send} className="space-y-3 border-t border-black/10 p-4 dark:border-white/10">
-            {file && (
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-black/[0.04] px-3 py-2 text-sm dark:bg-white/[0.06]">
-                <span className="min-w-0 break-all">{file.name} <span className="text-xs text-black/50 dark:text-white/50">({formatFileSize(file.size)})</span></span>
-                <button type="button" onClick={() => setFile(null)} aria-label="Retirer le fichier" className="shrink-0 rounded-md p-1 hover:bg-black/10 dark:hover:bg-white/10">
-                  <X size={16} />
-                </button>
+        {/* PANNEAU DROIT : CONTENU DU FORUM ACTIF */}
+        <section className="flex flex-col min-h-0 min-w-0 bg-white dark:bg-zinc-900">
+          
+          {selected ? (
+            <>
+              {/* Entête du forum actif */}
+              <div className="border-b border-slate-200 dark:border-zinc-800 p-3.5 flex items-center justify-between shrink-0">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xs text-slate-900 dark:text-white truncate">{selected.nom}</h2>
+                  <p className="text-[10px] text-slate-400 truncate">{selected.formation_titre}</p>
+                </div>
               </div>
-            )}
-            <div className="flex gap-2">
-              <label className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-black/15 px-3 text-black/65 transition hover:border-orange-500 hover:text-orange-600 dark:border-white/20 dark:text-white/70" title="Joindre un fichier">
-                <Paperclip size={18} />
-                <span className="sr-only">Joindre un fichier</span>
-                <input type="file" className="sr-only" onChange={(event) => setFile(event.target.files?.[0] || null)} />
-              </label>
-              <input
-                className="min-w-0 flex-1 rounded-xl border border-black/15 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-orange-500 dark:border-white/20"
-                placeholder="Écrire un message..."
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                disabled={!selected || sending}
-              />
-              <button
-                type="submit"
-                disabled={sending || !selected || (!content.trim() && !file)}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:opacity-50"
-              >
-                <Send size={16} /> <span className="hidden sm:inline">{sending ? 'Envoi...' : 'Envoyer'}</span>
-              </button>
+
+              {/* LISTE DES MESSAGES */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30 dark:bg-zinc-950/20">
+                {messagesLoading ? (
+                  <p className="py-8 text-center text-xs text-slate-400">Chargement des messages...</p>
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <article key={message.id_message} className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 space-y-1.5 shadow-sm">
+                        <p className="text-[11px] text-orange-600 dark:text-orange-400">
+                          {message.prenom} {message.nom_expediteur} · {new Date(message.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                        {message.contenu && <p className="whitespace-pre-wrap text-xs text-slate-800 dark:text-zinc-200">{message.contenu}</p>}
+                        
+                        {message.chemin_fichier && (
+                          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 p-2.5 mt-2">
+                            <div className="min-w-0">
+                              <p className="break-all text-xs text-slate-900 dark:text-white">{message.nom_fichier}</p>
+                              <p className="mt-0.5 text-[10px] text-slate-400">
+                                {message.type_fichier || 'Fichier'}{message.taille_fichier ? ` · ${formatFileSize(Number(message.taille_fichier))}` : ''}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => download(message)}
+                              disabled={downloading === message.id_message}
+                              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs text-white transition disabled:opacity-50"
+                            >
+                              <i className="bi bi-download text-xs"></i>
+                              {downloading === message.id_message ? '...' : 'Télécharger'}
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                    {!messages.length && <p className="py-8 text-center text-xs text-slate-400">Aucun message pour le moment.</p>}
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* SAISIE DE MESSAGE */}
+              <form onSubmit={send} className="border-t border-slate-200 dark:border-zinc-800 p-3 bg-white dark:bg-zinc-900 space-y-2 shrink-0">
+                {file && (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3 py-1.5 text-xs">
+                    <span className="min-w-0 break-all text-slate-700 dark:text-zinc-300">
+                      {file.name} <span className="text-[10px] text-slate-400">({formatFileSize(file.size)})</span>
+                    </span>
+                    <button type="button" onClick={() => setFile(null)} className="shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                      <i className="bi bi-x text-sm"></i>
+                    </button>
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <label className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 px-3 text-slate-500 dark:text-zinc-400 transition hover:border-orange-500 bg-slate-50 dark:bg-zinc-950" title="Joindre un fichier">
+                    <i className="bi bi-paperclip text-sm"></i>
+                    <input type="file" className="sr-only" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+                  </label>
+
+                  <input
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3 py-2 text-xs text-slate-800 dark:text-zinc-100 outline-none focus:border-orange-500"
+                    placeholder="Écrire un message..."
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    disabled={!selected || sending}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={sending || !selected || (!content.trim() && !file)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-xs text-white transition disabled:opacity-50"
+                  >
+                    <i className="bi bi-send text-xs"></i> 
+                    <span className="hidden sm:inline">{sending ? '...' : 'Envoyer'}</span>
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-400">
+              Sélectionnez un forum dans la liste pour démarrer la discussion.
             </div>
-          </form>
+          )}
+
         </section>
+
       </div>
     </div>
   );
