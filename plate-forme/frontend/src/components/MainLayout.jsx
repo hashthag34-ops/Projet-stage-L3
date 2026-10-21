@@ -19,10 +19,12 @@ const NAV_CONFIG = {
   admin: [
     { path: '/Admin/dashboard', label: 'Stats', icon: 'bi-activity' },
     { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
+    { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database-add' },
   ],
   administrateur: [
     { path: '/Admin/dashboard', label: 'Stats', icon: 'bi-activity' },
     { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
+    { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database-add' },
   ],
   responsable: [
     { path: '/Responsable/GsFormation', label: 'Formations', icon: 'bi-book' },

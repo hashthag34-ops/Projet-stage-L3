@@ -1,7 +1,20 @@
 // backend/controllers/adminController.js
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const { randomUUID } = require('crypto');
 const { emitToRoles, disconnectUser } = require('../services/realtime');
+
+const syntheticFirstNames = ['Aina', 'Tiana', 'Miora', 'Fara', 'Nomena', 'Lova', 'Hery', 'Soa', 'Tahina', 'Mialy'];
+const syntheticLastNames = ['Rakoto', 'Ramanantsoa', 'Andria', 'Rasoanaivo', 'Randria', 'Razafy', 'Rabe', 'Raveloson'];
+const syntheticSchools = ['Établissement de test A', 'Établissement de test B', 'Centre de formation fictif'];
+const syntheticFields = ['Informatique', 'Gestion', 'Communication', 'Réseaux', 'Marketing'];
+
+const randomItem = (items) => items[Math.floor(Math.random() * items.length)];
+const randomInteger = (minimum, maximum) => Math.floor(Math.random() * (maximum - minimum + 1)) + minimum;
+const randomRecentDate = (now) => new Date(now.getTime() - randomInteger(0, 180) * 24 * 60 * 60 * 1000);
+const buildValuesClause = (rows, columnCount) => rows.map((_, rowIndex) => (
+  `(${Array.from({ length: columnCount }, (__, columnIndex) => `$${rowIndex * columnCount + columnIndex + 1}`).join(', ')})`
+)).join(', ');
 
 // Lister tous les utilisateurs avec leur rôle
 exports.getUsers = async (req, res) => {
@@ -117,6 +130,264 @@ exports.updateUserStatus = async (req, res) => {
   } catch (error) {
     console.error("Erreur updateUserStatus :", error);
     res.status(500).json({ message: "Erreur lors de la mise à jour." });
+  }
+};
+
+exports.getSyntheticDataFormations = async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id_formation, titre, statut
+       FROM formation
+       ORDER BY titre, id_formation`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur getSyntheticDataFormations :', error);
+    res.status(500).json({ message: 'Impossible de charger les formations.' });
+  }
+};
+
+exports.createSyntheticCandidates = async (req, res) => {
+  const { nombre, id_formations, mode, max_formations } = req.body;
+  if (!Number.isInteger(nombre) || nombre < 1 || nombre > 500) {
+    return res.status(400).json({ message: 'Le nombre doit être compris entre 1 et 500.' });
+  }
+  if (!Array.isArray(id_formations) || id_formations.length < 1 || id_formations.length > 10
+    || id_formations.some((id) => !Number.isInteger(id) || id < 1)
+    || new Set(id_formations).size !== id_formations.length) {
+    return res.status(400).json({ message: 'Sélectionnez entre 1 et 10 formations valides.' });
+  }
+  if (!['attente', 'apprenant'].includes(mode)) {
+    return res.status(400).json({ message: 'Le mode de génération est invalide.' });
+  }
+  if (!Number.isInteger(max_formations) || max_formations < 1 || max_formations > id_formations.length) {
+    return res.status(400).json({ message: 'Le nombre de formations par candidat est invalide.' });
+  }
+
+  let client;
+  try {
+    client = await db.connect();
+    await client.query('BEGIN');
+
+    const existingFormations = await client.query(
+      'SELECT id_formation FROM formation WHERE id_formation = ANY($1::integer[])',
+      [id_formations]
+    );
+    if (existingFormations.rows.length !== id_formations.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Une ou plusieurs formations sélectionnées sont introuvables.' });
+    }
+
+    const availableSeatsByFormation = new Map();
+    if (mode === 'apprenant') {
+      const lockedFormations = await client.query(
+        `SELECT id_formation, capacite_max
+         FROM formation
+         WHERE id_formation = ANY($1::integer[])
+         FOR UPDATE`,
+        [id_formations]
+      );
+      const acceptedCounts = await client.query(
+        `SELECT id_formation, COUNT(*)::INTEGER AS total
+         FROM inscription
+         WHERE id_formation = ANY($1::integer[]) AND statut = 'ACCEPTEE'
+         GROUP BY id_formation`,
+        [id_formations]
+      );
+      const acceptedByFormation = new Map(
+        acceptedCounts.rows.map((row) => [row.id_formation, Number(row.total)])
+      );
+      lockedFormations.rows.forEach((formation) => {
+        availableSeatsByFormation.set(
+          formation.id_formation,
+          formation.capacite_max == null
+            ? Number.POSITIVE_INFINITY
+            : Math.max(0, Number(formation.capacite_max) - (acceptedByFormation.get(formation.id_formation) || 0))
+        );
+      });
+
+      const totalAvailableSeats = [...availableSeatsByFormation.values()]
+        .reduce((total, seats) => total + seats, 0);
+      if (totalAvailableSeats < nombre) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          message: `Capacité insuffisante : ${totalAvailableSeats} place(s) disponible(s) pour ${nombre} apprenant(s) demandé(s).`
+        });
+      }
+    }
+
+    const now = new Date();
+    const candidates = Array.from({ length: nombre }, () => {
+      const prenom = randomItem(syntheticFirstNames);
+      const nom = randomItem(syntheticLastNames);
+      const dateCreation = randomRecentDate(now);
+      return {
+        email: `synthetic-${randomUUID()}@example.invalid`,
+        nom,
+        prenom,
+        age: randomInteger(18, 40),
+        genre: randomItem(['Femme', 'Homme', 'Non renseigné']),
+        telephone: '000000000',
+        niveau_etude: randomItem(['Baccalauréat', 'Licence', 'Master', 'Formation professionnelle']),
+        situation_professionnelle: randomItem(['Étudiant', 'En recherche d’emploi', 'Salarié']),
+        etablissement: randomItem(syntheticSchools),
+        filiere: randomItem(syntheticFields),
+        dateCreation
+      };
+    });
+
+    const candidateValues = candidates.flatMap((candidate) => [
+      candidate.email,
+      candidate.nom,
+      candidate.prenom,
+      candidate.age,
+      candidate.genre,
+      candidate.telephone,
+      candidate.niveau_etude,
+      candidate.situation_professionnelle,
+      candidate.etablissement,
+      candidate.filiere,
+      candidate.dateCreation
+    ]);
+    const candidateResult = await client.query(
+      `INSERT INTO candidat (
+         email, nom, prenom, age, genre, telephone, niveau_etude,
+         situation_professionnelle, etablissement, filiere, date_creation
+       ) VALUES ${buildValuesClause(candidates, 11)}
+       RETURNING id_candidat, email`,
+      candidateValues
+    );
+    const candidateIdsByEmail = new Map(candidateResult.rows.map((row) => [row.email, row.id_candidat]));
+
+    const applications = [];
+    const selectedFormationsByCandidate = candidates.map(() => []);
+    if (mode === 'apprenant') {
+      candidates.forEach((__, candidateIndex) => {
+        const availableFormations = [...availableSeatsByFormation.entries()]
+          .filter(([, seats]) => seats > 0)
+          .map(([id]) => id);
+        const selectedFormation = randomItem(availableFormations);
+        selectedFormationsByCandidate[candidateIndex].push(selectedFormation);
+        availableSeatsByFormation.set(
+          selectedFormation,
+          availableSeatsByFormation.get(selectedFormation) - 1
+        );
+      });
+    }
+
+    candidates.forEach((candidate, candidateIndex) => {
+      const selectedForCandidate = selectedFormationsByCandidate[candidateIndex];
+      const targetCount = randomInteger(1, max_formations);
+      while (selectedForCandidate.length < targetCount) {
+        const availableFormations = id_formations.filter((id) => (
+          !selectedForCandidate.includes(id)
+          && (mode !== 'apprenant' || availableSeatsByFormation.get(id) > 0)
+        ));
+        if (availableFormations.length === 0) break;
+        const selectedFormation = randomItem(availableFormations);
+        selectedForCandidate.push(selectedFormation);
+        if (mode === 'apprenant') {
+          availableSeatsByFormation.set(
+            selectedFormation,
+            availableSeatsByFormation.get(selectedFormation) - 1
+          );
+        }
+      }
+      const applicationDate = candidate.dateCreation > now ? now : candidate.dateCreation;
+      selectedForCandidate.forEach((id_formation) => {
+        applications.push({
+          id_candidat: candidateIdsByEmail.get(candidate.email),
+          id_formation,
+          date_inscription: applicationDate,
+          statut: mode === 'apprenant' ? 'ACCEPTEE' : 'EN_ATTENTE',
+          motivation: 'Candidature de démonstration générée par l’administration.',
+          objectif: 'Développer des compétences dans cette formation.',
+          projet_apres_formation: 'Mettre en pratique les compétences acquises.',
+          source_information: 'Jeu de données synthétique',
+          a_deja_suivi_formation: false,
+          conditions_acceptees: true,
+          date_decision: mode === 'apprenant' ? applicationDate : null
+        });
+      });
+    });
+
+    if (mode === 'apprenant') {
+      const userValues = candidates.flatMap((candidate) => [
+        candidate.email,
+        candidate.nom,
+        candidate.prenom,
+        candidate.telephone,
+        candidate.age,
+        candidate.dateCreation
+      ]);
+      const userResult = await client.query(
+        `INSERT INTO utilisateur (email, nom, prenom, telephone, age, date_creation)
+         VALUES ${buildValuesClause(candidates, 6)}
+         RETURNING id_utilisateur, email`,
+        userValues
+      );
+      const userIdsByEmail = new Map(userResult.rows.map((row) => [row.email, row.id_utilisateur]));
+      const learnerRows = candidates.map((candidate) => ({
+        id_utilisateur: userIdsByEmail.get(candidate.email),
+        id_candidat: candidateIdsByEmail.get(candidate.email),
+        date_creation: candidate.dateCreation,
+        statut: 'ACTIF'
+      }));
+      await client.query(
+        `INSERT INTO apprenant (id_utilisateur, id_candidat, date_creation, statut)
+         VALUES ${buildValuesClause(learnerRows, 4)}`,
+        learnerRows.flatMap((learner) => [
+          learner.id_utilisateur,
+          learner.id_candidat,
+          learner.date_creation,
+          learner.statut
+        ])
+      );
+    }
+
+    await client.query(
+      `INSERT INTO inscription (
+         id_candidat, id_formation, date_inscription, statut, motivation, objectif,
+         projet_apres_formation, source_information, a_deja_suivi_formation,
+         conditions_acceptees, date_decision
+       ) VALUES ${buildValuesClause(applications, 11)}`,
+      applications.flatMap((application) => [
+        application.id_candidat,
+        application.id_formation,
+        application.date_inscription,
+        application.statut,
+        application.motivation,
+        application.objectif,
+        application.projet_apres_formation,
+        application.source_information,
+        application.a_deja_suivi_formation,
+        application.conditions_acceptees,
+        application.date_decision
+      ])
+    );
+
+    await client.query('COMMIT');
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
+    res.status(201).json({
+      message: 'Les données synthétiques ont été ajoutées sans envoyer d’e-mail.',
+      candidats_crees: candidates.length,
+      candidatures_creees: applications.length,
+      apprenants_crees: mode === 'apprenant' ? candidates.length : 0,
+      comptes_sans_mot_de_passe: mode === 'apprenant' ? candidates.length : 0
+    });
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Erreur lors de l’annulation de la génération synthétique :', rollbackError);
+      }
+    }
+    console.error('Erreur createSyntheticCandidates :', error);
+    res.status(500).json({ message: 'Erreur lors de la génération des données synthétiques.' });
+  } finally {
+    client?.release();
   }
 };
 

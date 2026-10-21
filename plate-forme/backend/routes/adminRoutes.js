@@ -19,5 +19,7 @@ router.get('/statistics', adminController.getStatistics);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
 router.patch('/users/:id/status', adminController.updateUserStatus);
+router.get('/synthetic-data/formations', adminController.getSyntheticDataFormations);
+router.post('/synthetic-data/candidates', adminController.createSyntheticCandidates);
 
 module.exports = router;

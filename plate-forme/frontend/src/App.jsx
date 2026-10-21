@@ -20,6 +20,7 @@ import ApprenantEvaluations from './pages/Apprenant/ApprenantEvaluations';
 // Admin
 import GsUsers from './pages/Admin/GsUsers';
 import AdminStats from './pages/Admin/AdminStats';
+import SyntheticData from './pages/Admin/SyntheticData';
 
 // Responsable
 import Candidatures from './pages/Responsable/Candidature';
@@ -62,6 +63,7 @@ export default function App() {
             <Route index element={<Navigate to="/Admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminStats />} />
             <Route path="users" element={<GsUsers />} />
+            <Route path="donnees-test" element={<SyntheticData />} />
             <Route path="Profil" element={<Profil />} />
           </Route>
 
