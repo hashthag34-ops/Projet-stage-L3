@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ciSHbhxJu0dglv07wgaU212NUZTDlvs7ZP2jPh86RihqJC6iWxKu6I5ZplyCdKb
+\restrict vxwkcQcDbTsacQvn5PcsSpWy6dFxQDoGpha8JJvh8JHwHVoOaN1TLVbobzdwt5W
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -1280,8 +1280,8 @@ COPY public.administrateur (id_administrateur, id_utilisateur, date_creation) FR
 --
 
 COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation, statut) FROM stdin;
-2	5	1	2026-09-19 09:59:04.428199	ACTIF
 3	6	2	2026-10-01 15:05:48.503126	ACTIF
+2	5	1	2026-09-19 09:59:04.428199	ACTIF
 \.
 
 
@@ -1290,8 +1290,9 @@ COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation,
 --
 
 COPY public.candidat (id_candidat, email, nom, prenom, age, genre, telephone, niveau_etude, situation_professionnelle, etablissement, filiere, date_creation) FROM stdin;
-1	hashthag10@gmail.com	Sarah	Cameroon	19	Femme	032 28 188 26	Licence	Etudiant	EMIT	DA2I	2026-09-19 08:17:34.585532
-2	bebemartiora@gmail.com	Cristiano	Ronaldo	19	Homme	032 28 188 26	Licence	Etudiant	ENS	SV	2026-10-01 15:02:23.649478
+3	hashthag071@gmail.com	George	Lucas	17	Homme	0327364739	L3	Etudiant	ENI	informatique	2026-10-21 04:44:16.254095
+2	bebemartiora@gmail.com	Cristiano	Ronaldo	19	Homme	0322818826	Licence	Etudiant	ENS	SV	2026-10-01 15:02:23.649478
+1	hashthag10@gmail.com	Sarah	Cameroon	19	Femme	0322818826	Licence	Etudiant	EMIT	DA2I	2026-09-19 08:17:34.585532
 \.
 
 
@@ -1366,6 +1367,15 @@ COPY public.evaluation_choix (id_choix, id_question, libelle, est_correct, ordre
 50	19	da	f	2
 51	20	asdsa	t	1
 52	20	adsa	f	2
+53	21	blade	f	1
+54	21	rakoto	t	2
+55	22	10	f	1
+56	22	12	t	2
+57	22	3	f	3
+58	23	ad	t	1
+59	23	ad	f	2
+60	24	ef	t	1
+61	24	ad	f	2
 \.
 
 
@@ -1393,6 +1403,10 @@ COPY public.evaluation_question (id_question, id_evaluation_sujet, numero_questi
 18	4	2	fgdhgdf	5.00	2026-10-12 08:06:43.396717
 19	4	3	gfdhg	5.00	2026-10-12 08:06:51.825618
 20	4	4	dadsad	5.00	2026-10-12 08:06:58.046246
+21	5	1	iza i nyandry	5.00	2026-10-14 08:17:53.417697
+22	5	2	amifiry zao	5.00	2026-10-14 08:18:19.87573
+23	5	3	dodo	5.00	2026-10-14 08:18:39.43493
+24	5	4	fs	5.00	2026-10-14 08:18:49.78274
 \.
 
 
@@ -1431,6 +1445,13 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 28	6	18	48	5.00
 29	6	19	49	5.00
 30	6	20	52	0.00
+31	7	21	53	0.00
+32	7	22	56	5.00
+33	7	23	58	5.00
+34	7	24	61	0.00
+35	8	21	54	5.00
+36	8	22	55	0.00
+37	8	24	60	5.00
 \.
 
 
@@ -1443,6 +1464,8 @@ COPY public.evaluation_sujet (id_evaluation_sujet, id_formation, id_formateur, t
 1	1	1	exam	bla	20	t	PUBLIEE	20.00	2026-09-19 07:50:04.889609	2026-10-07 08:31:04.359483	2026-10-07 08:31:04.359483
 3	3	1	question au piff	bla bla	2	t	PUBLIEE	20.00	2026-10-07 08:36:05.756265	2026-10-07 08:39:04.671957	2026-10-07 08:39:04.671957
 4	1	1	fc	\N	10	t	PUBLIEE	20.00	2026-10-12 08:06:07.625201	2026-10-12 08:09:07.156098	2026-10-12 08:09:07.156098
+5	1	1	EXAM 2	bla bla	1	t	PUBLIEE	20.00	2026-10-14 08:17:21.235841	2026-10-14 08:20:07.060289	2026-10-14 08:20:07.060289
+6	1	1	miam	\N	2	t	BROUILLON	0.00	2026-10-20 05:25:28.76247	\N	\N
 \.
 
 
@@ -1457,6 +1480,8 @@ COPY public.evaluation_tentative (id_tentative, id_evaluation_sujet, id_apprenan
 4	3	3	2026-10-07 08:39:51.392889	2026-10-07 08:41:51.392	15.00	TERMINEE
 5	1	3	2026-10-07 08:42:07.023061	2026-10-07 08:42:26.988505	15.00	TERMINEE
 6	4	3	2026-10-12 08:10:29.521859	2026-10-12 08:10:39.596064	10.00	TERMINEE
+7	5	3	2026-10-14 08:20:12.558718	2026-10-14 08:21:12.558	10.00	TERMINEE
+8	5	2	2026-10-16 08:15:20.964729	2026-10-16 08:15:26.57848	10.00	TERMINEE
 \.
 
 
@@ -1479,8 +1504,8 @@ COPY public.formation (id_formation, titre, description, image_url, date_debut, 
 9	BDG	formation pour devenir un vrai BDG	/uploads/formations/b08761527e58f3c40d9587fd05cdf3db.jpg	2026-11-08	2026-11-11	2026-11-05	10	OUVERTE	2026-10-12 07:28:41.963612	2026-10-12 16:33:45.322648
 8	Miaou	formation sur les  chats	/uploads/formations/137b50fafc234230cec27c9b4da47d18.jpg	2026-10-25	2026-10-27	2026-10-22	10	OUVERTE	2026-10-12 07:25:34.372538	2026-10-12 16:34:02.44484
 4	BG	formation pour devenir BG, soit pas timide mon chou, mouaaa	/uploads/formations/bcec4f31c8ff3c628ecbb7a8578faf0a.jpg	2026-07-30	2026-08-03	2026-07-26	20	TERMINEE	2026-10-01 16:46:18.181844	2026-10-12 16:34:46.824809
-3	Bleach	formation special sur bleach	/uploads/formations/044d50a256b5a2e8f26feab5624b0cb4.jpg	2026-09-29	2026-10-02	2026-09-29	20	TERMINEE	2026-10-01 14:56:12.050024	2026-10-12 16:35:10.204557
 1	dev peronnel	formation sur le développement personnel et la metrise de ses emotions	/uploads/formations/3f6b2c678075373be8ea856bb60ac20b.jpg	2026-12-17	2026-12-21	2026-11-27	40	OUVERTE	2026-09-19 07:31:18.251346	2026-10-12 16:35:39.242336
+3	Bleach	formation special sur bleach	/uploads/formations/042d39374572cadcc9a04844f0628126.jpg	2026-09-28	2026-10-01	2026-09-28	20	TERMINEE	2026-10-01 14:56:12.050024	2026-10-14 08:04:27.506087
 \.
 
 
@@ -1527,6 +1552,9 @@ COPY public.inscription (id_inscription, id_candidat, id_formation, date_inscrip
 1	1	1	2026-09-19 08:17:34.585532	ACCEPTEE	je veut metriser mes émotions pour les moments difficile et opressants	controller mon stress, mon courage, mes pulsions	mettre en valeur les ompetence que j'aurais acquis lors de la formation		f			t	2026-09-19 09:59:04.428199	\N	2026-09-19 09:59:04.428199
 2	2	3	2026-10-01 15:02:23.649478	ACCEPTEE	j'aime bleach 	maitriser bleach	pouvoirs tenir une conversation sur bleach		f			t	2026-10-01 15:05:48.503126	\N	2026-10-01 15:05:48.503126
 3	2	1	2026-10-02 09:40:28.93796	ACCEPTEE	pareil, blabla	tous mes skill	me faire un packet de frick		f			t	2026-10-02 09:50:10.014635	\N	2026-10-02 09:50:10.014635
+4	3	1	2026-10-21 04:44:16.254095	EN_ATTENTE	j'aime étudier 	etre capable de me metriser	reussir a appliquer ces concepte		f			t	\N	\N	\N
+5	2	11	2026-10-21 06:38:01.742249	EN_ATTENTE	miam miam	je sais pas trop	rien pour le moment		f			t	\N	\N	\N
+6	1	11	2026-10-21 06:39:07.538615	ACCEPTEE	que dall	pareil	nothing to say		f			t	2026-10-21 06:40:39.39736	\N	2026-10-21 06:40:39.39736
 \.
 
 
@@ -1552,6 +1580,9 @@ COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, c
 1	3	4	2026-10-02 06:26:03.594912	PRESENT	\N
 2	3	5	2026-10-02 09:10:40.222211	PRESENT	\N
 5	3	6	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+7287	3	40	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+7288	3	41	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+7289	3	42	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 \.
 
 
@@ -1603,6 +1634,11 @@ COPY public.seance (id_seance, id_formation, titre, description, date_seance, he
 37	4	Cours Magistral - BG		2026-08-03	08:00:00	10:00:00	Cours Magistral	salle odc
 38	1	Cours Magistral - dev peronnel		2026-12-17	08:00:00	10:00:00	Cours Magistral	salle odc
 39	1	Cours Magistral - dev peronnel		2026-12-18	08:00:00	10:00:00	Cours Magistral	salle odc
+40	3	Cours Magistral - Bleach		2026-09-29	08:00:00	10:00:00	Cours Magistral	salle odc
+41	3	Cours Magistral - Bleach		2026-09-30	08:00:00	10:00:00	Cours Magistral	salle odc
+42	3	Cours Magistral - Bleach		2026-10-01	08:00:00	10:00:00	Cours Magistral	salle odc
+43	11	Cours Magistral - Le fer aiguise le fer		2026-11-24	08:00:00	10:00:00	Cours Magistral	salle odc
+44	11	Cours Magistral - Le fer aiguise le fer		2026-11-22	08:00:00	10:00:00	Cours Magistral	salle odc
 \.
 
 
@@ -1619,11 +1655,11 @@ COPY public.support_cours (id_support, id_formation, id_formateur, nom_fichier, 
 --
 
 COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion) FROM stdin;
-3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-12 16:37:16.209519
-6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-12 16:39:59.111652
-2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-12 16:44:11.972209
-5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	032 28 188 26	19	avatar-5-1791784509387-747449665.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-12 07:14:47.630143
-1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-12 08:01:34.926371
+6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-21 06:36:11.634712
+5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1791784509387-747449665.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-21 06:42:43.971466
+2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-21 06:44:00.523355
+3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-21 06:45:09.577314
+1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-21 06:54:32.147031
 \.
 
 
@@ -1638,14 +1674,14 @@ SELECT pg_catalog.setval('public.administrateur_id_administrateur_seq', 1, true)
 -- Name: apprenant_id_apprenant_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 4, true);
+SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 5, true);
 
 
 --
 -- Name: candidat_id_candidat_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 2, true);
+SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 3, true);
 
 
 --
@@ -1659,7 +1695,7 @@ SELECT pg_catalog.setval('public.certification_id_certification_seq', 1, false);
 -- Name: evaluation_choix_id_choix_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 52, true);
+SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 61, true);
 
 
 --
@@ -1673,28 +1709,28 @@ SELECT pg_catalog.setval('public.evaluation_id_evaluation_seq', 1, true);
 -- Name: evaluation_question_id_question_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 20, true);
+SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 24, true);
 
 
 --
 -- Name: evaluation_reponse_id_reponse_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 30, true);
+SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 37, true);
 
 
 --
 -- Name: evaluation_sujet_id_evaluation_sujet_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 4, true);
+SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 6, true);
 
 
 --
 -- Name: evaluation_tentative_id_tentative_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 6, true);
+SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 8, true);
 
 
 --
@@ -1729,7 +1765,7 @@ SELECT pg_catalog.setval('public.forum_id_forum_seq', 8, true);
 -- Name: inscription_id_inscription_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 3, true);
+SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 6, true);
 
 
 --
@@ -1743,7 +1779,7 @@ SELECT pg_catalog.setval('public.message_id_message_seq', 6, true);
 -- Name: presence_id_presence_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.presence_id_presence_seq', 6959, true);
+SELECT pg_catalog.setval('public.presence_id_presence_seq', 15185, true);
 
 
 --
@@ -1757,7 +1793,7 @@ SELECT pg_catalog.setval('public.responsable_id_responsable_seq', 1, true);
 -- Name: seance_id_seance_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.seance_id_seance_seq', 39, true);
+SELECT pg_catalog.setval('public.seance_id_seance_seq', 44, true);
 
 
 --
@@ -2602,5 +2638,5 @@ ALTER TABLE ONLY public.evaluation_tentative
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ciSHbhxJu0dglv07wgaU212NUZTDlvs7ZP2jPh86RihqJC6iWxKu6I5ZplyCdKb
+\unrestrict vxwkcQcDbTsacQvn5PcsSpWy6dFxQDoGpha8JJvh8JHwHVoOaN1TLVbobzdwt5W
 
