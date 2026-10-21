@@ -1,0 +1,2 @@
+ALTER TABLE utilisateur
+ADD COLUMN IF NOT EXISTS date_derniere_deconnexion TIMESTAMP WITHOUT TIME ZONE;

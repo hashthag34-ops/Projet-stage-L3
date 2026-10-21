@@ -2,6 +2,7 @@
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+const { emitRoomEvent } = require('../services/realtime');
 
 const uploadDirectory = path.join(__dirname, '..', 'uploads', 'forum');
 const attachmentPrefix = '__FORUM_ATTACHMENT_V1__:';
@@ -121,6 +122,7 @@ exports.createMessage = async (req, res) => {
     const message = messageRows[0];
     const user = userRows[0];
 
+    emitRoomEvent(`forum:${id_forum}`, 'forum:message', { id_forum: Number(id_forum) });
     res.status(201).json({
       id_message: message.id_message,
       id_forum,

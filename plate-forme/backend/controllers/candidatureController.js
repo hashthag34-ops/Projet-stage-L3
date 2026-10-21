@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
 const getFrontendBaseUrl = require('../utils/frontendUrl');
+const { emitToRoles } = require('../services/realtime');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -176,6 +177,8 @@ exports.validerCandidature = async (req, res) => {
 
     await client.query('COMMIT');
     transactionStarted = false;
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
 
     res.json({
       message: 'Candidature acceptée et e-mail envoyé avec succès.'
@@ -405,6 +408,8 @@ exports.validerPromotion = async (req, res) => {
 
     await client.query('COMMIT');
     transactionStarted = false;
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
 
     res.json({
       message: `Validation réussie ! ${candidatsTraites.length} candidatures traitées et e-mails envoyés.`,
@@ -452,6 +457,7 @@ exports.togglePreselection = async (req, res) => {
       return res.status(404).json({ message: "Candidature introuvable." });
     }
 
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
     res.json({ message: "Statut de pré-sélection mis à jour." });
   } catch (err) {
     console.error("Erreur lors du changement de statut de la candidature :", err);

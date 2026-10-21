@@ -2,6 +2,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { emitToRoles } = require('../services/realtime');
 
 exports.setupAccount = async (req, res) => {
   const { email, username, mot_de_passe } = req.body;
@@ -29,6 +30,7 @@ exports.setupAccount = async (req, res) => {
       return res.status(404).json({ message: "Aucun compte associé à cet email." });
     }
 
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
     res.json({
       message: "Compte configuré avec succès ! Vous pouvez maintenant vous connecter.",
       user: result.rows[0]
@@ -173,6 +175,7 @@ exports.updateProfile = async (req, res) => {
       nom, prenom, telephone || null, age || null, photo_profil || null, userId
     ]);
 
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
     res.status(200).json({ message: "Profil mis à jour avec succès !", user: rows[0] });
   } catch (error) {
     console.error("Erreur updateProfile :", error);

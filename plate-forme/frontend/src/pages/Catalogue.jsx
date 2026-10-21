@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API, { getFormationImageUrl } from '../services/api';
+import { getRealtimeSocket } from '../services/realtime';
 
 const STATUT_LABELS = {
   OUVERTE: 'Ouverte',
@@ -145,6 +146,12 @@ export default function Catalogue() {
 
   useEffect(() => {
     fetchFormations();
+  }, [fetchFormations]);
+
+  useEffect(() => {
+    const socket = getRealtimeSocket();
+    socket.on('formations:changed', fetchFormations);
+    return () => socket.off('formations:changed', fetchFormations);
   }, [fetchFormations]);
 
   const handlePostuler = (formation) => {

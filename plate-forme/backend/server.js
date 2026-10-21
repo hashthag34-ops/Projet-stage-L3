@@ -3,9 +3,13 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
+const http = require('http');
 const { startExpiryTasks } = require('./services/expiryService');
+const { initializeRealtime } = require('./services/realtime');
 
 const app = express();
+const server = http.createServer(app);
+initializeRealtime(server, app);
 
 // 1. Configuration CORS pour autoriser PC + Mobile
 app.use(cors({
@@ -55,7 +59,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await startExpiryTasks();
 
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Serveur backend démarré sur http://localhost:${PORT}`);
     console.log(`Aussi accessible sur le réseau via ton IP locale sur le port ${PORT}`);
   });

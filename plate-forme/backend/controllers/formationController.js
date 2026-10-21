@@ -1,5 +1,6 @@
 // backend/controllers/formationController.js
 const db = require('../config/db');
+const { emitRealtimeEvent } = require('../services/realtime');
 
 exports.uploadFormationImage = (req, res) => {
   if (!req.file) {
@@ -134,6 +135,7 @@ exports.createFormationAvis = async (req, res) => {
       [req.params.id, req.user.id_utilisateur, note, commentaire]
     );
     if (!rows[0]) return res.status(403).json({ message: 'Seuls les apprenants inscrits peuvent noter une formation terminée.' });
+    emitRealtimeEvent('formations:changed', {});
     res.status(201).json(rows[0]);
   } catch (error) {
     if (error.code === '23505') return res.status(409).json({ message: 'Vous avez déjà publié un avis pour cette formation.' });
@@ -227,6 +229,7 @@ exports.createFormation = async (req, res) => {
     ];
 
     const { rows } = await db.query(query, values);
+    emitRealtimeEvent('formations:changed', {});
     res.status(201).json({ message: "Formation créée avec succès !", formation: rows[0] });
   } catch (error) {
     console.error("Erreur createFormation :", error);
@@ -279,6 +282,7 @@ exports.updateFormation = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Formation non trouvée" });
     }
+    emitRealtimeEvent('formations:changed', {});
     res.status(200).json({ message: "Formation mise à jour !", formation: rows[0] });
   } catch (error) {
     console.error("Erreur updateFormation :", error);
@@ -294,6 +298,7 @@ exports.deleteFormation = async (req, res) => {
     if (rowCount === 0) {
       return res.status(404).json({ message: "Formation non trouvée" });
     }
+    emitRealtimeEvent('formations:changed', {});
     res.status(200).json({ message: "Formation supprimée avec succès !" });
   } catch (error) {
     console.error("Erreur deleteFormation :", error);
@@ -347,6 +352,7 @@ exports.assignFormateur = async (req, res) => {
       RETURNING *;
     `;
     const { rows } = await db.query(query, [id, id_formateur, role_formateur || 'Intervenant Principal']);
+    emitRealtimeEvent('formations:changed', {});
     res.status(201).json({ message: "Formateur affecté avec succès !", data: rows[0] });
   } catch (error) {
     console.error(error);
@@ -357,10 +363,11 @@ exports.assignFormateur = async (req, res) => {
 exports.removeFormateur = async (req, res) => {
   const { id, idFormateur } = req.params;
   try {
-    await db.query(
+    const { rowCount } = await db.query(
       'DELETE FROM formation_formateur WHERE id_formation = $1 AND id_formateur = $2',
       [id, idFormateur]
     );
+    if (rowCount > 0) emitRealtimeEvent('formations:changed', {});
     res.status(200).json({ message: "Formateur retiré de la formation" });
   } catch (error) {
     console.error(error);

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { getAuthUser, logout as logoutService } from '../services/authService';
+import { connectRealtime } from '../services/realtime';
 import sitelogo from '../assets/logo.png';
 
 const API_AVATARS = import.meta.env.VITE_URL;
@@ -66,6 +67,11 @@ export default function MainLayout() {
     setUser(getAuthUser());
     setIsProfileMenuOpen(false);
   }, [location]);
+
+  useEffect(() => {
+    const socket = connectRealtime();
+    return () => socket.disconnect();
+  }, [user?.id_utilisateur]);
 
   // Mode Sombre / Clair
   const [darkMode, setDarkMode] = useState(() => {

@@ -3,6 +3,7 @@ const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const getFrontendBaseUrl = require('../utils/frontendUrl');
+const { emitToRoles } = require('../services/realtime');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -130,6 +131,9 @@ exports.postuler = async (req, res) => {
     );
 
     await db.query('COMMIT');
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
+      id_formation: Number(id_formation)
+    });
 
     const candidature = await getEditableCandidature(newInscription.rows[0].id_inscription, normalizedEmail);
     const editToken = getEditToken(candidature.id_inscription, normalizedEmail);
@@ -204,6 +208,9 @@ exports.updateCandidature = async (req, res) => {
       [motivation, objectif || null, projet_apres_formation || null, source_information || null, a_deja_suivi_formation || false, formation_precedente || null, retour_suggestion || null, payload.id_inscription]
     );
     await db.query('COMMIT');
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
+      id_formation: Number(candidature.id_formation)
+    });
     res.json({ message: 'Votre candidature a été mise à jour.' });
   } catch (err) {
     await db.query('ROLLBACK');

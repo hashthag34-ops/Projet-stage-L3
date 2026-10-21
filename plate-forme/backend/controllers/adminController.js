@@ -1,13 +1,15 @@
 // backend/controllers/adminController.js
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const { emitToRoles, disconnectUser } = require('../services/realtime');
 
 // Lister tous les utilisateurs avec leur rôle
 exports.getUsers = async (req, res) => {
   try {
     const query = `
       SELECT 
-        u.id_utilisateur, u.email, u.nom, u.prenom, u.telephone, u.age, u.photo_profil, u.statut_compte, u.date_creation,
+        u.id_utilisateur, u.email, u.nom, u.prenom, u.telephone, u.age, u.photo_profil,
+        u.statut_compte, u.date_creation, u.date_derniere_connexion, u.date_derniere_deconnexion,
         f.specialite,
         r.fonction,
         ap.id_apprenant,
@@ -86,6 +88,7 @@ exports.createUser = async (req, res) => {
     }
 
     await client.query('COMMIT');
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
     res.status(201).json({ message: "Utilisateur et rôle créés avec succès." });
     console.log("Utilisateur et rôle créés avec succès.");
   } catch (error) {
@@ -103,7 +106,13 @@ exports.updateUserStatus = async (req, res) => {
   const { statut_compte } = req.body;
 
   try {
-    await db.query('UPDATE utilisateur SET statut_compte = $1 WHERE id_utilisateur = $2', [statut_compte, id]);
+    const result = await db.query(
+      'UPDATE utilisateur SET statut_compte = $1 WHERE id_utilisateur = $2',
+      [statut_compte, id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ message: "Utilisateur introuvable." });
+    if (statut_compte !== 'ACTIF') disconnectUser(id);
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
     res.status(200).json({ message: "Statut mis à jour." });
   } catch (error) {
     console.error("Erreur updateUserStatus :", error);

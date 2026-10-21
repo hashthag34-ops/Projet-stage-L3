@@ -4,6 +4,7 @@ import {
   Search, Send, Users
 } from 'lucide-react';
 import API from '../../services/api';
+import { getRealtimeSocket, subscribeToForum } from '../../services/realtime';
 
 const formatFileSize = (bytes) => {
   if (!bytes) return '';
@@ -55,8 +56,29 @@ export default function ApprenantForum() {
   }, []);
 
   useEffect(() => {
+    const socket = getRealtimeSocket();
+    const refreshForums = () => {
+      API.get('/apprenant/forums')
+        .then((response) => setForums(Array.isArray(response.data) ? response.data : []))
+        .catch((requestError) => {
+          setError(requestError.response?.data?.message || 'Impossible de charger les forums.');
+        });
+    };
+    socket.on('formations:changed', refreshForums);
+    return () => socket.off('formations:changed', refreshForums);
+  }, []);
+
+  useEffect(() => {
     if (!selectedForum) return undefined;
 
+    const refreshMessages = () => {
+      API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`)
+        .then((response) => setMessages(Array.isArray(response.data) ? response.data : []))
+        .catch((requestError) => {
+          setError(requestError.response?.data?.message || 'Impossible de charger les messages.');
+        });
+    };
+    const unsubscribe = subscribeToForum(selectedForum.id_forum, refreshMessages);
     let active = true;
     API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`)
       .then((response) => {
@@ -69,7 +91,10 @@ export default function ApprenantForum() {
         if (active) setMessagesLoading(false);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [selectedForum]);
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import API from '../../services/api';
+import { getRealtimeSocket, subscribeToForum } from '../../services/realtime';
 
 const formatFileSize = (bytes) => {
   if (!bytes) return '';
@@ -33,6 +34,27 @@ export default function FormateurForum() {
   }, []);
 
   useEffect(() => {
+    const socket = getRealtimeSocket();
+    const refreshForums = () => {
+      API.get('/formateur/forums')
+        .then((response) => {
+          const availableForums = Array.isArray(response.data) ? response.data : [];
+          setForums(availableForums);
+          setSelected((current) => (
+            availableForums.find((forum) => forum.id_forum === current?.id_forum)
+            || availableForums[0]
+            || null
+          ));
+        })
+        .catch((requestError) => {
+          setError(requestError.response?.data?.message || 'Impossible de charger les forums.');
+        });
+    };
+    socket.on('formations:changed', refreshForums);
+    return () => socket.off('formations:changed', refreshForums);
+  }, []);
+
+  useEffect(() => {
     if (!selected) {
       setMessages([]);
       return;
@@ -41,6 +63,13 @@ export default function FormateurForum() {
     let active = true;
     setMessagesLoading(true);
     setError('');
+    const unsubscribe = subscribeToForum(selected.id_forum, () => {
+      API.get(`/formateur/forums/${selected.id_forum}/messages`)
+        .then((response) => setMessages(Array.isArray(response.data) ? response.data : []))
+        .catch((requestError) => {
+          setError(requestError.response?.data?.message || 'Impossible de charger les messages.');
+        });
+    });
     API.get(`/formateur/forums/${selected.id_forum}/messages`)
       .then((response) => {
         if (active) setMessages(Array.isArray(response.data) ? response.data : []);
@@ -52,7 +81,10 @@ export default function FormateurForum() {
         if (active) setMessagesLoading(false);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [selected]);
 
   useEffect(() => {

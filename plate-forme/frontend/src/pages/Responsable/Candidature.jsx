@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, Check, CheckCircle, ChevronRight, Eye, Filter, GraduationCap,
-  Mail, RefreshCw, Search, Send, Users, UserRound, X
+  Mail, Search, Send, Users, UserRound, X
 } from 'lucide-react';
 import API from '../../services/api';
+import { getRealtimeSocket } from '../../services/realtime';
 
 const inputClass = 'rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200';
 const cardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900';
@@ -128,6 +129,12 @@ export default function Candidatures() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const socket = getRealtimeSocket();
+    socket.on('candidatures:changed', fetchData);
+    return () => socket.off('candidatures:changed', fetchData);
+  }, []);
+
   const candidaturesParFormation = useMemo(() => {
     return candidatures.reduce((groups, candidature) => {
       const id = String(candidature.id_formation);
@@ -246,9 +253,6 @@ export default function Candidatures() {
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Gestion des candidatures</h1>
               <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Choisissez une formation pour consulter et traiter ses dossiers.</p>
             </div>
-            <button onClick={fetchData} className={`${inputClass} inline-flex items-center justify-center gap-2`} disabled={loading}>
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Actualiser
-            </button>
           </header>
 
           <section className={`${cardClass} p-4`}>
@@ -325,9 +329,6 @@ export default function Candidatures() {
                 <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{selectedFormation.titre}</h1>
                 <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{selectedFormation.statut || 'Formation'} · {capacity} places au total</p>
               </div>
-              <button onClick={fetchData} className={`${inputClass} inline-flex items-center justify-center gap-2`} disabled={loading}>
-                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Actualiser
-              </button>
             </div>
           </header>
 

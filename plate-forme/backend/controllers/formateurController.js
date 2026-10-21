@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { emitToRoles } = require('../services/realtime');
 
 const getFormateurId = async (userId) => {
   const result = await db.query(
@@ -586,6 +587,10 @@ exports.updateEvaluationStatus = async (req, res) => {
       [statut, req.params.id, formateurId, publicationUtc]
     );
     if (!rows[0]) return res.status(409).json({ message: 'Évaluation introuvable ou déjà publiée/utilisée.' });
+    emitToRoles(['APPRENANT', 'FORMATEUR'], 'evaluations:changed', {
+      id_formation: rows[0].id_formation,
+      id_evaluation_sujet: rows[0].id_evaluation_sujet
+    });
     res.json(rows[0]);
   } catch (error) {
     console.error('Erreur publication évaluation :', error);

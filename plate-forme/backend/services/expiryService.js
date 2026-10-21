@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { emitRealtimeEvent, emitToRoles } = require('./realtime');
 
 const INTERVAL_MS = 15 * 1000;
 let intervalId;
@@ -10,7 +11,8 @@ const runExpiryTasks = async () => {
      SET statut = 'TERMINEE',
          date_modification = CURRENT_TIMESTAMP
      WHERE date_fin < CURRENT_DATE
-       AND statut IN ('OUVERTE', 'EN_COURS')`
+       AND statut IN ('OUVERTE', 'EN_COURS')
+     RETURNING id_formation`
   );
 
   const absenceResult = await db.query(
@@ -40,8 +42,17 @@ const runExpiryTasks = async () => {
        AND EXISTS (
          SELECT 1 FROM evaluation_question eq
          WHERE eq.id_evaluation_sujet = evaluation_sujet.id_evaluation_sujet
-       )`
+       )
+     RETURNING id_evaluation_sujet, id_formation`
   );
+
+  if (formationResult.rowCount > 0) emitRealtimeEvent('formations:changed', {});
+  publicationResult.rows.forEach((evaluation) => {
+    emitToRoles(['APPRENANT', 'FORMATEUR'], 'evaluations:changed', {
+      id_formation: evaluation.id_formation,
+      id_evaluation_sujet: evaluation.id_evaluation_sujet
+    });
+  });
 
   const expiredAttemptResult = await db.query(
     `UPDATE evaluation_tentative et

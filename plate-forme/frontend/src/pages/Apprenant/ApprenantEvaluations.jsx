@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, Clock3, Play, RotateCcw, Send, AlertTriangle } from 'lucide-react';
 import API from '../../services/api';
+import { getRealtimeSocket } from '../../services/realtime';
 
 const formatDuration = (minutes) => {
   if (!minutes) return 'Sans limite de durée';
@@ -50,10 +51,10 @@ export default function ApprenantEvaluations() {
     submittingRef.current = submitting;
   }, [submitting]);
 
-  const loadEvaluations = async () => {
+  const loadEvaluations = useCallback(async () => {
     const response = await API.get('/apprenant/evaluations');
     setEvaluations(Array.isArray(response.data) ? response.data : []);
-  };
+  }, []);
 
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
@@ -62,7 +63,18 @@ export default function ApprenantEvaluations() {
         .finally(() => setLoading(false));
     }, 0);
     return () => window.clearTimeout(loadTimer);
-  }, []);
+  }, [loadEvaluations]);
+
+  useEffect(() => {
+    const socket = getRealtimeSocket();
+    const refreshEvaluations = () => {
+      loadEvaluations().catch((loadError) => {
+        setError(loadError.response?.data?.message || 'Impossible de charger les évaluations.');
+      });
+    };
+    socket.on('evaluations:changed', refreshEvaluations);
+    return () => socket.off('evaluations:changed', refreshEvaluations);
+  }, [loadEvaluations]);
 
   const submitAttempt = useCallback(async (isAutoSubmit = false, reason = null) => {
     const currentAttempt = attemptRef.current;
@@ -91,7 +103,7 @@ export default function ApprenantEvaluations() {
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, []);
+  }, [loadEvaluations]);
 
   // Timer Countdown Logic
   useEffect(() => {

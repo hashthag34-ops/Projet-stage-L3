@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
   BriefcaseBusiness,
   ChevronLeft,
@@ -21,7 +21,9 @@ import {
   BarChart3,
   ChevronDown,
   Edit2,
-  CheckCircle2
+  CheckCircle2,
+  Printer,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   AreaChart,
@@ -35,6 +37,7 @@ import {
   CartesianGrid
 } from 'recharts';
 import API from '../../services/api';
+import { getRealtimeSocket } from '../../services/realtime';
 
 const BACKEND_URL = import.meta.env.VITE_URL;
 
@@ -100,6 +103,14 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
+const formatPresenceDate = (value) => {
+  if (!value) return 'Jamais';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Inconnue'
+    : date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+};
+
 
 
 export default function GsUsers() {
@@ -111,6 +122,7 @@ export default function GsUsers() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
   const [mobileIndex, setMobileIndex] = useState(0);
+  const presenceByUser = useRef(new Map());
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -143,7 +155,28 @@ export default function GsUsers() {
   const fetchUsers = async () => {
     try {
       const res = await API.get('/admin/users');
-      setUsers(Array.isArray(res.data) ? res.data : []);
+      const nextUsers = Array.isArray(res.data) ? res.data : [];
+      setUsers((currentUsers) => {
+        const currentPresence = new Map(currentUsers.map((user) => [user.id_utilisateur, user.is_online]));
+        return nextUsers.map((user) => ({
+          ...user,
+          ...presenceByUser.current.get(user.id_utilisateur),
+          is_online: presenceByUser.current.get(user.id_utilisateur)?.is_online
+            ?? currentPresence.get(user.id_utilisateur)
+            ?? false
+        }));
+      });
+      setSelectedUser((currentUser) => {
+        if (!currentUser) return currentUser;
+        const latestUser = nextUsers.find((user) => user.id_utilisateur === currentUser.id_utilisateur);
+        if (!latestUser) return currentUser;
+        const presence = presenceByUser.current.get(currentUser.id_utilisateur);
+        return {
+          ...latestUser,
+          ...presence,
+          is_online: presence?.is_online ?? currentUser.is_online ?? false
+        };
+      });
     } catch (err) {
       console.error('Erreur de chargement des utilisateurs:', err);
     } finally {
@@ -153,6 +186,60 @@ export default function GsUsers() {
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const socket = getRealtimeSocket();
+    const handlePresence = (presence) => {
+      presenceByUser.current.set(presence.id_utilisateur, {
+        ...presenceByUser.current.get(presence.id_utilisateur),
+        ...presence
+      });
+      setUsers((currentUsers) => currentUsers.map((user) => (
+        user.id_utilisateur === presence.id_utilisateur
+          ? { ...user, ...presence }
+          : user
+      )));
+      setSelectedUser((currentUser) => (
+        currentUser?.id_utilisateur === presence.id_utilisateur
+          ? { ...currentUser, ...presence }
+          : currentUser
+      ));
+    };
+    const handlePresenceSnapshot = (presenceList) => {
+      const onlineIds = new Set(presenceList.map((presence) => presence.id_utilisateur));
+      presenceByUser.current.forEach((presence, id) => {
+        presenceByUser.current.set(id, { ...presence, is_online: onlineIds.has(id) });
+      });
+      onlineIds.forEach((id) => {
+        presenceByUser.current.set(id, {
+          ...presenceByUser.current.get(id),
+          id_utilisateur: id,
+          is_online: true
+        });
+      });
+      setUsers((currentUsers) => currentUsers.map((user) => ({
+        ...user,
+        ...presenceByUser.current.get(user.id_utilisateur),
+        is_online: onlineIds.has(user.id_utilisateur)
+      })));
+      setSelectedUser((currentUser) => (
+        currentUser
+          ? { ...currentUser, is_online: onlineIds.has(currentUser.id_utilisateur) }
+          : currentUser
+      ));
+    };
+    const handleUsersChanged = () => fetchUsers();
+
+    socket.on('user:presence', handlePresence);
+    socket.on('users:presence', handlePresenceSnapshot);
+    socket.on('users:changed', handleUsersChanged);
+    if (socket.connected) socket.emit('users:presence:request');
+    return () => {
+      socket.off('user:presence', handlePresence);
+      socket.off('users:presence', handlePresenceSnapshot);
+      socket.off('users:changed', handleUsersChanged);
+    };
   }, []);
 
   const handleChange = (e) => setFormData((current) => ({ ...current, [e.target.name]: e.target.value ?? '' }));
@@ -199,7 +286,6 @@ export default function GsUsers() {
 
   // Métriques
   const totalUsersCount = users.length;
-  const activeUsersCount = users.filter(u => u.statut_compte === 'ACTIF').length;
   const suspendedUsersCount = users.filter(u => u.statut_compte === 'SUSPENDU').length;
   const disabledUsersCount = users.filter(u => u.statut_compte === 'DESACTIVE').length;
 
@@ -218,15 +304,110 @@ export default function GsUsers() {
     ];
   }, [users]);
 
-  const activityChartData = [
-    { name: 'Lun', actifs: Math.round(activeUsersCount * 0.7) },
-    { name: 'Mar', actifs: Math.round(activeUsersCount * 0.85) },
-    { name: 'Mer', actifs: Math.round(activeUsersCount * 0.9) },
-    { name: 'Jeu', actifs: Math.round(activeUsersCount * 0.8) },
-    { name: 'Ven', actifs: activeUsersCount },
-    { name: 'Sam', actifs: Math.round(activeUsersCount * 0.4) },
-    { name: 'Dim', actifs: Math.round(activeUsersCount * 0.3) },
-  ];
+  const monthlyCreationChartData = useMemo(() => {
+    const currentMonth = new Date();
+    const firstMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 5, 1);
+    const months = Array.from({ length: 6 }, (_, index) => (
+      new Date(firstMonth.getFullYear(), firstMonth.getMonth() + index, 1)
+    ));
+    const countsByMonth = new Map();
+
+    users.forEach((user) => {
+      if (!user.date_creation) return;
+      const monthKey = String(user.date_creation).slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(monthKey)) return;
+      countsByMonth.set(monthKey, (countsByMonth.get(monthKey) || 0) + 1);
+    });
+
+    return months.map((month) => {
+      const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+      return {
+        name: month.toLocaleDateString('fr-FR', { month: 'short' }),
+        comptes: countsByMonth.get(key) || 0
+      };
+    });
+  }, [users]);
+
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+
+  const getUserExportRows = () => filteredUsers.map((user) => [
+    `${user.prenom || ''} ${user.nom || ''}`.trim(),
+    user.email || '',
+    user.role || 'UTILISATEUR',
+    user.statut_compte || 'ACTIF',
+    user.is_online ? 'En ligne' : 'Hors ligne'
+  ]);
+
+  const handleExportExcel = () => {
+    const headers = ['Utilisateur', 'Email', 'Rôle', 'Statut', 'Présence'];
+    const escapeCsv = (value) => {
+      const text = String(value ?? '');
+      const safeText = /^[\t\r ]*[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replace(/"/g, '""')}"`;
+    };
+    const csv = [headers, ...getUserExportRows()]
+      .map((row) => row.map(escapeCsv).join(';'))
+      .join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `utilisateurs-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+  };
+
+  const handlePrintUsers = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Autorisez l'ouverture de la fenêtre d'impression pour continuer.");
+      return;
+    }
+
+    const headers = ['Utilisateur', 'Email', 'Rôle', 'Statut', 'Présence'];
+    const tableRows = getUserExportRows().map((row) => (
+      `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`
+    )).join('');
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8">
+          <title>Liste des utilisateurs</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #18181b; margin: 24px; }
+            h1 { font-size: 20px; margin-bottom: 4px; }
+            p { color: #52525b; font-size: 12px; margin: 0 0 16px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #d4d4d8; padding: 8px; text-align: left; }
+            th { background: #f4f4f5; }
+            @media print { body { margin: 12mm; } tr { break-inside: avoid; } }
+          </style>
+        </head>
+        <body>
+          <h1>Liste des utilisateurs</h1>
+          <p>${filteredUsers.length} utilisateur(s) — ordre : ${escapeHtml(
+            sort === 'name' ? 'Nom A-Z' : sort === 'role' ? 'Rôle' : 'Récent'
+          )}</p>
+          <table>
+            <thead><tr>${headers.map((header) => `<th>${header}</th>`).join('')}</tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   return (
     <div className="relative min-h-screen space-y-6 font-sans text-zinc-800 transition-colors duration-300 dark:text-zinc-100 p-2 sm:p-4">
@@ -266,10 +447,10 @@ export default function GsUsers() {
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Graphique 1 : Activité récente (AreaChart) */}
             <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/40">
-              <span className="text-xs font-normal text-zinc-500">Comptes actifs cette semaine</span>
+              <span className="text-xs font-normal text-zinc-500">Comptes créés ces 6 derniers mois</span>
               <div className="mt-4 h-48 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={activityChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <AreaChart data={monthlyCreationChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <defs>
                       <linearGradient id="userActivity" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#18181b" stopOpacity={0.3} />
@@ -280,7 +461,7 @@ export default function GsUsers() {
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#09090b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
-                    <Area type="monotone" dataKey="actifs" stroke="#18181b" strokeWidth={2} fill="url(#userActivity)" />
+                    <Area type="monotone" dataKey="comptes" stroke="#18181b" strokeWidth={2} fill="url(#userActivity)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -330,6 +511,26 @@ export default function GsUsers() {
           </select>
           <ArrowUpDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
         </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handlePrintUsers}
+            disabled={loading || filteredUsers.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            <Printer size={14} />
+            Imprimer
+          </button>
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={loading || filteredUsers.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            <FileSpreadsheet size={14} />
+            Exporter Excel
+          </button>
+        </div>
       </div>
 
       {/* Tableau des utilisateurs */}
@@ -348,6 +549,7 @@ export default function GsUsers() {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Rôle</th>
                 <th className="px-4 py-2">Statut</th>
+                <th className="px-4 py-2">Présence</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -388,6 +590,20 @@ export default function GsUsers() {
                       <option value="DESACTIVE">DÉSACTIVÉ</option>
                       <option value="SUSPENDU">SUSPENDU</option>
                     </select>
+                  </td>
+
+                  <td className="p-3 bg-white dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${user.is_online ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                      <span className={user.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'}>
+                        {user.is_online ? 'En ligne' : 'Hors ligne'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-zinc-400">
+                      {user.is_online
+                        ? `Connecté depuis ${formatPresenceDate(user.date_derniere_connexion)}`
+                        : `Dernière déconnexion ${formatPresenceDate(user.date_derniere_deconnexion)}`}
+                    </p>
                   </td>
 
                   <td className="p-3 bg-white rounded-r-2xl text-right dark:bg-zinc-900 group-hover:bg-zinc-100/80 dark:group-hover:bg-zinc-800/50" onClick={(e) => e.stopPropagation()}>
@@ -463,6 +679,19 @@ export default function GsUsers() {
                 <p className="text-[10px] text-zinc-400">Téléphone</p>
                 <p className="mt-0.5 text-xs font-normal text-zinc-800 dark:text-zinc-200">
                   {selectedUser.telephone || 'Non renseigné'}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-zinc-50 p-3.5 dark:bg-zinc-800/50">
+                <p className="text-[10px] text-zinc-400">Présence</p>
+                <p className={`mt-0.5 text-xs font-medium ${selectedUser.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-600 dark:text-zinc-300'}`}>
+                  {selectedUser.is_online ? 'En ligne' : 'Hors ligne'}
+                </p>
+                <p className="mt-1 text-[10px] text-zinc-400">
+                  Dernière connexion : {formatPresenceDate(selectedUser.date_derniere_connexion)}
+                </p>
+                <p className="mt-1 text-[10px] text-zinc-400">
+                  Dernière déconnexion : {formatPresenceDate(selectedUser.date_derniere_deconnexion)}
                 </p>
               </div>
 
