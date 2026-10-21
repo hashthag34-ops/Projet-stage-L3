@@ -10,6 +10,9 @@ export default function FormateurPlanning() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Nouvel état pour gérer la vue "Week" (semaine) ou "Month" (mois) comme sur l'image
+  const [currentView, setCurrentView] = useState('Week');
 
   const initialFormState = {
     id_formation: '',
@@ -90,7 +93,7 @@ export default function FormateurPlanning() {
   const getWeekDays = (startDate) => {
     const start = new Date(startDate);
     const days = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) { // Ajusté à 7 jours pour correspondre exactement au design
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       days.push(d);
@@ -100,9 +103,13 @@ export default function FormateurPlanning() {
 
   const weekDays = getWeekDays(currentDate);
 
-  const navigateWeek = (direction) => {
+  const navigateTime = (direction) => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + direction * 7);
+    if (currentView === 'Week') {
+      newDate.setDate(currentDate.getDate() + direction * 7);
+    } else {
+      newDate.setMonth(currentDate.getMonth() + direction);
+    }
     setCurrentDate(newDate);
   };
 
@@ -161,12 +168,12 @@ export default function FormateurPlanning() {
   const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 dark:bg-[#0b0c10] dark:text-zinc-100 font-sans p-3 sm:p-6 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f1f5f9] text-slate-800 dark:bg-[#0b0c10] dark:text-zinc-100 font-sans p-3 sm:p-6 transition-colors duration-300">
 
-      {/* Conteneur Principal Style Carte Fixolaw */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm p-4 sm:p-6">
+      {/* Conteneur Principal Style Barbers / SaaS Moderne */}
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm p-5 sm:p-8">
         
-        {/* BARRE SUPÉRIEURE DE NAVIGATION */}
+        {/* BARRE SUPÉRIEURE DE NAVIGATION ET VUES */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-zinc-800 pb-5">
           
           <div className="flex flex-wrap items-center gap-3">
@@ -176,23 +183,23 @@ export default function FormateurPlanning() {
 
             <button 
               onClick={() => setCurrentDate(new Date())}
-              className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+              className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition shadow-xs"
             >
               Aujourd'hui
             </button>
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => navigateWeek(-1)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
-                title="Semaine précédente"
+                onClick={() => navigateTime(-1)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition shadow-xs"
+                title="Précédent"
               >
                 <i className="bi bi-chevron-left text-xs"></i>
               </button>
               <button
-                onClick={() => navigateWeek(1)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
-                title="Semaine suivante"
+                onClick={() => navigateTime(1)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition shadow-xs"
+                title="Suivant"
               >
                 <i className="bi bi-chevron-right text-xs"></i>
               </button>
@@ -200,10 +207,34 @@ export default function FormateurPlanning() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* Bascule Vue Semaine / Mois inspirée de l'image */}
+            <div className="flex items-center rounded-xl bg-slate-100 dark:bg-zinc-950 p-1 border border-slate-200 dark:border-zinc-800">
+              <button
+                onClick={() => setCurrentView('Week')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  currentView === 'Week' 
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setCurrentView('Month')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  currentView === 'Month' 
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                Month
+              </button>
+            </div>
+
             <select
               value={selectedFormation}
               onChange={(e) => setSelectedFormation(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 px-3 py-2 text-xs font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500"
+              className="rounded-xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 px-3 py-2 text-xs font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500 shadow-xs"
             >
               <option value="">Toutes les formations</option>
               {formations.map(f => (
@@ -213,10 +244,10 @@ export default function FormateurPlanning() {
 
             <button
               onClick={() => handleOpenCreateForDate(formatDateLocal(new Date()))}
-              className="flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition"
+              className="flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-xs font-bold text-white shadow-md transition"
             >
               <i className="bi bi-plus-lg text-sm"></i>
-              <span>Nouvelle Séance</span>
+              <span>Add New</span>
             </button>
           </div>
         </div>
@@ -226,25 +257,25 @@ export default function FormateurPlanning() {
           <div className="py-24 text-center text-sm font-medium text-slate-400">Chargement du planning...</div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
+            <div className="min-w-[900px]">
               
               {/* En-tête des jours */}
-              <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 pb-3 text-center">
+              <div className="grid grid-cols-8 border-b border-slate-200 dark:border-zinc-800 pb-3 text-center">
                 <div className="text-xs font-bold text-slate-400 dark:text-zinc-500 flex items-center justify-center">
-                  GMT+1
+                  Time
                 </div>
                 {weekDays.map((day, idx) => {
                   const dateISO = formatDateLocal(day);
                   const isToday = formatDateLocal(new Date()) === dateISO;
                   return (
                     <div key={idx} className="flex flex-col items-center">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                        {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                        {day.toLocaleDateString('fr-FR', { weekday: 'long' })}
                       </span>
-                      <span className={`text-xs font-extrabold mt-0.5 px-2 py-0.5 rounded-full ${
-                        isToday ? 'bg-orange-500 text-white' : 'text-slate-800 dark:text-zinc-200'
+                      <span className={`text-xs font-extrabold mt-0.5 px-2.5 py-0.5 rounded-full ${
+                        isToday ? 'bg-orange-500 text-white shadow-xs' : 'text-slate-800 dark:text-zinc-200'
                       }`}>
-                        {day.getDate()}
+                        {day.getDate() < 10 ? `0${day.getDate()}` : day.getDate()}-{String(day.getMonth() + 1).padStart(2, '0')}
                       </span>
                     </div>
                   );
@@ -257,10 +288,10 @@ export default function FormateurPlanning() {
                   const currentSlotHour = parseInt(hour.substring(0, 2), 10);
 
                   return (
-                    <div key={hIdx} className="grid grid-cols-7 min-h-[95px]">
+                    <div key={hIdx} className="grid grid-cols-8 min-h-[95px]">
                       
                       {/* Heure fixe */}
-                      <div className="pr-3 py-2 text-right text-xs font-medium text-slate-400 dark:text-zinc-500">
+                      <div className="pr-3 py-2 text-right text-xs font-medium text-slate-400 dark:text-zinc-500 flex items-start justify-end pt-1">
                         {hour}
                       </div>
 
@@ -268,15 +299,11 @@ export default function FormateurPlanning() {
                       {weekDays.map((day, dIdx) => {
                         const dateISO = formatDateLocal(day);
                         
-                        // Filtrer les séances qui couvrent cette heure précise (entre heure_debut et heure_fin)
                         const daySeances = seances.filter(s => {
                           if (!s.date_seance || formatDateLocal(s.date_seance) !== dateISO) return false;
                           if (!s.heure_debut || !s.heure_fin) return false;
                           
                           const startHour = parseInt(s.heure_debut.substring(0, 2), 10);
-                          const endHour = parseInt(s.heure_fin.substring(0, 2), 10);
-                          
-                          // La séance s'affiche sur le bloc horaire correspondant à son heure de début
                           return currentSlotHour === startHour;
                         });
 
@@ -300,13 +327,13 @@ export default function FormateurPlanning() {
                                     setSelectedSeanceDetails(s);
                                   }}
                                   style={{ height: computedHeight }}
-                                  className="absolute inset-x-1.5 top-1.5 z-20 cursor-pointer rounded-xl bg-orange-500/10 dark:bg-orange-500/15 p-3 transition hover:bg-orange-500/20 text-left flex flex-col justify-between overflow-hidden"
+                                  className="absolute inset-x-1.5 top-1.5 z-20 cursor-pointer rounded-2xl bg-emerald-500/10 border border-emerald-500/20 dark:bg-emerald-500/15 p-3 transition hover:bg-emerald-500/20 text-left flex flex-col justify-between overflow-hidden shadow-2xs"
                                 >
                                   <div>
-                                    <div className="flex items-center justify-between text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                                    <div className="flex items-center justify-between text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                       <span>{s.type_seance || 'Séance'}</span>
                                       <span className="text-slate-400 dark:text-zinc-400 font-normal">
-                                        {s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)}
+                                        {s.heure_debut?.substring(0, 5)}
                                       </span>
                                     </div>
 
@@ -323,7 +350,7 @@ export default function FormateurPlanning() {
 
                                   {s.salle && (
                                     <div className="text-[9px] font-semibold text-slate-500 dark:text-zinc-400 flex items-center gap-1">
-                                      <i className="bi bi-geo-alt-fill text-orange-500"></i> {s.salle}
+                                      <i className="bi bi-geo-alt-fill text-emerald-500"></i> {s.salle}
                                     </div>
                                   )}
                                 </div>
@@ -346,7 +373,7 @@ export default function FormateurPlanning() {
 
       {/* Modal Création de Séance */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/80 p-4 backdrop-blur-xs">
           <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 text-slate-800 dark:text-zinc-100 shadow-2xl">
             <button
               onClick={closeModal}
@@ -477,7 +504,7 @@ export default function FormateurPlanning() {
 
       {/* Modal Détails Séance */}
       {selectedSeanceDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/80 p-4 backdrop-blur-xs">
           <div className="relative w-full max-w-sm rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 text-slate-800 dark:text-zinc-100 shadow-2xl">
             <button
               onClick={() => setSelectedSeanceDetails(null)}
@@ -487,7 +514,7 @@ export default function FormateurPlanning() {
             </button>
 
             <div className="flex flex-wrap gap-2 mb-2">
-              <span className="bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border border-orange-500/20 dark:border-orange-500/30 font-bold text-xs px-2.5 py-1 rounded-md">
+              <span className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/30 font-bold text-xs px-2.5 py-1 rounded-md">
                 {selectedSeanceDetails.type_seance || 'Séance'}
               </span>
               {selectedSeanceDetails.formation_titre && (
@@ -503,13 +530,13 @@ export default function FormateurPlanning() {
 
             <div className="mb-6 space-y-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4 text-xs text-slate-600 dark:text-zinc-300">
               <div className="flex items-center gap-2.5">
-                <i className="bi bi-clock text-orange-500 shrink-0 text-sm"></i>
+                <i className="bi bi-clock text-emerald-500 shrink-0 text-sm"></i>
                 <span>
                   {new Date(selectedSeanceDetails.date_seance).toLocaleDateString('fr-FR')} ({selectedSeanceDetails.heure_debut?.substring(0, 5)} - {selectedSeanceDetails.heure_fin?.substring(0, 5)})
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <i className="bi bi-geo-alt text-orange-500 shrink-0 text-sm"></i>
+                <i className="bi bi-geo-alt text-emerald-500 shrink-0 text-sm"></i>
                 <span>Salle : <strong>{selectedSeanceDetails.salle || 'Non spécifiée'}</strong></span>
               </div>
               {selectedSeanceDetails.description && (

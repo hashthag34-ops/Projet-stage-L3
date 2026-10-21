@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { 
-  CheckCircle, Send, XCircle, RefreshCw, ChevronLeft, ChevronRight, 
-  UserRound, Mail, Phone, GraduationCap, BriefcaseBusiness, UserCheck, Sparkles,
-  Search, Filter, Check, MoreHorizontal, ArrowRight, User
+  CheckCircle, Send, RefreshCw, ChevronLeft, ChevronRight, 
+  Search, Eye, Users, UserX, Clock, Calendar, MapPin, 
+  Check, X, ChevronDown, Filter
 } from 'lucide-react';
 import API from '../../services/api';
 
@@ -16,6 +16,7 @@ export default function Candidatures() {
   // Filtres de recherche tableau
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatut, setFilterStatut] = useState('TOUT');
+  const [filterNiveau, setFilterNiveau] = useState('TOUT');
 
   // Pour le swipe / glissement sur mobile
   const touchStartX = useRef(0);
@@ -114,14 +115,19 @@ export default function Candidatures() {
   const currentCandidate = candidatsAExaminer[currentCandidateIndex];
 
   const nbPreselectionnes = tousLesCandidats.filter((c) => c.statut === 'PRESELECTIONNEE').length;
+  const nbRefuses = tousLesCandidats.filter((c) => c.statut === 'REFUSEE').length;
   const nbAcceptes = candidatsAcceptes.length;
   const placesRestantes = Math.max(0, (selectedGroup?.capacite_max || 0) - nbAcceptes - nbPreselectionnes);
 
+  // Liste unique des niveaux d'études pour le filtre
+  const niveauxEtudeUniques = Array.from(new Set(tousLesCandidats.map(c => c.niveau_etude).filter(Boolean)));
+
   // Filtrage du tableau de résultats
   const candidatsFiltres = tousLesCandidats.filter((c) => {
-    const matchSearch = `${c.prenom} ${c.nom} ${c.email} ${c.niveau_etude}`.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = `${c.prenom} ${c.nom} ${c.email} ${c.niveau_etude} ${c.filiere}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatut = filterStatut === 'TOUT' || c.statut === filterStatut;
-    return matchSearch && matchStatut;
+    const matchNiveau = filterNiveau === 'TOUT' || c.niveau_etude === filterNiveau;
+    return matchSearch && matchStatut && matchNiveau;
   });
 
   const selectFormation = (value) => {
@@ -157,110 +163,113 @@ export default function Candidatures() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 font-sans text-slate-800 dark:text-zinc-100 transition-colors duration-300 antialiased">
       
-      {/* Top Banner / Card d'En-tête Style Référence */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-              <span className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
-                #PROMO-{selectedGroup?.id_formation || '001'}
+      {/* CARD PRINCIPALE D'EN-TÊTE (Style Fiche Offre ATS Référence) */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        
+        {/* Ligne Référence & Boutons d'Action Globaux */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-5 dark:border-zinc-800">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                #OFFRE-{selectedGroup?.id_formation || '001'}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-emerald-600 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> EN COURS
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-blue-600 dark:text-blue-400">
+                EN LIGNE
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
                 {selectedGroup?.titre || 'Gestion des Candidatures'}
               </h1>
             </div>
-
-            <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
-              Examens des candidatures, sélection des apprenants et validation finale.
-            </p>
           </div>
 
-          {/* Badges de Statut / Compteurs */}
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800/80 lg:border-t-0 lg:pt-0">
-            <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50 min-w-[100px]">
-              <span className="block text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase">Total</span>
-              <span className="text-lg font-black text-slate-900 dark:text-white">{tousLesCandidats.length}</span>
-            </div>
-            <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50 min-w-[100px]">
-              <span className="block text-xs font-bold text-orange-600 dark:text-orange-400 uppercase">Retenus</span>
-              <span className="text-lg font-black text-orange-600 dark:text-orange-400">{nbPreselectionnes}</span>
-            </div>
-            <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50 min-w-[100px]">
-              <span className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">Acceptés</span>
-              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{nbAcceptes}</span>
-            </div>
-            <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50 min-w-[100px]">
-              <span className="block text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase">Restants</span>
-              <span className="text-lg font-black text-slate-900 dark:text-white">{placesRestantes} / {selectedGroup?.capacite_max || 0}</span>
-            </div>
+          {/* Sélection de Formation & Bouton Action Valider */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select 
+              value={selectedFormationId} 
+              onChange={(e) => selectFormation(e.target.value)} 
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              {formationsDisponibles.map((group) => (
+                <option key={group.id_formation} value={group.id_formation}>{group.titre}</option>
+              ))}
+            </select>
+
+            {selectedGroup && (
+              <button
+                onClick={() => handleValiderPromotion(selectedGroup.id_formation, selectedGroup.titre, nbPreselectionnes, selectedGroup.capacite_max - nbAcceptes)}
+                disabled={nbPreselectionnes === 0 || nbPreselectionnes > selectedGroup.capacite_max - nbAcceptes}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Send size={14} /> Valider Promotion ({nbPreselectionnes})
+              </button>
+            )}
 
             <button 
               onClick={fetchCandidatures} 
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 transition"
               title="Actualiser"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin text-orange-500" : ""} />
+              <RefreshCw size={14} className={loading ? "animate-spin text-blue-600" : ""} />
             </button>
+          </div>
+        </div>
+
+        {/* MÉTROLOGIE & COMPTEURS (Inspiré de l'Image de Référence) */}
+        <div className="pt-4 flex flex-wrap items-center justify-between gap-4 text-xs font-medium text-slate-500 dark:text-zinc-400">
+          
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Eye size={15} className="text-slate-400" />
+              <span><strong className="text-slate-900 dark:text-white">{tousLesCandidats.length}</strong> vues / postulants</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users size={15} className="text-blue-600 dark:text-blue-400" />
+              <span><strong className="text-slate-900 dark:text-white">{nbPreselectionnes}</strong> retenus</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <UserX size={15} className="text-rose-500" />
+              <span><strong className="text-slate-900 dark:text-white">{nbRefuses}</strong> refusés</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 border-l border-slate-100 pl-4 dark:border-zinc-800">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400">Capacité disponible</span>
+              <p className="text-xs font-extrabold text-slate-900 dark:text-white">
+                {placesRestantes} / {selectedGroup?.capacite_max || 0} places
+              </p>
+            </div>
           </div>
 
         </div>
+
       </div>
 
-      {/* Barre d'actions & Sélection de Formation */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-full sm:w-80">
-          <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-            Formation sélectionnée
-          </label>
-          <select 
-            value={selectedFormationId} 
-            onChange={(e) => selectFormation(e.target.value)} 
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            {formationsDisponibles.map((group) => (
-              <option key={group.id_formation} value={group.id_formation}>{group.titre}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Action Valider Promotion Globale */}
-        {selectedGroup && (
-          <button
-            onClick={() => handleValiderPromotion(selectedGroup.id_formation, selectedGroup.titre, nbPreselectionnes, selectedGroup.capacite_max - nbAcceptes)}
-            disabled={nbPreselectionnes === 0 || nbPreselectionnes > selectedGroup.capacite_max - nbAcceptes}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed self-end"
-          >
-            <Send size={15} /> Valider la promotion ({nbPreselectionnes})
-          </button>
-        )}
-      </div>
-
-      {/* Focus Dossier / Mode Examen Carrousel */}
+      {/* CARROUSEL / MODE EXAMEN INDIVIDUEL TACTILE */}
       {candidatsAExaminer.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
           <div className="mb-3 flex items-center justify-between text-xs font-bold">
-            <span className="text-orange-600 dark:text-orange-400 uppercase">
-              Examen individuel ({currentCandidateIndex + 1} / {candidatsAExaminer.length})
+            <span className="text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
+              <Clock size={14} /> Examen individuel du dossier ({currentCandidateIndex + 1} sur {candidatsAExaminer.length})
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentCandidateIndex((i) => Math.max(0, i - 1))}
                 disabled={currentCandidateIndex === 0}
-                className="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
+                className="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 hover:bg-slate-50 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => setCurrentCandidateIndex((i) => Math.min(candidatsAExaminer.length - 1, i + 1))}
                 disabled={currentCandidateIndex === candidatsAExaminer.length - 1}
-                className="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
+                className="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 hover:bg-slate-50 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
               >
                 <ChevronRight size={16} />
               </button>
@@ -272,10 +281,10 @@ export default function Candidatures() {
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-center md:justify-between"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
                   {currentCandidate.prenom?.[0]}{currentCandidate.nom?.[0]}
                 </div>
                 <div>
@@ -289,21 +298,21 @@ export default function Candidatures() {
               </div>
 
               <div className="text-xs text-slate-600 dark:text-zinc-300 max-w-md line-clamp-2">
-                <strong>Motivation :</strong> {currentCandidate.motivation || 'Aucune renseignée.'}
+                <strong>Motivation :</strong> {currentCandidate.motivation || 'Aucune lettre renseignée.'}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleDecision(currentCandidate, 'REFUSEE')}
                   disabled={processingId === currentCandidate.id_inscription}
-                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 transition"
                 >
                   Refuser
                 </button>
                 <button
                   onClick={() => handleDecision(currentCandidate, 'PRESELECTIONNEE')}
                   disabled={processingId === currentCandidate.id_inscription || placesRestantes === 0}
-                  className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-orange-600 disabled:opacity-40"
+                  className="rounded-xl bg-blue-600 hover:bg-blue-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition disabled:opacity-40"
                 >
                   Pré-sélectionner
                 </button>
@@ -313,162 +322,169 @@ export default function Candidatures() {
         </div>
       )}
 
-      {/* SECTION TABLEAU DES CANDIDATS (STYLE IMAGE DE RÉFÉRENCE) */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+      {/* TABLEAU DES CANDIDATS DE STYLE "DATA GRID ATS" */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
         
-        {/* Header Tableau & Filtres Horizontaux */}
-        <div className="p-4 border-b border-slate-100 dark:border-zinc-800 space-y-3">
+        {/* Titre & Barre de Recherche et Filtres Déroulants */}
+        <div className="p-5 border-b border-slate-100 dark:border-zinc-800 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Candidats ({candidatsFiltres.length})
-            </h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                Candidats ({candidatsFiltres.length})
+              </h2>
+              <p className="text-xs text-slate-400">
+                Affinez la recherche en renseignant les filtres correspondants à vos attentes.
+              </p>
+            </div>
 
-            {/* Champ de Recherche */}
-            <div className="relative w-full md:w-64">
+            {/* Barre de recherche */}
+            <div className="relative w-full md:w-72">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Rechercher un candidat..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-800 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-orange-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-blue-600"
               />
             </div>
           </div>
 
-          {/* Filtres Pilules (Qualification, Statut, etc.) */}
-          <div className="flex flex-wrap gap-2 text-xs">
-            <button 
-              onClick={() => setFilterStatut('TOUT')}
-              className={`rounded-lg px-3 py-1 font-semibold transition ${
-                filterStatut === 'TOUT' 
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-                  : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              Tous
-            </button>
-            <button 
-              onClick={() => setFilterStatut('EN_ATTENTE')}
-              className={`rounded-lg px-3 py-1 font-semibold transition ${
-                filterStatut === 'EN_ATTENTE' 
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-                  : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              En attente
-            </button>
-            <button 
-              onClick={() => setFilterStatut('PRESELECTIONNEE')}
-              className={`rounded-lg px-3 py-1 font-semibold transition ${
-                filterStatut === 'PRESELECTIONNEE' 
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-                  : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              Présélectionnés
-            </button>
-            <button 
-              onClick={() => setFilterStatut('ACCEPTEE')}
-              className={`rounded-lg px-3 py-1 font-semibold transition ${
-                filterStatut === 'ACCEPTEE' 
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-                  : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              Acceptés
-            </button>
+          {/* Grille de Dropdowns de Filtres (Inspirée de la Maquette) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            
+            {/* Filtre Statut */}
+            <div>
+              <select 
+                value={filterStatut}
+                onChange={(e) => setFilterStatut(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 outline-none"
+              >
+                <option value="TOUT">Tous les statuts</option>
+                <option value="EN_ATTENTE">En attente</option>
+                <option value="PRESELECTIONNEE">Présélectionné</option>
+                <option value="ACCEPTEE">Accepté</option>
+                <option value="REFUSEE">Refusé</option>
+              </select>
+            </div>
+
+            {/* Filtre Niveau d'étude */}
+            <div>
+              <select 
+                value={filterNiveau}
+                onChange={(e) => setFilterNiveau(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 outline-none"
+              >
+                <option value="TOUT">Toutes qualifications</option>
+                {niveauxEtudeUniques.map(niv => (
+                  <option key={niv} value={niv}>{niv}</option>
+                ))}
+              </select>
+            </div>
+
           </div>
         </div>
 
-        {/* Structure du Tableau */}
+        {/* Corps du Tableau */}
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400">Chargement du tableau...</div>
+          <div className="p-12 text-center text-xs text-slate-400">Chargement des données...</div>
         ) : candidatsFiltres.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">Aucun candidat trouvé.</div>
+          <div className="p-12 text-center text-xs text-slate-400">Aucun candidat ne correspond aux filtres actuels.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase dark:border-zinc-800 dark:bg-zinc-800/40">
+              <thead className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold text-slate-400 dark:border-zinc-800 dark:bg-zinc-800/40">
                 <tr>
-                  <th className="p-3.5">Candidat</th>
-                  <th className="p-3.5">Formation / Filière</th>
+                  <th className="p-3.5 pl-5">Candidat</th>
+                  <th className="p-3.5">Filière / Spécialité</th>
+                  <th className="p-3.5">Niveau</th>
                   <th className="p-3.5">Contact</th>
                   <th className="p-3.5">Statut</th>
-                  <th className="p-3.5 text-right">Actions</th>
+                  <th className="p-3.5 pr-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {candidatsFiltres.map((cand) => (
-                  <tr key={cand.id_inscription} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition">
+                  <tr key={cand.id_inscription} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 transition">
                     
                     {/* Colonne Candidat */}
-                    <td className="p-3.5">
+                    <td className="p-3.5 pl-5">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 dark:bg-zinc-700 text-[10px] font-bold text-slate-700 dark:text-zinc-200">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
+                        />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-700 dark:text-zinc-200">
                           {cand.prenom?.[0]}{cand.nom?.[0]}
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 dark:text-white">{cand.prenom} {cand.nom}</p>
-                          <p className="text-[10px] text-slate-400">{cand.niveau_etude || 'Niveau N/R'}</p>
+                          <p className="text-[10px] text-slate-400">{cand.telephone || 'Sans téléphone'}</p>
                         </div>
                       </div>
                     </td>
 
-                    {/* Colonne Formation / Informations */}
+                    {/* Filière */}
+                    <td className="p-3.5 font-medium text-slate-700 dark:text-zinc-300">
+                      {cand.filiere || 'Général'}
+                    </td>
+
+                    {/* Niveau */}
                     <td className="p-3.5">
-                      <p className="font-medium text-slate-700 dark:text-zinc-300 truncate max-w-[180px]">{cand.formation_titre}</p>
-                      <p className="text-[10px] text-slate-400">{cand.filiere || 'Général'}</p>
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                        {cand.niveau_etude || 'N/R'}
+                      </span>
                     </td>
 
-                    {/* Colonne Contact */}
-                    <td className="p-3.5 text-slate-600 dark:text-zinc-400">
-                      <p>{cand.email}</p>
-                      <p className="text-[10px] text-slate-400">{cand.telephone || 'Non renseigné'}</p>
+                    {/* Contact */}
+                    <td className="p-3.5 text-slate-500 dark:text-zinc-400 truncate max-w-[160px]">
+                      {cand.email}
                     </td>
 
-                    {/* Colonne Statut Badges */}
+                    {/* Statut Style Maquette (Pill pastel) */}
                     <td className="p-3.5">
                       {cand.statut === 'ACCEPTEE' ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle size={11} /> ACCEPTÉ
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/70 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                          OFFRE ENVOYÉE
                         </span>
                       ) : cand.statut === 'PRESELECTIONNEE' ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100/70 px-2.5 py-0.5 text-[10px] font-extrabold text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
                           PRÉSÉLECTIONNÉ
                         </span>
                       ) : cand.statut === 'REFUSEE' ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-100/70 px-2.5 py-0.5 text-[10px] font-extrabold text-rose-700 dark:bg-rose-500/20 dark:text-rose-400">
                           REFUSÉ
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-zinc-800 dark:text-zinc-400">
-                          EN ATTENTE
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
+                          AUCUN
                         </span>
                       )}
                     </td>
 
-                    {/* Colonne Actions */}
-                    <td className="p-3.5 text-right">
+                    {/* Actions */}
+                    <td className="p-3.5 pr-5 text-right">
                       {cand.statut !== 'ACCEPTEE' ? (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleDecision(cand, 'REFUSEE')}
                             disabled={processingId === cand.id_inscription}
-                            className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                            className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 transition"
                           >
                             Refuser
                           </button>
                           <button
                             onClick={() => handleDecision(cand, 'PRESELECTIONNEE')}
                             disabled={processingId === cand.id_inscription || placesRestantes === 0}
-                            className="rounded-lg bg-orange-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-orange-600 disabled:opacity-40"
+                            className="rounded-lg bg-blue-600 hover:bg-blue-700 px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xs disabled:opacity-40 transition"
                           >
                             Retenir
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] font-semibold text-slate-400">Validé</span>
+                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          Offre envoyée !
+                        </span>
                       )}
                     </td>
 
