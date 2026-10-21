@@ -212,6 +212,7 @@ exports.getCandidatures = async (req, res) => {
         i.statut,
         i.date_inscription,
         i.motivation,
+        i.conditions_acceptees,
         c.id_candidat,
         c.nom,
         c.prenom,
@@ -223,6 +224,7 @@ exports.getCandidatures = async (req, res) => {
         c.situation_professionnelle,
         c.etablissement,
         c.filiere,
+        COALESCE(a.id_apprenant IS NOT NULL AND u.mot_de_passe IS NOT NULL, FALSE) AS est_apprenant,
         f.id_formation,
         f.titre AS formation_titre,
         f.capacite_max,
@@ -240,6 +242,8 @@ exports.getCandidatures = async (req, res) => {
       FROM inscription i
       JOIN candidat c ON i.id_candidat = c.id_candidat
       JOIN formation f ON i.id_formation = f.id_formation
+      LEFT JOIN utilisateur u ON LOWER(u.email) = LOWER(c.email)
+      LEFT JOIN apprenant a ON a.id_candidat = c.id_candidat AND a.id_utilisateur = u.id_utilisateur
       ORDER BY i.date_inscription DESC;
     `;
 
@@ -253,6 +257,15 @@ exports.getCandidatures = async (req, res) => {
 
 exports.validerPromotion = async (req, res) => {
   const { id_formation } = req.params;
+  let selectedIds = null;
+  if (Object.prototype.hasOwnProperty.call(req.body, 'id_inscriptions')) {
+    const { id_inscriptions } = req.body;
+    if (!Array.isArray(id_inscriptions) || id_inscriptions.length === 0
+      || id_inscriptions.some((id) => !Number.isInteger(id) || id <= 0)) {
+      return res.status(400).json({ message: "La sélection de candidatures est invalide." });
+    }
+    selectedIds = [...new Set(id_inscriptions)];
+  }
   let client;
   let transactionStarted = false;
 
@@ -280,17 +293,34 @@ exports.validerPromotion = async (req, res) => {
        FROM inscription i
        JOIN candidat c ON i.id_candidat = c.id_candidat
        JOIN formation f ON i.id_formation = f.id_formation
-       WHERE i.id_formation = $1 AND i.statut = 'PRESELECTIONNEE'
+       WHERE i.id_formation = $1
+         AND (
+           ($2::INTEGER[] IS NULL AND i.statut = 'PRESELECTIONNEE')
+           OR ($2::INTEGER[] IS NOT NULL AND i.id_inscription = ANY($2::INTEGER[])
+             AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE'))
+         )
        FOR UPDATE`,
-      [id_formation]
+      [id_formation, selectedIds]
     );
 
     const candidats = resPreselection.rows;
-
-    if (candidats.length > capaciteMax) {
+    if (selectedIds && candidats.length !== selectedIds.length) {
       await client.query('ROLLBACK');
       return res.status(400).json({
-        message: `La limite est dépassée : ${candidats.length} candidats sélectionnés pour une capacité maximale de ${capaciteMax}.`
+        message: "Un ou plusieurs candidats sélectionnés ne sont plus disponibles pour cette promotion."
+      });
+    }
+
+    const resAcceptes = await client.query(
+      `SELECT COUNT(*)::INTEGER AS total FROM inscription WHERE id_formation = $1 AND statut = 'ACCEPTEE'`,
+      [id_formation]
+    );
+    const totalAcceptes = resAcceptes.rows[0].total;
+
+    if (totalAcceptes + candidats.length > capaciteMax) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        message: `La limite est dépassée : ${totalAcceptes} place(s) sont déjà attribuées et ${candidats.length} candidat(s) sont sélectionnés pour une capacité maximale de ${capaciteMax}.`
       });
     }
 
