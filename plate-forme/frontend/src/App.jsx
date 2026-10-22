@@ -21,12 +21,14 @@ import ApprenantEvaluations from './pages/Apprenant/ApprenantEvaluations';
 import GsUsers from './pages/Admin/GsUsers';
 import AdminStats from './pages/Admin/AdminStats';
 import SyntheticData from './pages/Admin/SyntheticData';
+import AdminCertification from './pages/Admin/Certification';
 
 // Responsable
 import Candidatures from './pages/Responsable/Candidature';
 import ResponsableFormations from './pages/Responsable/ResponsableFormations';
 import Planning from './pages/Responsable/Planning';
 import Scan from './pages/Responsable/Scan';
+import Certification from './pages/Responsable/Certification';
 
 // Formateur
 import FormateurDashboard from './pages/Formateur/dashboard';
@@ -64,6 +66,7 @@ export default function App() {
             <Route path="dashboard" element={<AdminStats />} />
             <Route path="users" element={<GsUsers />} />
             <Route path="donnees-test" element={<SyntheticData />} />
+            <Route path="certifications" element={<AdminCertification />} />
             <Route path="Profil" element={<Profil />} />
           </Route>
 
@@ -74,6 +77,7 @@ export default function App() {
             <Route path="Planning" element={<Planning />} />
             <Route path="Profil" element={<Profil />} />
             <Route path="Scan" element={<Scan />} />
+            <Route path="Certification" element={<Certification />} />
             <Route path="Catalogue" element={<Catalogue />} />
           </Route>
 

@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const certificationController = require('../controllers/certificationController');
 const verifyToken = require('../middleware/authMiddleware');
 
 // Middleware d'autorisation Administrateur
@@ -16,6 +17,8 @@ const requireAdmin = (req, res, next) => {
 router.use(verifyToken, requireAdmin);
 
 router.get('/statistics', adminController.getStatistics);
+router.get('/certifications/formations', certificationController.getAdminCertificationFormations);
+router.get('/certifications/formations/:id_formation/apprenants', certificationController.getAdminCertificationLearners);
 router.get('/user-activity', adminController.getUserActivityByMonth);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);

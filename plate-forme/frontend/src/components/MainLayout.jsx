@@ -20,11 +20,13 @@ const NAV_CONFIG = {
   admin: [
     { path: '/Admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
     { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
+    { path: '/Admin/certifications', label: 'Certifications', icon: 'bi-patch-check' },
     { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database' },
   ],
   administrateur: [
     { path: '/Admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
     { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
+    { path: '/Admin/certifications', label: 'Certifications', icon: 'bi-patch-check' },
     { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database' },
   ],
   responsable: [
@@ -32,6 +34,7 @@ const NAV_CONFIG = {
     { path: '/Responsable/Candidature', label: 'Candidatures', icon: 'bi-file-earmark-person' },
     { path: '/Responsable/Planning', label: 'Planning', icon: 'bi-calendar-week' },
     { path: '/Responsable/Scan', label: 'Scan', icon: 'bi-qr-code-scan' },
+    { path: '/Responsable/Certification', label: 'Certification', icon: 'bi-patch-check' },
     { path: '/Responsable/Catalogue', label: 'Catalogue', icon: 'bi-compass' },
   ],
   formateur: [

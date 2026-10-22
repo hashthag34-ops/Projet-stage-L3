@@ -393,7 +393,16 @@ export default function Catalogue() {
               return (
                 <article
                   key={f.id_formation}
-                  className={`group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition duration-300 ${
+                  onClick={() => handleOpenDetails(f)}
+                  onKeyDown={(event) => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      handleOpenDetails(f);
+                    }
+                  }}
+                  tabIndex={0}
+                  aria-label={`Consulter les informations et les avis de la formation ${f.titre}`}
+                  className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition duration-300 ${
                     viewMode === 'list' ? 'sm:flex-row sm:items-center' : ''
                   }`}
                 >
@@ -470,10 +479,13 @@ export default function Catalogue() {
                       {/* Boutons d'action */}
                       {estApprenant ? (
                         <button
-                          onClick={() => handleOpenDetails(f)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleOpenDetails(f);
+                          }}
                           className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
                         >
-                          {f.statut === 'TERMINEE' ? 'Consulter les avis' : 'Formation suivie'}
+                          {f.statut === 'TERMINEE' ? 'Consulter les avis' : 'Déjà inscrit'}
                           <i className="bi bi-arrow-up-right text-[10px]"></i>
                         </button>
                       ) : statutCandidature === 'EN_ATTENTE' ? (
@@ -486,7 +498,10 @@ export default function Catalogue() {
                         </span>
                       ) : ouverte ? (
                         <button
-                          onClick={() => handlePostuler(f)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handlePostuler(f);
+                          }}
                           className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
                         >
                           Postuler
@@ -494,7 +509,10 @@ export default function Catalogue() {
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleOpenDetails(f)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleOpenDetails(f);
+                          }}
                           className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white"
                         >
                           Infos
