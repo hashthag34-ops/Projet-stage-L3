@@ -15,8 +15,8 @@ import {
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -44,7 +44,7 @@ const monthName = (month) =>
 
 const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
-// Tooltip sur-mesure stylé Noir / Blanc / Orange
+// Tooltip sur-mesure stylé Zinc / Blanc / Orange
 const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
   if (active && payload && payload.length) {
     return (
@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
         {label && <p className="mb-1.5 text-xs font-bold text-slate-900 dark:text-white">{label}</p>}
         {payload.map((entry, index) => (
           <div key={`item-${index}`} className="flex items-center gap-2 text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
             <span className="text-slate-500 dark:text-zinc-400">{entry.name}:</span>
             <span className="font-extrabold text-orange-600 dark:text-orange-400">
               {entry.value} {suffix}
@@ -67,7 +67,7 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
 
 function StatCard({ label, value, detail, icon: Icon }) {
   return (
-    <article className="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
+    <article className="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white p-5 shadow-xs transition-all duration-300 hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold text-slate-400">{label}</p>
@@ -86,7 +86,7 @@ function StatCard({ label, value, detail, icon: Icon }) {
 
 function ChartPanel({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="flex flex-col rounded-3xl bg-white p-6 shadow-sm transition-all dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
+    <section className="flex flex-col rounded-3xl bg-white p-6 shadow-xs transition-all dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
@@ -158,11 +158,7 @@ export default function AdminStats() {
 
   const successData = useMemo(() => 
     (statistics?.successByFormation || [])
-      .filter((item) => Number(item.tentatives) > 0)
-      .map((item, idx) => ({
-        ...item,
-        fill: ORANGE_PALETTE[idx % ORANGE_PALETTE.length],
-      })),
+      .filter((item) => Number(item.tentatives) > 0),
     [statistics]
   );
 
@@ -186,7 +182,7 @@ export default function AdminStats() {
           disabled={loading}
           aria-label="Actualiser les statistiques"
           title="Actualiser"
-          className={`inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 ${focusRing}`}
+          className={`inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 ${focusRing}`}
         >
           <RefreshCw size={15} className={loading ? 'animate-spin text-orange-500' : 'text-orange-500'} />
           <span>Actualiser</span>
@@ -219,7 +215,7 @@ export default function AdminStats() {
       ) : statistics && (
         <>
           {/* Cartes KPI */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 font-sans">
             <StatCard
               label="Comptes Utilisateurs"
               value={overview.utilisateurs}
@@ -250,10 +246,10 @@ export default function AdminStats() {
             />
           </section>
 
-          {/* Grille de Graphiques Stylés (Même style Recharts animé du Dashboard) */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Grille de Graphiques Fluides (AreaChart et LineChart sans diagrammes en bâtons) */}
+          <div className="grid gap-6 lg:grid-cols-2 font-sans">
             
-            {/* 1. AreaChart : Formations créées (Identique au Dashboard) */}
+            {/* 1. AreaChart : Formations créées */}
             <ChartPanel
               title="Formations créées"
               subtitle="Évolution chronologique sur les 12 derniers mois"
@@ -350,7 +346,7 @@ export default function AdminStats() {
               )}
             </ChartPanel>
 
-            {/* 3. BarChart : Réussite aux Évaluations */}
+            {/* 3. AreaChart : Taux de Réussite aux Évaluations (Remplacement du BarChart) */}
             <ChartPanel
               title="Taux de Réussite aux Évaluations"
               subtitle="Note moyenne ≥ 10/20 par formation"
@@ -363,7 +359,13 @@ export default function AdminStats() {
               ) : (
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                    <AreaChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                      <defs>
+                        <linearGradient id="colorSuccess" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
                       <XAxis
                         dataKey="titre"
@@ -371,7 +373,7 @@ export default function AdminStats() {
                         axisLine={false}
                         tick={{ fontSize: 10, fill: '#94a3b8' }}
                         interval={0}
-                        tickFormatter={(v) => (v.length > 12 ? `${v.substring(0, 10)}...` : v)}
+                        tickFormatter={(v) => (v.length > 10 ? `${v.substring(0, 8)}...` : v)}
                       />
                       <YAxis
                         domain={[0, 100]}
@@ -381,25 +383,24 @@ export default function AdminStats() {
                         tick={{ fontSize: 10, fill: '#94a3b8' }}
                       />
                       <Tooltip content={<CustomTooltip suffix="%" />} />
-                      <Bar
+                      <Area
+                        type="monotone"
                         dataKey="taux_reussite"
                         name="Taux de réussite"
-                        radius={[6, 6, 0, 0]}
-                        barSize={24}
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorSuccess)"
                         isAnimationActive={true}
                         animationDuration={1500}
-                      >
-                        {successData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
             </ChartPanel>
 
-            {/* 4. Horizontal BarChart : Notes Moyennes des Formations */}
+            {/* 4. LineChart : Appréciation des Apprenants (Remplacement du BarChart horizontal) */}
             <ChartPanel
               title="Appréciation des Apprenants"
               subtitle="Notes moyennes attribuées (sur 5 étoiles)"
@@ -412,38 +413,34 @@ export default function AdminStats() {
               ) : (
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      layout="vertical"
-                      data={averageRating}
-                      margin={{ top: 5, right: 20, bottom: 5, left: 30 }}
-                    >
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
+                    <LineChart data={averageRating} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
                       <XAxis
-                        type="number"
+                        dataKey="titre"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tickFormatter={(v) => (v.length > 10 ? `${v.substring(0, 8)}…` : v)}
+                      />
+                      <YAxis
                         domain={[0, 5]}
                         tickLine={false}
                         axisLine={false}
                         tick={{ fontSize: 10, fill: '#94a3b8' }}
                       />
-                      <YAxis
-                        dataKey="titre"
-                        type="category"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
-                        tickFormatter={(v) => (v.length > 14 ? `${v.substring(0, 12)}…` : v)}
-                      />
                       <Tooltip content={<CustomTooltip suffix="/ 5" />} />
-                      <Bar
+                      <Line
+                        type="monotone"
                         dataKey="note_moyenne"
                         name="Note moyenne"
-                        fill="#f97316"
-                        radius={[0, 6, 6, 0]}
-                        barSize={18}
+                        stroke="#f97316"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: '#f97316' }}
+                        activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
                         isAnimationActive={true}
                         animationDuration={1500}
                       />
-                    </BarChart>
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}

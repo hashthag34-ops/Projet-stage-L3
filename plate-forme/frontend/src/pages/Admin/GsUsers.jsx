@@ -119,6 +119,7 @@ export default function GsUsers() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [monthlyActivity, setMonthlyActivity] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
   const [mobileIndex, setMobileIndex] = useState(0);
@@ -128,10 +129,7 @@ export default function GsUsers() {
     nom: '',
     prenom: '',
     email: '',
-    mot_de_passe: '',
     role: 'FORMATEUR',
-    specialite: '',
-    fonction: ''
   });
   // 1. Ajouter l'état de fermeture
   const [isClosing, setIsClosing] = useState(false);
@@ -184,8 +182,18 @@ export default function GsUsers() {
     }
   };
 
+  const fetchMonthlyActivity = async () => {
+    try {
+      const response = await API.get('/admin/user-activity');
+      setMonthlyActivity(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Erreur de chargement de l’activité mensuelle :', error);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchMonthlyActivity();
   }, []);
 
   useEffect(() => {
@@ -229,16 +237,22 @@ export default function GsUsers() {
           : currentUser
       ));
     };
-    const handleUsersChanged = () => fetchUsers();
+    const handleUsersChanged = () => {
+      fetchUsers();
+      fetchMonthlyActivity();
+    };
+    const handleApplicationsChanged = () => fetchMonthlyActivity();
 
     socket.on('user:presence', handlePresence);
     socket.on('users:presence', handlePresenceSnapshot);
     socket.on('users:changed', handleUsersChanged);
+    socket.on('candidatures:changed', handleApplicationsChanged);
     if (socket.connected) socket.emit('users:presence:request');
     return () => {
       socket.off('user:presence', handlePresence);
       socket.off('users:presence', handlePresenceSnapshot);
       socket.off('users:changed', handleUsersChanged);
+      socket.off('candidatures:changed', handleApplicationsChanged);
     };
   }, []);
 
@@ -247,9 +261,11 @@ export default function GsUsers() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/admin/users', formData);
+      const { nom, prenom, email, role } = formData;
+      const response = await API.post('/admin/users', { nom, prenom, email, role });
+      alert(response.data.message);
       setShowCreate(false);
-      setFormData({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'FORMATEUR', specialite: '', fonction: '' });
+      setFormData({ nom: '', prenom: '', email: '', role: 'FORMATEUR' });
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur lors de la création du compte');
@@ -310,23 +326,18 @@ export default function GsUsers() {
     const months = Array.from({ length: 6 }, (_, index) => (
       new Date(firstMonth.getFullYear(), firstMonth.getMonth() + index, 1)
     ));
-    const countsByMonth = new Map();
-
-    users.forEach((user) => {
-      if (!user.date_creation) return;
-      const monthKey = String(user.date_creation).slice(0, 7);
-      if (!/^\d{4}-\d{2}$/.test(monthKey)) return;
-      countsByMonth.set(monthKey, (countsByMonth.get(monthKey) || 0) + 1);
-    });
+    const activityByMonth = new Map(monthlyActivity.map((item) => [item.mois, item]));
 
     return months.map((month) => {
       const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+      const activity = activityByMonth.get(key);
       return {
         name: month.toLocaleDateString('fr-FR', { month: 'short' }),
-        comptes: countsByMonth.get(key) || 0
+        comptes: Number(activity?.comptes || 0),
+        candidatures: Number(activity?.candidatures || 0)
       };
     });
-  }, [users]);
+  }, [monthlyActivity]);
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
@@ -447,7 +458,11 @@ export default function GsUsers() {
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Graphique 1 : Activité récente (AreaChart) */}
             <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/40">
-              <span className="text-xs font-normal text-zinc-500">Comptes créés ces 6 derniers mois</span>
+              <span className="text-xs font-normal text-zinc-500">Comptes et candidatures ces 6 derniers mois</span>
+              <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-zinc-500">
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-zinc-800 dark:bg-zinc-200" />Comptes créés</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-orange-500" />Candidatures envoyées</span>
+              </div>
               <div className="mt-4 h-48 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyCreationChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -456,12 +471,31 @@ export default function GsUsers() {
                         <stop offset="5%" stopColor="#18181b" stopOpacity={0.3} />
                         <stop offset="95%" stopColor="#18181b" stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="applicationActivity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#09090b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
-                    <Area type="monotone" dataKey="comptes" stroke="#18181b" strokeWidth={2} fill="url(#userActivity)" />
+                    <Area
+                      type="monotone"
+                      dataKey="comptes"
+                      name="Comptes créés"
+                      stroke="#18181b"
+                      strokeWidth={2}
+                      fill="url(#userActivity)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="candidatures"
+                      name="Candidatures envoyées"
+                      stroke="#f97316"
+                      strokeWidth={2}
+                      fill="url(#applicationActivity)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -769,27 +803,21 @@ export default function GsUsers() {
               </div>
 
               <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className={inputClass} />
-              <input type="password" name="mot_de_passe" placeholder="Mot de passe" required value={formData.mot_de_passe ?? ''} onChange={handleChange} className={inputClass} />
 
               <select name="role" value={formData.role ?? 'FORMATEUR'} onChange={handleChange} className={inputClass}>
                 <option value="FORMATEUR">Formateur</option>
                 <option value="RESPONSABLE">Responsable</option>
                 <option value="ADMINISTRATEUR">Administrateur</option>
               </select>
-
-              {formData.role === 'FORMATEUR' && (
-                <input name="specialite" placeholder="Spécialité (ex: React, Python)" value={formData.specialite ?? ''} onChange={handleChange} className={inputClass} />
-              )}
-
-              {formData.role === 'RESPONSABLE' && (
-                <input name="fonction" placeholder="Fonction" value={formData.fonction ?? ''} onChange={handleChange} className={inputClass} />
-              )}
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Un lien sécurisé sera envoyé à cette adresse pour vérifier l’e-mail et configurer le compte.
+              </p>
 
               <button
                 type="submit"
                 className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-xs font-normal text-white shadow-md transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
               >
-                Créer l'utilisateur
+                Créer et envoyer l’invitation
               </button>
             </form>
           </div>

@@ -1,8 +1,18 @@
 // backend/controllers/adminController.js
 const db = require('../config/db');
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const { randomUUID } = require('crypto');
+const nodemailer = require('nodemailer');
 const { emitToRoles, disconnectUser } = require('../services/realtime');
+const getFrontendBaseUrl = require('../utils/frontendUrl');
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const syntheticFirstNames = ['Aina', 'Tiana', 'Miora', 'Fara', 'Nomena', 'Lova', 'Hery', 'Soa', 'Tahina', 'Mialy'];
 const syntheticLastNames = ['Rakoto', 'Ramanantsoa', 'Andria', 'Rasoanaivo', 'Randria', 'Razafy', 'Rabe', 'Raveloson'];
@@ -70,46 +80,99 @@ exports.getUsers = async (req, res) => {
 
 // Créer un utilisateur et l'assigner à son rôle
 exports.createUser = async (req, res) => {
-  const { email, mot_de_passe, nom, prenom, telephone, age, role, specialite, fonction } = req.body;
+  const { email, nom, prenom, role } = req.body;
+  const normalizedEmail = typeof email === 'string' ? email.trim() : '';
+  const normalizedNom = typeof nom === 'string' ? nom.trim() : '';
+  const normalizedPrenom = typeof prenom === 'string' ? prenom.trim() : '';
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+    || !normalizedNom
+    || !normalizedPrenom
+    || !['ADMINISTRATEUR', 'RESPONSABLE', 'FORMATEUR'].includes(role)
+  ) {
+    return res.status(400).json({ message: 'Veuillez renseigner le nom, le prénom, l’email et un rôle valide.' });
+  }
 
-  const client = await db.connect();
-
+  let client;
+  let transactionStarted = false;
   try {
+    const frontendBaseUrl = getFrontendBaseUrl(req);
+    await transporter.verify();
+    client = await db.connect();
     await client.query('BEGIN');
+    transactionStarted = true;
 
-    // 1. Hachage du mot de passe
-    const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const activationTokenHash = crypto.createHash('sha256').update(activationToken).digest('hex');
 
-    // 2. Insertion dans 'utilisateur'
     const userQuery = `
-      INSERT INTO utilisateur (email, mot_de_passe, nom, prenom, telephone, age)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO utilisateur (
+        email, nom, prenom, statut_compte, email_verifie,
+        jeton_activation_hash, jeton_activation_expiration
+      )
+      VALUES ($1, $2, $3, 'ACTIF', FALSE, $4, CURRENT_TIMESTAMP + INTERVAL '24 hours')
       RETURNING id_utilisateur;
     `;
-    const userRes = await client.query(userQuery, [email, hashedPassword, nom, prenom, telephone || null, age || null]);
+    const userRes = await client.query(userQuery, [normalizedEmail, normalizedNom, normalizedPrenom, activationTokenHash]);
     const userId = userRes.rows[0].id_utilisateur;
-    console.log("Utilisateur creer", userId);
 
-
-    // 3. Liaison avec la table correspondant au rôle
     if (role === 'ADMINISTRATEUR') {
       await client.query('INSERT INTO administrateur (id_utilisateur) VALUES ($1)', [userId]);
     } else if (role === 'RESPONSABLE') {
-      await client.query('INSERT INTO responsable (id_utilisateur, fonction) VALUES ($1, $2)', [userId, fonction || null]);
+      await client.query('INSERT INTO responsable (id_utilisateur) VALUES ($1)', [userId]);
     } else if (role === 'FORMATEUR') {
-      await client.query('INSERT INTO formateur (id_utilisateur, specialite) VALUES ($1, $2)', [userId, specialite || null]);
+      await client.query('INSERT INTO formateur (id_utilisateur) VALUES ($1)', [userId]);
     }
 
+    const setupLink = `${frontendBaseUrl}/setup-account?token=${encodeURIComponent(activationToken)}`;
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+    await transporter.sendMail({
+      to: normalizedEmail,
+      from: `"Plateforme Formations" <${process.env.EMAIL_USER}>`,
+      subject: 'Finalisez la configuration de votre compte',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2>Bonjour ${escapeHtml(normalizedPrenom)} ${escapeHtml(normalizedNom)},</h2>
+          <p>Un compte ${escapeHtml(role.toLowerCase())} a été créé pour vous.</p>
+          <p>Pour vérifier votre adresse e-mail et définir votre nom d’utilisateur ainsi que votre mot de passe, utilisez le lien ci-dessous. Il est valable pendant 24 heures.</p>
+          <p style="margin: 24px 0;">
+            <a href="${setupLink}" style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+              Configurer mon compte
+            </a>
+          </p>
+          <p>Si vous n’attendiez pas cet e-mail, vous pouvez l’ignorer.</p>
+        </div>
+      `
+    });
+
     await client.query('COMMIT');
+    transactionStarted = false;
     emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
-    res.status(201).json({ message: "Utilisateur et rôle créés avec succès." });
-    console.log("Utilisateur et rôle créés avec succès.");
+    res.status(201).json({ message: 'Compte créé. Un e-mail de configuration a été envoyé à cette adresse.' });
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Erreur lors de l’annulation de la création du compte :', rollbackError);
+      }
+    }
     console.error("Erreur createUser :", error);
-    res.status(500).json({ message: error.detail || "Erreur lors de la création de l'utilisateur." });
+    if (error.code === '23505') {
+      return res.status(409).json({ message: 'Cette adresse e-mail est déjà utilisée.' });
+    }
+    if (error.code === 'INVALID_FRONTEND_URL') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(503).json({ message: "Impossible de créer le compte ou d'envoyer l'e-mail de configuration. Vérifiez la configuration du service e-mail puis réessayez." });
   } finally {
-    client.release();
+    client?.release();
   }
 };
 
@@ -465,5 +528,43 @@ exports.getStatistics = async (req, res) => {
   } catch (error) {
     console.error('Erreur statistiques administrateur :', error);
     res.status(500).json({ message: 'Impossible de charger les statistiques.' });
+  }
+};
+
+exports.getUserActivityByMonth = async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `WITH months AS (
+        SELECT generated.month_start::DATE AS month_start
+         FROM GENERATE_SERIES(
+           DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months',
+           DATE_TRUNC('month', CURRENT_DATE),
+           INTERVAL '1 month'
+        ) AS generated(month_start)
+       ),
+       monthly_users AS (
+         SELECT DATE_TRUNC('month', date_creation)::DATE AS month_start, COUNT(*)::INTEGER AS comptes
+         FROM utilisateur
+         WHERE date_creation >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+         GROUP BY DATE_TRUNC('month', date_creation)
+       ),
+       monthly_applications AS (
+         SELECT DATE_TRUNC('month', date_inscription)::DATE AS month_start, COUNT(*)::INTEGER AS candidatures
+         FROM inscription
+         WHERE date_inscription >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+         GROUP BY DATE_TRUNC('month', date_inscription)
+       )
+       SELECT TO_CHAR(months.month_start, 'YYYY-MM') AS mois,
+              COALESCE(monthly_users.comptes, 0)::INTEGER AS comptes,
+              COALESCE(monthly_applications.candidatures, 0)::INTEGER AS candidatures
+       FROM months
+       LEFT JOIN monthly_users USING (month_start)
+       LEFT JOIN monthly_applications USING (month_start)
+       ORDER BY months.month_start`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur activité mensuelle utilisateurs :', error);
+    res.status(500).json({ message: 'Impossible de charger l’activité mensuelle.' });
   }
 };

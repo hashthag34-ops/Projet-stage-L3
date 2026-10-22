@@ -2,13 +2,24 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { emitToRoles } = require('../services/realtime');
 
 exports.setupAccount = async (req, res) => {
-  const { email, username, mot_de_passe } = req.body;
+  const { email, token, username, mot_de_passe } = req.body;
   const photo_profil = req.file ? req.file.filename : null;
+  const hasToken = typeof token === 'string' && token.length > 0;
+  const hasEmail = typeof email === 'string' && email.trim().length > 0;
 
-  if (!email || !mot_de_passe || !username) {
+  if (
+    (!hasEmail && !hasToken)
+    || (token && !hasToken)
+    || (email && !hasEmail)
+    || typeof mot_de_passe !== 'string'
+    || !mot_de_passe
+    || typeof username !== 'string'
+    || !username.trim()
+  ) {
     return res.status(400).json({ message: "Veuillez remplir tous les champs obligatoires." });
   }
 
@@ -18,16 +29,42 @@ exports.setupAccount = async (req, res) => {
     const hashedPassword = await bcrypt.hash(mot_de_passe, saltRounds);
 
     // 2. Mettre à jour l'utilisateur dans la base de données
-    const result = await db.query(
-      `UPDATE utilisateur 
-       SET username = $1, mot_de_passe = $2, photo_profil = $3
-       WHERE email = $4
-       RETURNING id_utilisateur, email, nom, prenom, username`,
-      [username, hashedPassword, photo_profil || null, email]
-    );
+    const result = hasToken
+      ? await db.query(
+        `UPDATE utilisateur
+         SET username = $1, mot_de_passe = $2, photo_profil = $3,
+             email_verifie = TRUE, jeton_activation_hash = NULL,
+             jeton_activation_expiration = NULL
+         WHERE jeton_activation_hash = $4
+           AND jeton_activation_expiration > CURRENT_TIMESTAMP
+           AND mot_de_passe IS NULL
+         RETURNING id_utilisateur, email, nom, prenom, username`,
+        [
+          username,
+          hashedPassword,
+          photo_profil || null,
+          crypto.createHash('sha256').update(token).digest('hex')
+        ]
+      )
+      : await db.query(
+        `UPDATE utilisateur AS u
+         SET username = $1, mot_de_passe = $2, photo_profil = $3
+         WHERE u.email = $4
+           AND u.mot_de_passe IS NULL
+           AND EXISTS (
+             SELECT 1 FROM apprenant ap
+             WHERE ap.id_utilisateur = u.id_utilisateur
+           )
+         RETURNING u.id_utilisateur, u.email, u.nom, u.prenom, u.username`,
+        [username, hashedPassword, photo_profil || null, email]
+      );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Aucun compte associé à cet email." });
+      return res.status(400).json({
+        message: token
+          ? "Ce lien de configuration est invalide, expiré ou déjà utilisé. Demandez un nouvel e-mail d’invitation."
+          : "Aucun compte apprenant non configuré n’est associé à cet email."
+      });
     }
 
     emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
@@ -59,6 +96,13 @@ exports.login = async (req, res) => {
     }
 
     const user = userQuery.rows[0];
+
+    if (user.email_verifie === false) {
+      return res.status(403).json({ message: "Veuillez vérifier votre adresse e-mail en configurant votre compte depuis le lien reçu." });
+    }
+    if (!user.mot_de_passe) {
+      return res.status(403).json({ message: "Votre compte n’est pas encore configuré. Finalisez sa configuration depuis le lien reçu par e-mail." });
+    }
 
     // Vérifier le statut du compte
     if (user.statut_compte !== 'ACTIF') {

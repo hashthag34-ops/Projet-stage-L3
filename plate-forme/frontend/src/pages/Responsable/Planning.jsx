@@ -22,6 +22,7 @@ export default function Planning() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState('Week');
 
   const initialFormState = {
     id_formation: '',
@@ -36,7 +37,7 @@ export default function Planning() {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // Helper pour formater la date au format YYYY-MM-DD en temps local
+  // Formater la date au format YYYY-MM-DD en temps local
   const formatDateLocal = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -56,7 +57,6 @@ export default function Planning() {
     if (selectedFormation) {
       const formFound = formations.find(f => String(f.id_formation) === String(selectedFormation));
       if (formFound && formFound.date_debut) {
-        // Aligne directement le calendrier sur la date exacte du début de la formation
         setCurrentDate(new Date(formFound.date_debut));
       }
     }
@@ -101,11 +101,10 @@ export default function Planning() {
     });
   };
 
-  // Génère les 6 jours à afficher à partir de currentDate
   const getWeekDays = (startDate) => {
     const start = new Date(startDate);
     const days = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       days.push(d);
@@ -115,9 +114,13 @@ export default function Planning() {
 
   const weekDays = getWeekDays(currentDate);
 
-  const navigateWeek = (direction) => {
+  const navigateTime = (direction) => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + direction * 7);
+    if (currentView === 'Week') {
+      newDate.setDate(currentDate.getDate() + direction * 7);
+    } else {
+      newDate.setMonth(currentDate.getMonth() + direction);
+    }
     setCurrentDate(newDate);
   };
 
@@ -132,12 +135,10 @@ export default function Planning() {
     setShowModal(true);
   };
 
-  // SOUMISSION DU FORMULAIRE DE CRÉATION
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Définition d'un nom par défaut automatique si non précisé
     const targetFormation = formations.find(f => String(f.id_formation) === String(formData.id_formation));
     const titreParDefaut = targetFormation ? `${formData.type_seance} - ${targetFormation.titre}` : formData.type_seance;
 
@@ -174,184 +175,304 @@ export default function Planning() {
     setFormData(initialFormState);
   };
 
-  // Couleurs adaptées pour les en-têtes en Mode Sombre & Clair
-  const headerColors = [
-    'bg-[#3b4366] dark:bg-[#3b4366] text-white',
-    'bg-[#3f5045] dark:bg-[#3f5045] text-white',
-    'bg-[#453f52] dark:bg-[#453f52] text-white',
-    'bg-[#364954] dark:bg-[#364954] text-white',
-    'bg-[#434258] dark:bg-[#434258] text-white',
-    'bg-[#3a3f4d] dark:bg-[#3a3f4d] text-white'
-  ];
+  const hoursList = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+  const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const selectedDateISO = formatDateLocal(currentDate);
+
+  const currentDaySeances = seances.filter(s => s.date_seance && formatDateLocal(s.date_seance) === selectedDateISO);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-[#1c1d22] dark:text-[#d1d5db] font-sans p-3 sm:p-6 transition-colors duration-300">
-      
-      {/* En-tête / Top Navbar style CRM Kanban */}
-      <div className="mb-6 flex flex-col gap-4 bg-white dark:bg-[#23252d] p-4 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border border-orange-500/20 dark:border-orange-500/30">
-            <CalendarIcon size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Gestion du planning</h1>
-            <p className="text-xs text-slate-500 dark:text-gray-400">Programmez et organisez les créneaux des formations</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-100 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 font-sans p-3 sm:p-6 transition-colors duration-300">
 
-        {/* Commandes et Filtres */}
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={selectedFormation}
-            onChange={(e) => setSelectedFormation(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-100 dark:border-white/10 dark:bg-[#18191e] px-3.5 py-2 text-xs font-medium text-slate-800 dark:text-gray-200 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-          >
-            <option value="">Toutes les formations</option>
-            {formations.map(f => (
-              <option key={f.id_formation} value={f.id_formation}>{f.titre}</option>
-            ))}
-          </select>
+      {/* CONTENEUR PRINCIPAL */}
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-xs p-4 sm:p-8 relative">
+        
+        {/* BARRE SUPÉRIEURE DE NAVIGATION */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-zinc-800 pb-5">
+          
+          <div className="flex flex-wrap items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white border border-slate-200 dark:border-zinc-700">
+                <CalendarIcon size={18} />
+              </div>
+              <div>
+                <h1 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white capitalize">
+                  {monthName}
+                </h1>
+                <p className="text-[11px] text-slate-400 dark:text-zinc-500">Planning Responsable</p>
+              </div>
+            </div>
 
-          {/* Navigation Semaine */}
-          <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-[#18191e] p-1 border border-slate-200 dark:border-white/10">
-            <button
-              onClick={() => navigateWeek(-1)}
-              className="rounded-lg p-1.5 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-[#282a33] hover:text-slate-900 dark:hover:text-white transition"
-              title="Semaine précédente"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="px-2 text-xs font-semibold text-slate-700 dark:text-gray-300">
-              {weekDays[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - {weekDays[weekDays.length - 1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-            </span>
-            <button
-              onClick={() => navigateWeek(1)}
-              className="rounded-lg p-1.5 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-[#282a33] hover:text-slate-900 dark:hover:text-white transition"
-              title="Semaine suivante"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Grille des Colonnes Kanban */}
-      {loading ? (
-        <div className="py-24 text-center text-sm font-medium text-slate-500 dark:text-gray-500">Chargement du planning...</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {weekDays.map((day, idx) => {
-            const dateISO = formatDateLocal(day);
-            const daySeances = seances.filter(s => s.date_seance && formatDateLocal(s.date_seance) === dateISO);
-            const isToday = formatDateLocal(new Date()) === dateISO;
-            const headerBg = headerColors[idx % headerColors.length];
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleOpenCreateForDate(dateISO)}
-                title="Cliquer sur la journée pour ajouter une séance"
-                className="group/col flex cursor-pointer flex-col gap-3 rounded-2xl bg-slate-100/80 dark:bg-[#23252d] p-3 border border-slate-200/80 dark:border-white/5 shadow-sm dark:shadow-lg min-h-[500px] transition-all hover:border-orange-500/40 hover:bg-slate-200/50 dark:hover:bg-[#262832]"
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentDate(new Date())}
+                className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
               >
-                {/* En-tête de la Colonne style CRM */}
-                <div className={`rounded-xl ${headerBg} p-3 shadow-md border border-white/10`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider">
-                      {day.toLocaleDateString('fr-FR', { weekday: 'short' })} {day.getDate()}
+                Aujourd'hui
+              </button>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => navigateTime(-1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                  title="Précédent"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => navigateTime(1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                  title="Suivant"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select
+              value={selectedFormation}
+              onChange={(e) => setSelectedFormation(e.target.value)}
+              className="w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 px-3 py-2 text-xs font-medium text-slate-800 dark:text-zinc-200 outline-none"
+            >
+              <option value="">Toutes les formations</option>
+              {formations.map(f => (
+                <option key={f.id_formation} value={f.id_formation}>{f.titre}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => handleOpenCreateForDate(selectedDateISO)}
+              className="hidden sm:flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 px-4 py-2 text-xs font-bold text-white shadow-xs transition"
+            >
+              <Plus size={16} />
+              <span>Nouvelle Séance</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ========================================================= */}
+        {/* VUE MOBILE / TABLETTE (STYLE MAQUETTE MOBILE)             */}
+        {/* ========================================================= */}
+        <div className="block lg:hidden">
+          
+          {/* Bandeau de jours défilant horizontalement */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 pt-1 no-scrollbar">
+            {weekDays.map((day, idx) => {
+              const dateISO = formatDateLocal(day);
+              const isSelected = selectedDateISO === dateISO;
+              const isToday = formatDateLocal(new Date()) === dateISO;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentDate(day)}
+                  className={`flex flex-col items-center justify-center min-w-[52px] py-2.5 rounded-2xl transition border ${
+                    isSelected
+                      ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-zinc-950 dark:text-zinc-400 dark:border-zinc-800'
+                  }`}
+                >
+                  <span className="text-[10px] font-bold uppercase">
+                    {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                  </span>
+                  <span className={`text-sm font-extrabold mt-1 ${isToday && !isSelected ? 'text-zinc-900 dark:text-white underline underline-offset-4' : ''}`}>
+                    {day.getDate()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Liste chronologique des séances du jour */}
+          {loading ? (
+            <div className="py-12 text-center text-xs text-slate-400">Chargement...</div>
+          ) : currentDaySeances.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl my-4">
+              Aucune séance programmée pour cette journée.
+            </div>
+          ) : (
+            <div className="space-y-3 my-4">
+              {currentDaySeances.map((s) => (
+                <div
+                  key={s.id_seance}
+                  onClick={() => setSelectedSeanceDetails(s)}
+                  className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 hover:bg-slate-100/80 dark:hover:bg-zinc-800/50 transition cursor-pointer"
+                >
+                  <div className="text-right shrink-0 min-w-[48px]">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">{s.heure_debut?.substring(0, 5)}</p>
+                    <p className="text-[10px] font-semibold text-slate-400">{s.heure_fin?.substring(0, 5)}</p>
+                  </div>
+
+                  <div className="flex-1 min-w-0 border-l-2 border-zinc-900 dark:border-zinc-100 pl-3">
+                    <span className="inline-block rounded-md bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 text-[9px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      {s.type_seance || 'Séance'}
                     </span>
-                    {isToday && (
-                      <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-black uppercase text-black">
-                        Aujourd'hui
-                      </span>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {s.titre || s.type_seance}
+                    </h4>
+                    {s.formation_titre && (
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                        {s.formation_titre}
+                      </p>
+                    )}
+                    {s.salle && (
+                      <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 flex items-center gap-1">
+                        <MapPin size={11} /> {s.salle}
+                      </p>
                     )}
                   </div>
-                  <div className="mt-1 text-[11px] font-medium opacity-80">
-                    {daySeances.length} {daySeances.length > 1 ? 'séances' : 'séance'}
-                  </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                {/* Liste des Cartes Kanban du Jour */}
-                <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto pr-0.5">
-                  {daySeances.length === 0 ? (
-                    <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-white/10 p-4 text-center text-slate-400 dark:text-gray-500 transition group-hover/col:border-orange-500/40 group-hover/col:text-orange-500 dark:group-hover/col:text-orange-400">
-                      <Plus size={18} className="mb-1" />
-                      <span className="text-[11px] font-medium">Cliquer pour ajouter</span>
-                    </div>
-                  ) : (
-                    daySeances.map(s => (
-                      <div
-                        key={s.id_seance}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Empêche l'ouverture de la modal d'ajout lors du clic sur une carte
-                          setSelectedSeanceDetails(s);
-                        }}
-                        className="group cursor-pointer rounded-xl bg-white dark:bg-[#2b2d37] p-3.5 border border-slate-200 dark:border-white/5 shadow-sm hover:border-orange-500/40 hover:bg-orange-50/20 dark:hover:bg-[#31333f] transition duration-200 text-left"
-                      >
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-400">
-                          <span className="font-semibold text-orange-600 dark:text-orange-400">
-                            {s.type_seance || 'Séance'}
-                          </span>
-                          <span className="text-[10px]">
-                            {s.date_seance ? new Date(s.date_seance).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : ''}
-                          </span>
-                        </div>
-
-                        <h4 className="mt-1.5 text-xs font-bold text-slate-800 dark:text-gray-100 line-clamp-2 leading-snug">
-                          {s.titre || s.type_seance}
-                        </h4>
-
-                        {s.formation_titre && (
-                          <p className="mt-1 truncate text-[10px] text-slate-500 dark:text-gray-400 font-medium">
-                            {s.formation_titre}
-                          </p>
-                        )}
-
-                        {/* Micro-badges style Kanban */}
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          <span className="rounded bg-slate-100 dark:bg-[#202127] px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-white/5">
-                            {s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)}
-                          </span>
-                          {s.salle && (
-                            <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              {s.salle}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 dark:text-gray-500 pt-2 border-t border-slate-100 dark:border-white/5">
-                          <span>Début</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            {s.heure_debut?.substring(0, 5)}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {/* Bouton Flottant (FAB) d'ajout sur Mobile */}
+          <button
+            onClick={() => handleOpenCreateForDate(selectedDateISO)}
+            className="fixed bottom-20 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-white shadow-xl dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            <Plus size={20} />
+          </button>
         </div>
-      )}
+
+        {/* ========================================================= */}
+        {/* VUE DESKTOP (GRILLE COMPLÈTE HAUTEUR/HEURES)              */}
+        {/* ========================================================= */}
+        <div className="hidden lg:block overflow-x-auto">
+          {loading ? (
+            <div className="py-24 text-center text-xs text-slate-400">Chargement du planning...</div>
+          ) : (
+            <div className="min-w-[900px]">
+              
+              {/* En-tête des jours */}
+              <div className="grid grid-cols-8 border-b border-slate-200 dark:border-zinc-800 pb-3 text-center">
+                <div className="text-xs font-bold text-slate-400 flex items-center justify-center">
+                  Heure
+                </div>
+                {weekDays.map((day, idx) => {
+                  const dateISO = formatDateLocal(day);
+                  const isToday = formatDateLocal(new Date()) === dateISO;
+                  return (
+                    <div key={idx} className="flex flex-col items-center">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                        {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                      </span>
+                      <span className={`text-xs font-extrabold mt-0.5 px-2.5 py-0.5 rounded-full ${
+                        isToday ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-slate-800 dark:text-zinc-200'
+                      }`}>
+                        {day.getDate()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Lignes Heures + Créneaux */}
+              <div className="relative divide-y divide-slate-100 dark:divide-zinc-800/60">
+                {hoursList.map((hour, hIdx) => {
+                  const currentSlotHour = parseInt(hour.substring(0, 2), 10);
+
+                  return (
+                    <div key={hIdx} className="grid grid-cols-8 min-h-[90px]">
+                      
+                      <div className="pr-3 py-2 text-right text-xs font-medium text-slate-400 flex items-start justify-end pt-1">
+                        {hour}
+                      </div>
+
+                      {weekDays.map((day, dIdx) => {
+                        const dateISO = formatDateLocal(day);
+                        
+                        const daySeances = seances.filter(s => {
+                          if (!s.date_seance || formatDateLocal(s.date_seance) !== dateISO) return false;
+                          if (!s.heure_debut || !s.heure_fin) return false;
+                          
+                          const startHour = parseInt(s.heure_debut.substring(0, 2), 10);
+                          return currentSlotHour === startHour;
+                        });
+
+                        return (
+                          <div
+                            key={dIdx}
+                            onClick={() => handleOpenCreateForDate(dateISO)}
+                            className="p-1.5 border-l border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition cursor-pointer flex flex-col gap-1.5 relative"
+                          >
+                            {daySeances.map(s => {
+                              const startHour = parseInt(s.heure_debut.substring(0, 2), 10);
+                              const endHour = parseInt(s.heure_fin.substring(0, 2), 10);
+                              const durationHours = Math.max(1, endHour - startHour);
+                              const computedHeight = `${durationHours * 90 - 10}px`;
+
+                              return (
+                                <div
+                                  key={s.id_seance}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedSeanceDetails(s);
+                                  }}
+                                  style={{ height: computedHeight }}
+                                  className="absolute inset-x-1.5 top-1.5 z-20 cursor-pointer rounded-2xl bg-zinc-100 border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 p-3 transition hover:border-zinc-400 text-left flex flex-col justify-between overflow-hidden shadow-2xs"
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between text-[10px] font-bold text-zinc-900 dark:text-zinc-100">
+                                      <span>{s.type_seance || 'Séance'}</span>
+                                      <span className="text-slate-400 font-normal">
+                                        {s.heure_debut?.substring(0, 5)}
+                                      </span>
+                                    </div>
+
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate">
+                                      {s.titre || s.type_seance}
+                                    </h4>
+
+                                    {s.formation_titre && (
+                                      <p className="text-[10px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                                        {s.formation_titre}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {s.salle && (
+                                    <div className="text-[9px] font-semibold text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                                      <MapPin size={10} /> {s.salle}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+
+                    </div>
+                  );
+                })}
+              </div>
+
+            </div>
+          )}
+        </div>
+
+      </div>
 
       {/* Modal Création de Séance */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#23252d] p-6 text-slate-800 dark:text-gray-200 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-xs">
+          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 text-slate-800 dark:text-zinc-100 shadow-2xl">
             <button
               onClick={closeModal}
-              className="absolute right-4 top-4 text-slate-400 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
-            <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3 text-lg font-bold text-slate-900 dark:text-white">
-              <span className="w-2 h-5 bg-orange-500 rounded-full inline-block"></span>
+            <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3 text-base font-bold text-slate-900 dark:text-white">
               Programmer une Séance
             </h2>
 
             {errorMsg && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/10 p-3 text-xs text-orange-600 dark:text-orange-400">
+              <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300">
                 <AlertCircle size={16} className="shrink-0" />
                 <span>{errorMsg}</span>
               </div>
@@ -359,12 +480,12 @@ export default function Planning() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Formation</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Formation</label>
                 <select
                   required
                   value={formData.id_formation}
                   onChange={handleModalFormationChange}
-                  className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white"
+                  className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white"
                 >
                   <option value="">Sélectionner une formation</option>
                   {formations.map(f => (
@@ -375,11 +496,11 @@ export default function Planning() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Type de Séance</label>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Type de Séance</label>
                   <select
                     value={formData.type_seance}
                     onChange={(e) => setFormData({ ...formData, type_seance: e.target.value })}
-                    className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white"
                   >
                     <option value="Cours Magistral">Cours Magistral</option>
                     <option value="Travaux Pratiques (TP)">Travaux Pratiques (TP)</option>
@@ -390,19 +511,19 @@ export default function Planning() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Salle / Lieu</label>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Salle / Lieu</label>
                   <input
                     type="text"
                     placeholder="Labo 2 / Zoom"
                     value={formData.salle}
                     onChange={(e) => setFormData({ ...formData, salle: e.target.value })}
-                    className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Date</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Date</label>
                 <input
                   type="date"
                   required
@@ -411,52 +532,47 @@ export default function Planning() {
                   max={activeModalFormation?.date_fin ? formatDateLocal(activeModalFormation.date_fin) : ''}
                   value={formData.date_seance}
                   onChange={(e) => setFormData({ ...formData, date_seance: e.target.value })}
-                  className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white disabled:opacity-50"
                 />
-                {activeModalFormation && (
-                  <p className="text-[10px] text-slate-400 dark:text-gray-400 mt-1">
-                    Du {new Date(activeModalFormation.date_debut).toLocaleDateString('fr-FR')} au {new Date(activeModalFormation.date_fin).toLocaleDateString('fr-FR')}
-                  </p>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Heure Début</label>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Heure Début</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_debut}
                     onChange={(e) => setFormData({ ...formData, heure_debut: e.target.value })}
-                    className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Heure Fin</label>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Heure Fin</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_fin}
                     onChange={(e) => setFormData({ ...formData, heure_fin: e.target.value })}
-                    className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">Description / Remarques (Optionnel)</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Description (Optionnel)</label>
                 <textarea
                   rows="2"
                   placeholder="Informations complémentaires..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs font-medium focus:ring-1 focus:ring-orange-500 outline-none bg-slate-50 dark:bg-[#18191e] text-slate-800 dark:text-white resize-none"
+                  className="w-full border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 text-xs font-medium outline-none bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-white resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-black font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition mt-2 text-xs"
+                className="w-full bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold py-3 rounded-2xl shadow-xs transition mt-2 text-xs"
               >
                 Valider la Séance
               </button>
@@ -467,51 +583,46 @@ export default function Planning() {
 
       {/* Modal Détails Séance */}
       {selectedSeanceDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#23252d] p-6 text-slate-800 dark:text-gray-200 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 text-slate-800 dark:text-zinc-100 shadow-2xl">
             <button
               onClick={() => setSelectedSeanceDetails(null)}
-              className="absolute right-4 top-4 text-slate-400 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="flex flex-wrap gap-2 mb-2">
-              <span className="bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border border-orange-500/20 dark:border-orange-500/30 font-bold text-xs px-2.5 py-1 rounded-md">
+              <span className="bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold text-xs px-2.5 py-1 rounded-md">
                 {selectedSeanceDetails.type_seance || 'Séance'}
               </span>
-              {selectedSeanceDetails.formation_titre && (
-                <span className="max-w-[180px] truncate rounded-md bg-slate-100 dark:bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-gray-300">
-                  {selectedSeanceDetails.formation_titre}
-                </span>
-              )}
             </div>
 
             <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-              {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance || 'Séance de cours'}
+              {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance}
             </h3>
 
-            <div className="mb-6 space-y-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#18191e] p-4 text-xs text-slate-600 dark:text-gray-300">
+            <div className="mb-6 space-y-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4 text-xs text-slate-600 dark:text-zinc-300">
               <div className="flex items-center gap-2.5">
-                <Clock size={15} className="text-orange-500 dark:text-orange-400 shrink-0" />
+                <Clock size={14} className="shrink-0" />
                 <span>
                   {new Date(selectedSeanceDetails.date_seance).toLocaleDateString('fr-FR')} ({selectedSeanceDetails.heure_debut?.substring(0, 5)} - {selectedSeanceDetails.heure_fin?.substring(0, 5)})
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <MapPin size={15} className="text-orange-500 dark:text-orange-400 shrink-0" />
+                <MapPin size={14} className="shrink-0" />
                 <span>Salle : <strong>{selectedSeanceDetails.salle || 'Non spécifiée'}</strong></span>
               </div>
               {selectedSeanceDetails.description && (
-                <div className="pt-2 border-t border-slate-200 dark:border-white/10">
-                  <p className="italic text-slate-500 dark:text-gray-400">{selectedSeanceDetails.description}</p>
+                <div className="pt-2 border-t border-slate-200 dark:border-zinc-800">
+                  <p className="italic text-slate-500 dark:text-zinc-400">{selectedSeanceDetails.description}</p>
                 </div>
               )}
             </div>
 
             <button
               onClick={() => handleDelete(selectedSeanceDetails.id_seance)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-500/20 transition"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition"
             >
               <Trash2 size={15} />
               Supprimer cette séance
@@ -519,6 +630,7 @@ export default function Planning() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

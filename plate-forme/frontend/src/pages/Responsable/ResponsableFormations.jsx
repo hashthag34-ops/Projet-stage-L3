@@ -46,8 +46,8 @@ function FormationDetailsModal({ formation, onClose }) {
   if (!formation) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
         
         {/* Bannière Image */}
         <div className="relative h-48 w-full bg-slate-100 dark:bg-zinc-800">
@@ -66,7 +66,7 @@ function FormationDetailsModal({ formation, onClose }) {
           )}
           <button 
             onClick={onClose}
-            className={`absolute right-3 top-3 rounded-xl bg-slate-950/60 p-1.5 text-white backdrop-blur-md transition hover:bg-slate-950/80 ${focusRing}`}
+            className={`absolute right-3 top-3 rounded-xl bg-zinc-950/60 p-1.5 text-white backdrop-blur-md transition hover:bg-zinc-950/80 ${focusRing}`}
           >
             <X size={18} />
           </button>
@@ -90,24 +90,24 @@ function FormationDetailsModal({ formation, onClose }) {
 
           {/* Grille d'infos */}
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
               <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
               <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-zinc-200">
                 {formation.date_debut ? new Date(formation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {formation.date_fin ? new Date(formation.date_fin).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-800/30">
               <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Limite d'inscription</span>
               <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-zinc-200">
                 {formation.date_limite_inscription ? new Date(formation.date_limite_inscription).toLocaleDateString('fr-FR') : 'Non spécifiée'}
               </p>
             </div>
 
-            <div className="col-span-2 rounded-xl border border-orange-500/20 bg-orange-500/10 p-3.5">
+            <div className="col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-orange-700 dark:text-orange-400">Capacité d'accueil</span>
-                <span className="rounded-lg bg-orange-500/20 px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-300">
+                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Capacité d'accueil</span>
+                <span className="rounded-lg bg-zinc-200/60 px-2.5 py-0.5 text-xs font-bold text-slate-800 dark:bg-zinc-700 dark:text-zinc-200">
                   {formation.capacite_max || 0} places max
                 </span>
               </div>
@@ -116,7 +116,7 @@ function FormationDetailsModal({ formation, onClose }) {
 
           <button 
             onClick={onClose}
-            className={`w-full rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+            className={`w-full rounded-2xl bg-zinc-900 py-3 text-xs font-semibold text-white shadow-xs transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white ${focusRing}`}
           >
             Fermer
           </button>
@@ -182,14 +182,14 @@ function FormateurAssignModal({ formation, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-lg space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
         
         <div className="flex items-start justify-between border-b border-slate-100 pb-4 dark:border-zinc-800">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Gestion des intervenants</h2>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-              Formation : <span className="font-semibold text-orange-600 dark:text-orange-400">{formation?.titre}</span>
+              Formation : <span className="font-semibold text-slate-900 dark:text-white">{formation?.titre}</span>
             </p>
           </div>
           <button 
@@ -207,20 +207,20 @@ function FormateurAssignModal({ formation, onClose }) {
           {loading ? (
             <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">Chargement...</div>
           ) : assignedFormateurs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
               <p className="text-xs text-slate-500 dark:text-zinc-400">Aucun formateur affecté pour le moment.</p>
             </div>
           ) : (
             <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
               {assignedFormateurs.map((f) => (
-                <div key={f.id_formateur} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+                <div key={f.id_formateur} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
                   <div className="flex items-center space-x-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-xs font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
                       {f.prenom?.[0]}{f.nom?.[0]}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900 dark:text-white">{f.nom} {f.prenom}</p>
-                      <span className="mt-0.5 inline-block rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">
+                      <span className="mt-0.5 inline-block rounded bg-zinc-200/60 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
                         {f.role_formateur || 'Intervenant'}
                       </span>
                     </div>
@@ -275,7 +275,7 @@ function FormateurAssignModal({ formation, onClose }) {
 
           <button 
             type="submit" 
-            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-3 text-xs font-semibold text-white shadow-xs transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white ${focusRing}`}
           >
             <UserPlus size={15} />
             <span>Affecter à la formation</span>
@@ -299,13 +299,11 @@ export default function ResponsableFormations() {
   // Recherche & Gestion Image
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState('recent');
-  const [mobileIndex, setMobileIndex] = useState(0);
-  const [imageInputType, setImageInputType] = useState('url'); // 'url' ou 'file'
+  const [imageInputType, setImageInputType] = useState('url');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Sécurisation : aucune propriété ne doit être null/undefined
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
@@ -376,7 +374,6 @@ export default function ResponsableFormations() {
     setSelectedFile(null);
     setImagePreviewUrl('');
     setImageInputType('url');
-    // Remplacement explicite des valeurs potentielles 'null' par des chaînes vides
     setFormData({
       titre: f.titre ?? '',
       description: f.description ?? '',
@@ -397,7 +394,6 @@ export default function ResponsableFormations() {
     try {
       let finalImageUrl = formData.image_url;
 
-      // Si l'option d'upload fichier est activée et qu'un fichier est présent
       if (imageInputType === 'file' && selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', selectedFile);
@@ -460,29 +456,27 @@ export default function ResponsableFormations() {
       });
   }, [formations, searchTerm, sort]);
 
-  const currentFormation = filteredFormations[mobileIndex];
-
   return (
-    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100">
+    <div className="space-y-8 font-sans text-slate-900 dark:text-zinc-100 p-2 sm:p-4">
       
       {/* En-tête */}
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
-            <Sparkles size={14} />
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400">
+            <Sparkles size={14} className="text-orange-500" />
             <span>Espace responsable</span>
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Gestion des formations
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400">
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
             Planifiez, administrez et affectez les formateurs à vos programmes d'apprentissage.
           </p>
         </div>
 
         <button 
           onClick={handleOpenCreate} 
-          className={`inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+          className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white ${focusRing}`}
         >
           <Plus size={16} />
           <span>Nouvelle formation</span>
@@ -490,47 +484,35 @@ export default function ResponsableFormations() {
       </header>
 
       {/* Cartes KPI */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-xs font-semibold text-slate-400">Total Formations</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{formations.length}</span>
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">+12%</span>
-          </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 font-sans">
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-bold text-slate-400">Total Formations</span>
+          <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">{formations.length}</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-xs font-semibold text-slate-400">Formations Ouvertes</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-emerald-600">{formations.filter(f => f.statut === 'OUVERTE').length}</span>
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Active</span>
-          </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-bold text-slate-400">Ouvertes</span>
+          <p className="mt-2 text-xl font-black text-emerald-600">{formations.filter(f => f.statut === 'OUVERTE').length}</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-xs font-semibold text-slate-400">En Cours</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-blue-600">{formations.filter(f => f.statut === 'EN_COURS').length}</span>
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">En session</span>
-          </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-bold text-slate-400">En Cours</span>
+          <p className="mt-2 text-xl font-black text-blue-600">{formations.filter(f => f.statut === 'EN_COURS').length}</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-xs font-semibold text-slate-400">Brouillons</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-600">{formations.filter(f => f.statut === 'BROUILLON').length}</span>
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Attente</span>
-          </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-xs font-bold text-slate-400">Brouillons</span>
+          <p className="mt-2 text-xl font-black text-amber-600">{formations.filter(f => f.statut === 'BROUILLON').length}</p>
         </div>
       </div>
 
       {/* Filtres & Recherche */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-3.5 text-slate-400 dark:text-zinc-500" />
+          <Search size={15} className="absolute left-3.5 top-3.5 text-slate-400 dark:text-zinc-500" />
           <input 
             value={searchTerm || ''} 
-            onChange={(e) => { setSearchTerm(e.target.value); setMobileIndex(0); }} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
             placeholder="Rechercher par titre, description ou statut..." 
             className={`${inputClass} pl-10`} 
           />
@@ -551,28 +533,28 @@ export default function ResponsableFormations() {
 
       {/* Contenu */}
       {loading ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
+        <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
           <p className="text-xs font-semibold text-slate-400 dark:text-zinc-500">Chargement des formations...</p>
         </div>
       ) : filteredFormations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
           <GraduationCap size={32} className="text-slate-300 dark:text-zinc-600" />
           <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-zinc-300">Aucune formation trouvée</p>
           <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
         </div>
       ) : (
         <>
-          {/* Vue Desktop */}
-          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 md:block">
+          {/* Vue Desktop (Tableau complet) */}
+          <div className="hidden overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60 md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200/80 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-zinc-800/80 dark:bg-zinc-800/30 dark:text-zinc-500">
+                <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-500">
                   <tr>
-                    <th className="p-4">Formation</th>
+                    <th className="p-4 pl-5">Formation</th>
                     <th className="p-4">Statut</th>
                     <th className="p-4">Période</th>
                     <th className="p-4">Capacité</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="p-4 pr-5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
@@ -581,18 +563,18 @@ export default function ResponsableFormations() {
                       key={f.id_formation} 
                       className="transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/40"
                     >
-                      <td className="p-4">
+                      <td className="p-4 pl-5">
                         <div className="flex items-center gap-3">
                           {f.image_url ? (
                             <img 
                               src={getFormationImageUrl(f.image_url)}
                               alt="" 
-                              className="h-10 w-10 rounded-xl object-cover ring-2 ring-orange-500/20" 
+                              className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-zinc-700" 
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
                               onLoad={(e) => { e.currentTarget.style.display = ''; }}
                             />
                           ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-zinc-800 font-bold text-slate-700 dark:text-zinc-300">
                               <GraduationCap size={18} />
                             </div>
                           )}
@@ -613,44 +595,44 @@ export default function ResponsableFormations() {
                       </td>
                       <td className="p-4 whitespace-nowrap text-[11px] font-semibold text-slate-600 dark:text-zinc-300">
                         {f.date_debut ? new Date(f.date_debut).toLocaleDateString('fr-FR') : '-'} 
-                        <span className="mx-1 text-orange-500">➔</span> 
+                        <span className="mx-1 text-slate-400">➔</span> 
                         {f.date_fin ? new Date(f.date_fin).toLocaleDateString('fr-FR') : '-'}
                       </td>
                       <td className="p-4 whitespace-nowrap font-medium text-slate-600 dark:text-zinc-400">
                         <span className="font-bold text-slate-900 dark:text-white">{f.capacite_max}</span> places
                       </td>
-                      <td className="p-4 text-right whitespace-nowrap">
+                      <td className="p-4 pr-5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button 
                             onClick={() => setSelectedFormationForDetails(f)}
-                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${focusRing}`}
                             title="Fiche détaillée"
                           >
-                            <Info size={17} />
+                            <Info size={16} />
                           </button>
 
                           <button 
                             onClick={() => setSelectedFormationForFormateurs(f)}
-                            className={`inline-flex items-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-50 px-2.5 py-1.5 text-[11px] font-bold text-orange-700 transition hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:hover:bg-orange-500/20 ${focusRing}`}
+                            className={`inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 ${focusRing}`}
                           >
-                            <Users size={14} />
+                            <Users size={13} />
                             <span>Formateurs</span>
                           </button>
 
                           <button 
                             onClick={() => handleOpenEdit(f)} 
-                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-orange-50 hover:text-orange-600 dark:text-zinc-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400 ${focusRing}`}
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${focusRing}`}
                             title="Modifier"
                           >
-                            <Edit3 size={16} />
+                            <Edit3 size={15} />
                           </button>
 
                           <button 
                             onClick={() => handleDelete(f.id_formation)} 
-                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`}
+                            className={`rounded-xl p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 ${focusRing}`}
                             title="Supprimer"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -661,113 +643,84 @@ export default function ResponsableFormations() {
             </div>
           </div>
 
-          {/* Vue Mobile */}
-          <div className="md:hidden">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
-              <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
-                <button 
-                  onClick={() => setMobileIndex((index) => Math.max(0, index - 1))} 
-                  disabled={mobileIndex === 0} 
-                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                  Programme {mobileIndex + 1} / {filteredFormations.length}
-                </span>
-                <button 
-                  onClick={() => setMobileIndex((index) => Math.min(filteredFormations.length - 1, index + 1))} 
-                  disabled={mobileIndex === filteredFormations.length - 1} 
-                  className={`rounded-xl border border-slate-200 p-2 text-slate-600 disabled:opacity-30 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-
-              {currentFormation && (
+          {/* Vue Mobile & Tablette en Grille Compacte (2 ou 3 cartes par ligne) */}
+          <div className="grid grid-cols-2 gap-3 md:hidden">
+            {filteredFormations.map((f) => (
+              <div 
+                key={f.id_formation}
+                className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+              >
                 <div>
-                  <div className="flex flex-col items-center text-center">
-                    {currentFormation.image_url ? (
+                  <div className="flex items-center justify-between gap-1 mb-2">
+                    <span className={`inline-flex rounded-md px-2 py-0.5 text-[9px] font-bold ${getStatusBadgeClass(f.statut)}`}>
+                      {f.statut}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400">{f.capacite_max} max</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-2">
+                    {f.image_url ? (
                       <img 
-                        src={getFormationImageUrl(currentFormation.image_url)}
+                        src={getFormationImageUrl(f.image_url)}
                         alt="" 
-                        className="h-20 w-20 rounded-2xl object-cover ring-2 ring-orange-500/30" 
+                        className="h-9 w-9 rounded-xl object-cover shrink-0" 
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         onLoad={(e) => { e.currentTarget.style.display = ''; }}
                       />
                     ) : (
-                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
-                        <GraduationCap size={32} />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-zinc-800 font-bold text-slate-700 dark:text-zinc-300 shrink-0">
+                        <GraduationCap size={16} />
                       </div>
                     )}
-                    <h2 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
-                      {currentFormation.titre}
-                    </h2>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
-                      {currentFormation.description || 'Aucune description'}
-                    </p>
-                    <span className={`mt-3 rounded-lg px-2.5 py-1 text-[11px] font-bold ${getStatusBadgeClass(currentFormation.statut)}`}>
-                      {currentFormation.statut}
-                    </span>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
+                      {f.titre}
+                    </h3>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
-                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Période</span>
-                      <strong className="mt-0.5 block truncate text-slate-700 dark:text-zinc-300">
-                        {currentFormation.date_debut ? new Date(currentFormation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {currentFormation.date_fin ? new Date(currentFormation.date_fin).toLocaleDateString('fr-FR') : '-'}
-                      </strong>
-                    </div>
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
-                      <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500">Capacité</span>
-                      <strong className="mt-0.5 block text-slate-700 dark:text-zinc-300">
-                        {currentFormation.capacite_max} places
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <button 
-                      onClick={() => setSelectedFormationForDetails(currentFormation)} 
-                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 active:scale-[0.98] dark:text-slate-950 ${focusRing}`}
-                    >
-                      <Info size={15} />
-                      <span>Détails</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSelectedFormationForFormateurs(currentFormation)} 
-                      className={`flex items-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-50 px-3 py-2.5 text-xs font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 ${focusRing}`}
-                    >
-                      <Users size={15} />
-                      <span>Formateurs</span>
-                    </button>
-
-                    <button 
-                      onClick={() => handleOpenEdit(currentFormation)} 
-                      className={`rounded-xl border border-slate-200 p-2.5 text-slate-600 dark:border-zinc-800 dark:text-zinc-400 ${focusRing}`}
-                    >
-                      <Edit3 size={15} />
-                    </button>
-
-                    <button 
-                      onClick={() => handleDelete(currentFormation.id_formation)} 
-                      className={`rounded-xl border border-slate-200 p-2.5 text-red-600 dark:border-zinc-800 dark:text-red-400 ${focusRing}`}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-zinc-400 line-clamp-1 mb-3">
+                    {f.description || 'Aucune description'}
+                  </p>
                 </div>
-              )}
-            </div>
+
+                <div className="border-t border-slate-100 pt-2.5 dark:border-zinc-800 flex items-center justify-between gap-1">
+                  <button 
+                    onClick={() => setSelectedFormationForDetails(f)} 
+                    className={`flex-1 rounded-xl bg-slate-100 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 ${focusRing}`}
+                  >
+                    Détails
+                  </button>
+                  <button 
+                    onClick={() => setSelectedFormationForFormateurs(f)} 
+                    className={`rounded-xl border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 ${focusRing}`}
+                    title="Formateurs"
+                  >
+                    <Users size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleOpenEdit(f)} 
+                    className={`rounded-xl border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 ${focusRing}`}
+                    title="Modifier"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(f.id_formation)} 
+                    className={`rounded-xl border border-slate-200 p-1.5 text-rose-600 hover:bg-rose-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-rose-400 ${focusRing}`}
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
 
       {/* Modal Création & Édition Formation */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
@@ -809,10 +762,10 @@ export default function ResponsableFormations() {
               </div>
 
               {/* Section Image (Fichier ou URL) */}
-              <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
+              <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/50 p-3 dark:border-zinc-800/60 dark:bg-zinc-800/30">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">Image de couverture</label>
-                  <div className="flex space-x-1 rounded-lg bg-slate-200/60 p-0.5 dark:bg-zinc-800">
+                  <div className="flex space-x-1 rounded-xl bg-slate-200/60 p-0.5 dark:bg-zinc-800">
                     <button
                       type="button"
                       onClick={() => {
@@ -823,7 +776,7 @@ export default function ResponsableFormations() {
                         setImagePreviewUrl('');
                         setImageInputType('url');
                       }}
-                      className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-slate-900 shadow-xs dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
                     >
                       <LinkIcon size={12} />
                       <span>URL</span>
@@ -831,7 +784,7 @@ export default function ResponsableFormations() {
                     <button
                       type="button"
                       onClick={() => setImageInputType('file')}
-                      className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-slate-900 shadow-xs dark:bg-zinc-700 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
                     >
                       <Upload size={12} />
                       <span>Fichier</span>
@@ -853,13 +806,12 @@ export default function ResponsableFormations() {
                     type="file" 
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="w-full text-xs text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-orange-700 hover:file:bg-orange-100 dark:text-zinc-400 dark:file:bg-orange-500/10 dark:file:text-orange-400" 
+                    className="w-full text-xs text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-300 dark:text-zinc-400 dark:file:bg-zinc-800 dark:file:text-zinc-200" 
                   />
                 )}
 
-                {/* Prévisualisation sécurisée */}
                 {imagePreviewUrl || formData.image_url ? (
-                  <div className="relative mt-2 h-24 w-full overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-800">
+                  <div className="relative mt-2 h-24 w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800">
                     <img
                       src={getFormationImageUrl(imagePreviewUrl || formData.image_url)}
                       alt="Aperçu"
@@ -940,7 +892,7 @@ export default function ResponsableFormations() {
               <button 
                 type="submit" 
                 disabled={uploadingImage}
-                className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-xs font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 dark:text-slate-950 dark:hover:bg-orange-400 ${focusRing}`}
+                className={`mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-3 text-xs font-semibold text-white shadow-xs transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white ${focusRing}`}
               >
                 {uploadingImage && <RefreshCw size={14} className="animate-spin" />}
                 <span>{uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}</span>

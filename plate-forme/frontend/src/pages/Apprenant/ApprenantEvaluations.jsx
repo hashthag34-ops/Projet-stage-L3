@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, Clock3, Play, RotateCcw, Send, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, Play, RotateCcw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import API from '../../services/api';
 import { getRealtimeSocket } from '../../services/realtime';
 
@@ -26,10 +26,13 @@ export default function ApprenantEvaluations() {
   const [error, setError] = useState('');
   const [terminationReason, setTerminationReason] = useState(null);
   
+  // Navigation question par question
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
   // Timer state
   const [timeLeft, setTimeLeft] = useState(null);
 
-  // References to keep fresh state in callbacks & timers
+  // References
   const answersRef = useRef(answers);
   const attemptRef = useRef(attempt);
   const submittingRef = useRef(submitting);
@@ -105,7 +108,7 @@ export default function ApprenantEvaluations() {
     }
   }, [loadEvaluations]);
 
-  // Timer Countdown Logic
+  // Timer Countdown
   useEffect(() => {
     if (!attempt || !attempt.deadline_epoch_ms) return;
 
@@ -142,13 +145,14 @@ export default function ApprenantEvaluations() {
   }, [detail, attempt, result, submitAttempt]);
 
   const openEvaluation = async (evaluation) => {
-    if (evaluation.tentative_statut === 'TERMINEE') return; // Double protection
+    if (evaluation.tentative_statut === 'TERMINEE') return;
 
     setOpeningId(evaluation.id_evaluation_sujet);
     setError('');
     setResult(null);
     setTerminationReason(null);
     setAnswers({});
+    setCurrentQuestionIndex(0);
     try {
       const [detailResponse, attemptResponse] = await Promise.all([
         API.get(`/apprenant/evaluations/${evaluation.id_evaluation_sujet}`),
@@ -194,11 +198,6 @@ export default function ApprenantEvaluations() {
     });
   };
 
-  const handleSubmitForm = (event) => {
-    event.preventDefault();
-    submitAttempt(false);
-  };
-
   const leaveEvaluation = () => {
     setDetail(null);
     setAttempt(null);
@@ -207,6 +206,7 @@ export default function ApprenantEvaluations() {
     setResult(null);
     setTimeLeft(null);
     setTerminationReason(null);
+    setCurrentQuestionIndex(0);
     answersRef.current = {};
     answerSaveQueue.current = Promise.resolve();
     answerSaveErrors.current.clear();
@@ -215,137 +215,191 @@ export default function ApprenantEvaluations() {
     setError('');
   };
 
-  if (loading) return <p className="py-8 text-sm text-black/50 dark:text-white/50">Chargement des évaluations...</p>;
+  if (loading) return <p className="p-6 text-xs text-zinc-500 dark:text-zinc-400 font-sans">Chargement des évaluations...</p>;
+
+  const totalQuestions = detail?.questions?.length || 0;
+  const currentQuestion = detail?.questions?.[currentQuestionIndex];
+  const progressPercent = totalQuestions > 0 ? Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100) : 0;
 
   return (
-    <div className="space-y-7">
-      <header className="flex flex-col justify-between gap-4 border-b border-black/10 pb-6 sm:flex-row sm:items-end dark:border-white/10">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 font-sans text-zinc-900 dark:text-zinc-100">
+      <header className="flex flex-col justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Espace apprenant</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">Mes évaluations</h1>
-          <p className="mt-2 text-sm text-black/55 dark:text-white/55">Passez les évaluations publiées pour vos formations.</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500 dark:text-orange-400">Espace apprenant</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Mes évaluations</h1>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Passez les évaluations publiées pour vos formations.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm font-semibold text-black/55 dark:text-white/55">
-          <ClipboardCheck size={18} className="text-orange-500" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <ClipboardCheck size={16} className="text-orange-500" />
           {evaluations.length} évaluation{evaluations.length === 1 ? '' : 's'} disponible{evaluations.length === 1 ? '' : 's'}
         </div>
       </header>
 
-      {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs font-medium text-rose-700 dark:text-rose-300">{error}</p>}
 
       {detail ? (
-        <section className="mx-auto max-w-3xl">
-          <button type="button" onClick={leaveEvaluation} className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-black/60 hover:text-orange-600 dark:text-white/60 dark:hover:text-orange-400">
-            <ArrowLeft size={16} /> Retour aux évaluations
+        <section className="mx-auto max-w-2xl">
+          <button type="button" onClick={leaveEvaluation} className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition">
+            <ArrowLeft size={15} /> Retour aux évaluations
           </button>
+          
           {result ? (
-            <div className="border-y border-black/10 py-10 text-center dark:border-white/10">
-              <CheckCircle2 size={42} className="mx-auto text-orange-500" />
-              <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">Évaluation terminée</p>
-              <h2 className="mt-2 text-2xl font-black">{detail.titre}</h2>
-              <p className="mt-3 text-4xl font-black">{result.note} <span className="text-lg text-black/40 dark:text-white/40">/ 20</span></p>
-              {terminationReason === 'onglet' && <p role="alert" className="mt-4 text-sm font-semibold text-red-600 dark:text-red-400">La tentative a été terminée automatiquement car l’onglet de l’évaluation a été quitté.</p>}
-              {terminationReason === 'temps' && <p className="mt-4 text-sm font-semibold text-red-600 dark:text-red-400">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
-              <button type="button" onClick={leaveEvaluation} className="mt-6 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-orange-400">Retour à la liste</button>
+            <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <CheckCircle2 size={38} className="mx-auto text-orange-500" />
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-widest text-zinc-400">Évaluation terminée</p>
+              <h2 className="mt-2 text-xl font-black">{detail.titre}</h2>
+              <p className="mt-3 text-3xl font-black">{result.note} <span className="text-sm font-normal text-zinc-400">/ 20</span></p>
+              {terminationReason === 'onglet' && <p role="alert" className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">La tentative a été terminée automatiquement car l’onglet a été quitté.</p>}
+              {terminationReason === 'temps' && <p className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
+              <button type="button" onClick={leaveEvaluation} className="mt-6 rounded-2xl bg-zinc-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900">Retour à la liste</button>
             </div>
           ) : (
-            <form onSubmit={handleSubmitForm} className="space-y-5">
-              <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-5 sm:flex-row sm:items-start dark:border-white/10">
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-6">
+              
+              {/* En-tête : Titre, Progression & Minuterie */}
+              <div className="flex flex-col gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">{detail.formation_titre}</p>
-                  <h2 className="mt-1 text-2xl font-black">{detail.titre}</h2>
-                  {detail.description && <p className="mt-2 text-sm text-black/55 dark:text-white/55">{detail.description}</p>}
-                  <p className="mt-3 text-xs font-semibold text-black/50 dark:text-white/50">{detail.questions.length} questions · {detail.total_points}/20 points</p>
-                  <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">Quitter cet onglet terminera immédiatement l’évaluation.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500">{detail.formation_titre}</p>
+                  <h2 className="mt-1 text-lg font-black">{detail.titre}</h2>
+                  <p className="mt-1 text-[11px] font-semibold text-zinc-400">Total test: {progressPercent}% complété</p>
                 </div>
-                
-                {detail.duree_minutes && (
-                  <div className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold ${
-                    timeLeft !== null && timeLeft <= 60 
-                      ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 animate-pulse' 
-                      : 'border-black/10 dark:border-white/10'
-                  }`}>
-                    {timeLeft !== null && timeLeft <= 60 ? <AlertTriangle size={16} /> : <Clock3 size={16} />}
-                    {timeLeft !== null ? formatSeconds(timeLeft) : formatDuration(detail.duree_minutes)}
+
+                <div className="flex items-center gap-4">
+                  {detail.duree_minutes && (
+                    <div className="flex items-center gap-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 px-3.5 py-2">
+                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-orange-500 text-orange-500">
+                        <span className="text-[10px] font-black">{timeLeft !== null ? formatSeconds(timeLeft) : formatDuration(detail.duree_minutes)}</span>
+                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                        Temps restant
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Avertissement anti-triche */}
+              <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                ⚠️ Quitter cet onglet terminera immédiatement l’évaluation.
+              </p>
+
+              {/* Question active */}
+              {currentQuestion && (
+                <fieldset className="space-y-4">
+                  <legend className="w-full pb-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                      <span>Question {currentQuestion.numero_question} sur {totalQuestions}</span>
+                      <span className="text-orange-500">{currentQuestion.points} point{currentQuestion.points > 1 ? 's' : ''}</span>
+                    </div>
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 block">{currentQuestion.enonce}</span>
+                  </legend>
+
+                  <div className="space-y-2.5 pt-2">
+                    {currentQuestion.choix.map((choice) => {
+                      const isSelected = Number(answers[currentQuestion.id_question]) === choice.id_choix;
+                      return (
+                        <label 
+                          key={choice.id_choix} 
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3.5 text-xs font-medium transition ${
+                            isSelected 
+                              ? 'border-orange-500 bg-orange-500/10 text-zinc-900 dark:text-white font-bold' 
+                              : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${currentQuestion.id_question}`}
+                            value={choice.id_choix}
+                            checked={isSelected}
+                            onChange={() => saveAnswer(currentQuestion.id_question, choice.id_choix)}
+                            className="accent-orange-500"
+                          />
+                          <span>{choice.libelle}</span>
+                        </label>
+                      );
+                    })}
                   </div>
+                </fieldset>
+              )}
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-5">
+                <button
+                  type="button"
+                  disabled={currentQuestionIndex === 0}
+                  onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition"
+                >
+                  <ChevronLeft size={15} /> Précédent
+                </button>
+
+                {currentQuestionIndex < totalQuestions - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-zinc-950 hover:bg-orange-400 transition shadow-xs"
+                  >
+                    Suivant <ChevronRight size={15} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => submitAttempt(false)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-zinc-950 hover:bg-orange-400 disabled:opacity-50 transition shadow-xs"
+                  >
+                    <Send size={14} /> {submitting ? 'Envoi...' : 'Terminer l’évaluation'}
+                  </button>
                 )}
               </div>
 
-              {detail.questions.map((question) => (
-                <fieldset key={question.id_question} disabled={submitting} className="border-b border-black/10 pb-5 dark:border-white/10">
-                  <legend className="w-full pb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Question {question.numero_question} · {question.points} points</span>
-                    <span className="mt-1 block font-semibold">{question.enonce}</span>
-                  </legend>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {question.choix.map((choice) => (
-                      <label key={choice.id_choix} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition ${Number(answers[question.id_question]) === choice.id_choix ? 'border-orange-500 bg-orange-500/10' : 'border-black/10 hover:border-orange-500/50 dark:border-white/10'}`}>
-                        <input
-                          type="radio"
-                          name={`question-${question.id_question}`}
-                          value={choice.id_choix}
-                          checked={Number(answers[question.id_question]) === choice.id_choix}
-                          onChange={() => saveAnswer(question.id_question, choice.id_choix)}
-                          className="mt-0.5 accent-orange-500"
-                        />
-                        <span>{choice.libelle}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              ))}
-
-              <div className="flex flex-col justify-between gap-3 border-t border-black/10 pt-5 sm:flex-row sm:items-center dark:border-white/10">
-                <p className="text-xs text-black/50 dark:text-white/50">Les questions sans réponse valent zéro point.</p>
-                <button type="submit" disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-5 py-3 text-sm font-bold text-black hover:bg-orange-400 disabled:cursor-wait disabled:opacity-50">
-                  <Send size={16} /> {submitting ? 'Envoi...' : 'Terminer l’évaluation'}
-                </button>
-              </div>
-            </form>
+            </div>
           )}
         </section>
       ) : evaluations.length === 0 ? (
-        <div className="border-y border-dashed border-black/15 py-14 text-center dark:border-white/15">
-          <ClipboardCheck size={36} className="mx-auto text-orange-500" />
-          <h2 className="mt-3 font-bold">Aucune évaluation disponible</h2>
-          <p className="mt-1 text-sm text-black/50 dark:text-white/50">Les évaluations publiées par vos formateurs apparaîtront ici.</p>
+        <div className="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <ClipboardCheck size={32} className="mx-auto text-orange-500" />
+          <h2 className="mt-3 text-sm font-bold">Aucune évaluation disponible</h2>
+          <p className="mt-1 text-xs text-zinc-400">Les évaluations publiées par vos formateurs apparaîtront ici.</p>
         </div>
       ) : (
-        <div className="divide-y divide-black/10 dark:divide-white/10">
+        <div className="grid gap-4 sm:grid-cols-2">
           {evaluations.map((evaluation) => {
             const completed = evaluation.tentative_statut === 'TERMINEE';
             const inProgress = evaluation.tentative_statut === 'EN_COURS';
             return (
-              <article key={evaluation.id_evaluation_sujet} className="flex flex-col justify-between gap-4 py-5 sm:flex-row sm:items-center">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400"><BookOpen size={14} /> {evaluation.formation_titre}</p>
-                  <h2 className="mt-1 text-lg font-bold">{evaluation.titre}</h2>
-                  {evaluation.description && <p className="mt-1 line-clamp-2 text-sm text-black/55 dark:text-white/55">{evaluation.description}</p>}
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-black/50 dark:text-white/50">
+              <article key={evaluation.id_evaluation_sujet} className="flex flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                <div>
+                  <p className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400"><BookOpen size={13} className="text-orange-500" /> {evaluation.formation_titre}</p>
+                  <h2 className="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{evaluation.titre}</h2>
+                  {evaluation.description && <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">{evaluation.description}</p>}
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-400">
                     <span>{evaluation.questions_count} questions</span>
-                    <span>{evaluation.total_points}/20 points</span>
+                    <span>{evaluation.total_points}/20 pts</span>
                     <span>{formatDuration(evaluation.duree_minutes)}</span>
-                    {evaluation.obligatoire && <span className="font-bold text-black/70 dark:text-white/70">Obligatoire</span>}
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                <div className="mt-4 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-3">
                   {completed ? (
-                    <div className="flex flex-col items-start sm:items-end gap-1">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 size={14} /> Terminé
+                    <>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 size={13} /> Terminé
                       </span>
-                      <span className="text-sm font-bold text-black/70 dark:text-white/70">Note : {evaluation.note}/20</span>
-                    </div>
+                      <span className="text-xs font-bold">Note : {evaluation.note}/20</span>
+                    </>
                   ) : (
-                    <button 
-                      type="button" 
-                      onClick={() => openEvaluation(evaluation)} 
-                      disabled={openingId === evaluation.id_evaluation_sujet} 
-                      className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-orange-400 disabled:opacity-50"
-                    >
-                      {inProgress ? <RotateCcw size={16} /> : <Play size={16} />}
-                      {openingId === evaluation.id_evaluation_sujet ? 'Ouverture...' : inProgress ? 'Reprendre' : 'Commencer'}
-                    </button>
+                    <>
+                      <span className="text-xs font-medium text-zinc-400">{evaluation.obligatoire ? 'Obligatoire' : 'Optionnel'}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => openEvaluation(evaluation)} 
+                        disabled={openingId === evaluation.id_evaluation_sujet} 
+                        className="inline-flex items-center gap-1.5 rounded-2xl bg-orange-500 px-4 py-2 text-xs font-bold text-zinc-950 hover:bg-orange-400 disabled:opacity-50 transition shadow-xs"
+                      >
+                        {inProgress ? <RotateCcw size={14} /> : <Play size={14} />}
+                        {openingId === evaluation.id_evaluation_sujet ? 'Ouverture...' : inProgress ? 'Reprendre' : 'Commencer'}
+                      </button>
+                    </>
                   )}
                 </div>
               </article>

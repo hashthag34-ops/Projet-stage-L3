@@ -167,59 +167,61 @@ export default function ApprenantForum() {
   };
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-col justify-between gap-3 border-b border-black/10 pb-5 sm:flex-row sm:items-end dark:border-white/10">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-5 font-sans text-zinc-900 dark:text-zinc-100">
+      <header className="flex flex-col justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-5 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Communication</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight">Forum & discussions</h1>
-          <p className="mt-1 text-sm text-black/55 dark:text-white/55">Retrouvez vos groupes et échangez avec votre promotion.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-500">Communication</p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight">Forum & discussions</h1>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">Retrouvez vos groupes et échangez avec votre promotion.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm font-semibold text-black/55 dark:text-white/55">
-          <Users size={17} className="text-orange-500" /> {forums.length} espace(s) de discussion
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <Users size={16} className="text-orange-500" /> {forums.length} espace(s) de discussion
         </div>
       </header>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
+        <p role="alert" className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs font-medium text-rose-700 dark:text-rose-300">
           {error}
         </p>
       )}
 
-      <div className="grid min-h-[620px] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm lg:h-[calc(100vh-255px)] lg:min-h-[560px] lg:grid-cols-[290px_minmax(0,1fr)] dark:border-white/10 dark:bg-zinc-950">
-        <aside className={`${selectedForum ? 'hidden lg:flex' : 'flex'} min-h-0 flex-col border-b border-black/10 bg-black/[0.015] lg:border-b-0 lg:border-r dark:border-white/10 dark:bg-white/[0.015]`}>
-          <div className="border-b border-black/10 p-4 dark:border-white/10">
+      <div className="grid min-h-[600px] overflow-hidden rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm lg:h-[calc(100vh-220px)] lg:min-h-[560px] lg:grid-cols-[300px_minmax(0,1fr)]">
+        
+        {/* ASIDE : Liste des forums */}
+        <aside className={`${selectedForum ? 'hidden lg:flex' : 'flex'} min-h-0 flex-col border-b border-zinc-200 bg-zinc-50/50 lg:border-b-0 lg:border-r dark:border-zinc-800 dark:bg-zinc-950/50`}>
+          <div className="border-b border-zinc-200 p-4 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-black">Vos discussions</h2>
-                <p className="mt-1 text-xs text-black/50 dark:text-white/50">Choisissez un forum de formation</p>
+                <h2 className="font-bold text-sm">Vos discussions</h2>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Choisissez un forum de formation</p>
               </div>
-              <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">{forums.length}</span>
+              <span className="rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-bold text-orange-500">{forums.length}</span>
             </div>
-            <label className="relative mt-4 block">
-              <Search size={16} className="absolute left-3 top-3 text-black/40 dark:text-white/40" />
+            <label className="relative mt-3 block">
+              <Search size={15} className="absolute left-3 top-3 text-zinc-400" />
               <input
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Rechercher une discussion"
                 aria-label="Rechercher une discussion"
-                className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-black/40 focus:border-orange-500 dark:border-white/10 dark:bg-zinc-900 dark:placeholder:text-white/40"
+                className="w-full rounded-2xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-900"
               />
             </label>
           </div>
 
-          <nav aria-label="Forums disponibles" className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
+          <nav aria-label="Forums disponibles" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
             {loading ? (
-              <p className="p-3 text-sm text-black/50 dark:text-white/50">Chargement des forums...</p>
+              <p className="p-3 text-xs text-zinc-500 dark:text-zinc-400">Chargement des forums...</p>
             ) : groupedForums.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-black/15 p-5 text-center dark:border-white/15">
-                <MessageCircle size={23} className="mx-auto text-orange-500" />
-                <p className="mt-2 text-sm font-semibold">Aucune discussion trouvée</p>
-                <p className="mt-1 text-xs text-black/50 dark:text-white/50">Les forums de vos formations apparaîtront ici.</p>
+              <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-5 text-center">
+                <MessageCircle size={22} className="mx-auto text-orange-500" />
+                <p className="mt-2 text-xs font-bold">Aucune discussion trouvée</p>
+                <p className="mt-1 text-[11px] text-zinc-400">Les forums de vos formations apparaîtront ici.</p>
               </div>
             ) : groupedForums.map(([formation, formationForums]) => (
               <section key={formation}>
-                <h3 className="mb-2 flex items-center gap-2 px-2 text-[10px] font-black uppercase tracking-[0.15em] text-black/45 dark:text-white/45">
+                <h3 className="mb-2 flex items-center gap-1.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400">
                   <BookOpen size={13} className="text-orange-500" /> {formation}
                 </h3>
                 <div className="space-y-1">
@@ -231,19 +233,19 @@ export default function ApprenantForum() {
                         key={forum.id_forum}
                         onClick={() => openForum(forum)}
                         aria-current={isSelected ? 'page' : undefined}
-                        className={`w-full rounded-xl border p-3 text-left transition ${
+                        className={`w-full rounded-2xl border p-3 text-left transition ${
                           isSelected
-                            ? 'border-orange-500/25 bg-orange-500/10'
-                            : 'border-transparent hover:border-black/5 hover:bg-black/[0.035] dark:hover:border-white/5 dark:hover:bg-white/[0.04]'
+                            ? 'border-orange-500/30 bg-orange-500/10'
+                            : 'border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                         }`}
                       >
                         <span className="flex items-start gap-3">
-                          <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isSelected ? 'bg-orange-500 text-black' : 'bg-black/[0.05] text-orange-600 dark:bg-white/[0.07] dark:text-orange-400'}`}>
-                            <MessageCircle size={17} />
+                          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isSelected ? 'bg-orange-500 text-zinc-950' : 'bg-zinc-200/60 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+                            <MessageCircle size={16} />
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className={`block truncate text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-300' : ''}`}>{forum.nom}</span>
-                            <span className="mt-1 block truncate text-xs text-black/50 dark:text-white/50">{forum.description || 'Discussions et entraide du groupe'}</span>
+                            <span className={`block truncate text-xs font-bold ${isSelected ? 'text-orange-500' : ''}`}>{forum.nom}</span>
+                            <span className="mt-0.5 block truncate text-[11px] text-zinc-400">{forum.description || 'Discussions et entraide du groupe'}</span>
                           </span>
                         </span>
                       </button>
@@ -253,54 +255,51 @@ export default function ApprenantForum() {
               </section>
             ))}
           </nav>
-          <div className="hidden border-t border-black/10 p-4 text-xs text-black/45 dark:border-white/10 dark:text-white/45 sm:block">
-            <span className="font-semibold text-orange-600 dark:text-orange-400">Astuce</span>
-            <p className="mt-1">Restez courtois et partagez vos questions avec le groupe.</p>
-          </div>
         </aside>
 
+        {/* CONTENU : Discussion active */}
         <section className={`${selectedForum ? 'flex' : 'hidden lg:flex'} min-h-0 min-w-0 flex-col`}>
           {selectedForum ? (
             <>
-              <header className="flex items-center gap-3 border-b border-black/10 px-4 py-4 sm:px-6 dark:border-white/10">
+              <header className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 sm:px-6">
                 <button
                   type="button"
                   onClick={() => setSelectedForum(null)}
-                  className="rounded-lg p-2 text-black/55 transition hover:bg-black/5 lg:hidden dark:text-white/55 dark:hover:bg-white/10"
+                  className="rounded-xl p-2 text-zinc-500 hover:bg-zinc-100 lg:hidden dark:hover:bg-zinc-800"
                   aria-label="Retour à la liste des forums"
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
-                  <MessageCircle size={19} />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+                  <MessageCircle size={18} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate font-black">{selectedForum.nom}</h2>
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-black/50 dark:text-white/50">
-                    <BookOpen size={13} className="shrink-0 text-orange-500" /> {selectedForum.titre_formation || 'Formation'}
+                  <h2 className="truncate font-bold text-sm">{selectedForum.nom}</h2>
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-zinc-400">
+                    <BookOpen size={12} className="shrink-0 text-orange-500" /> {selectedForum.titre_formation || 'Formation'}
                   </p>
                 </div>
-                <span className="hidden items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-700 sm:inline-flex dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Espace de discussion
+                <span className="hidden items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 sm:inline-flex">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Actif
                 </span>
               </header>
 
               {selectedForum.description && (
-                <div className="border-b border-black/5 bg-orange-500/[0.035] px-5 py-2.5 text-xs text-black/60 dark:border-white/5 dark:text-white/60">
+                <div className="border-b border-zinc-100 bg-orange-500/5 px-5 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                   {selectedForum.description}
                 </div>
               )}
 
-              <div className="flex-1 space-y-5 overflow-y-auto bg-black/[0.012] p-4 sm:p-6 dark:bg-white/[0.012]">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6 bg-zinc-50/30 dark:bg-zinc-950/20">
                 {messagesLoading ? (
-                  <p className="py-12 text-center text-sm text-black/50 dark:text-white/50">Chargement de la conversation...</p>
+                  <p className="py-12 text-center text-xs text-zinc-400">Chargement de la conversation...</p>
                 ) : messages.length === 0 ? (
                   <div className="flex h-full min-h-60 flex-col items-center justify-center text-center">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
-                      <MessageCircle size={26} />
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+                      <MessageCircle size={24} />
                     </span>
-                    <h3 className="mt-4 font-black">La discussion commence ici</h3>
-                    <p className="mt-1 max-w-xs text-sm text-black/50 dark:text-white/50">Posez la première question ou partagez une information avec votre groupe.</p>
+                    <h3 className="mt-3 font-bold text-sm">La discussion commence ici</h3>
+                    <p className="mt-1 max-w-xs text-xs text-zinc-400">Posez la première question ou partagez une information avec votre groupe.</p>
                   </div>
                 ) : (
                   messages.map((message) => {
@@ -309,29 +308,29 @@ export default function ApprenantForum() {
                     const lastName = message.nom_expediteur || '';
                     return (
                       <article key={message.id_message} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
-                          isMe ? 'bg-orange-500 text-black' : 'border border-black/10 bg-white text-orange-700 dark:border-white/10 dark:bg-zinc-900 dark:text-orange-300'
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                          isMe ? 'bg-orange-500 text-zinc-950' : 'border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
                         }`}>
                           {getInitials(firstName, lastName)}
                         </span>
                         <div className={`min-w-0 max-w-[88%] sm:max-w-[75%] ${isMe ? 'text-right' : ''}`}>
-                          <div className={`mb-1 flex flex-wrap items-baseline gap-x-2 text-xs ${isMe ? 'justify-end' : ''}`}>
-                            <span className="font-black">{isMe ? 'Vous' : `${firstName} ${lastName}`.trim() || 'Membre du groupe'}</span>
-                            <time className="text-[10px] text-black/45 dark:text-white/45">{formatMessageDate(message.created_at)}</time>
+                          <div className={`mb-1 flex flex-wrap items-baseline gap-x-2 text-[11px] ${isMe ? 'justify-end' : ''}`}>
+                            <span className="font-bold">{isMe ? 'Vous' : `${firstName} ${lastName}`.trim() || 'Membre'}</span>
+                            <time className="text-[10px] text-zinc-400">{formatMessageDate(message.created_at)}</time>
                           </div>
-                          <div className={`inline-block rounded-2xl border px-4 py-3 text-left text-sm shadow-sm ${
+                          <div className={`inline-block rounded-2xl border px-4 py-2.5 text-left text-xs shadow-xs ${
                             isMe
-                              ? 'rounded-tr-sm border-orange-500/20 bg-orange-500 text-black'
-                              : 'rounded-tl-sm border-black/5 bg-white dark:border-white/10 dark:bg-zinc-900'
+                              ? 'rounded-tr-xs border-orange-500 bg-orange-500 text-zinc-950 font-medium'
+                              : 'rounded-tl-xs border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
                           }`}>
                             {message.contenu && <p className="whitespace-pre-wrap break-words leading-relaxed">{message.contenu}</p>}
                             {message.chemin_fichier && (
-                              <div className={`mt-2 flex items-center justify-between gap-3 rounded-xl border p-3 ${
-                                isMe ? 'border-black/10 bg-black/5' : 'border-black/10 bg-black/[0.025] dark:border-white/10 dark:bg-white/[0.04]'
+                              <div className={`mt-2 flex items-center justify-between gap-3 rounded-xl border p-2.5 ${
+                                isMe ? 'border-zinc-900/10 bg-zinc-950/10' : 'border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950'
                               }`}>
                                 <div className="min-w-0">
                                   <p className="truncate text-xs font-bold">{message.nom_fichier}</p>
-                                  <p className="mt-0.5 text-[10px] opacity-65">
+                                  <p className="mt-0.5 text-[10px] opacity-70">
                                     {message.type_fichier || 'Fichier'}{message.taille_fichier ? ` · ${formatFileSize(Number(message.taille_fichier))}` : ''}
                                   </p>
                                 </div>
@@ -339,8 +338,8 @@ export default function ApprenantForum() {
                                   type="button"
                                   onClick={() => handleDownload(message)}
                                   disabled={downloading === message.id_message}
-                                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
-                                    isMe ? 'bg-black text-white hover:bg-black/80' : 'bg-orange-500 text-black hover:bg-orange-400'
+                                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition disabled:opacity-50 ${
+                                    isMe ? 'bg-zinc-950 text-white hover:bg-zinc-800' : 'bg-orange-500 text-zinc-950 hover:bg-orange-400'
                                   }`}
                                 >
                                   <Download size={13} /> {downloading === message.id_message ? '...' : 'Ouvrir'}
@@ -356,13 +355,13 @@ export default function ApprenantForum() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={handleSendMessage} className="border-t border-black/10 bg-white p-3 sm:p-4 dark:border-white/10 dark:bg-zinc-950">
+              <form onSubmit={handleSendMessage} className="border-t border-zinc-200 bg-white p-3 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
                 <label htmlFor="forum-message" className="sr-only">Votre message</label>
-                <div className="flex items-end gap-2 rounded-2xl border border-black/10 bg-black/[0.025] p-2 focus-within:border-orange-500/60 dark:border-white/10 dark:bg-white/[0.025]">
+                <div className="flex items-end gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2 focus-within:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950">
                   <textarea
                     id="forum-message"
                     rows={1}
-                    placeholder="Écrivez votre message au groupe..."
+                    placeholder="Écrivez votre message..."
                     value={newMessage}
                     onChange={(event) => setNewMessage(event.target.value)}
                     onKeyDown={(event) => {
@@ -372,34 +371,29 @@ export default function ApprenantForum() {
                       }
                     }}
                     disabled={sending || messagesLoading}
-                    className="max-h-32 min-h-10 min-w-0 flex-1 resize-y bg-transparent px-2 py-2 text-sm outline-none placeholder:text-black/40 disabled:opacity-60 dark:placeholder:text-white/40"
+                    className="max-h-32 min-h-9 min-w-0 flex-1 resize-y bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
                   />
                   <button
                     type="submit"
                     disabled={sending || messagesLoading || !newMessage.trim()}
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-500 px-3.5 text-sm font-bold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-500 px-3.5 text-xs font-bold text-zinc-950 transition hover:bg-orange-400 disabled:opacity-45"
                     title="Envoyer le message"
                   >
-                    <Send size={16} /> <span className="hidden sm:inline">{sending ? 'Envoi...' : 'Envoyer'}</span>
+                    <Send size={15} /> <span className="hidden sm:inline">{sending ? 'Envoi...' : 'Envoyer'}</span>
                   </button>
                 </div>
-                <p className="mt-2 px-1 text-[10px] text-black/40 dark:text-white/40">Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne</p>
+                <p className="mt-1.5 px-1 text-[10px] text-zinc-400">Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne</p>
               </form>
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
-                <MessageCircle size={30} />
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+                <MessageCircle size={28} />
               </span>
-              <h2 className="mt-4 text-lg font-black">Bienvenue dans vos forums</h2>
-              <p className="mt-2 max-w-sm text-sm text-black/50 dark:text-white/50">
+              <h2 className="mt-4 text-base font-bold">Bienvenue dans vos forums</h2>
+              <p className="mt-1 max-w-sm text-xs text-zinc-400">
                 Sélectionnez une discussion dans la liste pour lire les messages et participer aux échanges.
               </p>
-              {forums.length === 0 && !loading && (
-                <p className="mt-4 rounded-xl bg-black/[0.03] px-4 py-3 text-xs text-black/50 dark:bg-white/[0.04] dark:text-white/50">
-                  Aucun forum actif n’est associé à vos formations pour le moment.
-                </p>
-              )}
             </div>
           )}
         </section>
