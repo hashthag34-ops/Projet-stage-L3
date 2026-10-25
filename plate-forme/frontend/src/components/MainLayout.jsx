@@ -64,13 +64,16 @@ export default function MainLayout() {
   // État PC pour dérouler/fermer la sidebar
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Menu déroulant de profil (Mobile uniquement)
+  // Menus de profil séparés pour le desktop et le mobile/tablette.
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isDesktopProfileMenuOpen, setIsDesktopProfileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
+  const desktopProfileRef = useRef(null);
 
   useEffect(() => {
     setUser(getAuthUser());
     setIsProfileMenuOpen(false);
+    setIsDesktopProfileMenuOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -102,6 +105,9 @@ export default function MainLayout() {
     const handleClickOutside = (event) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
+      }
+      if (desktopProfileRef.current && !desktopProfileRef.current.contains(event.target)) {
+        setIsDesktopProfileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -180,68 +186,72 @@ export default function MainLayout() {
             </nav>
           </div>
 
-          {/* BAS : Options & Profil utilisateur (Style layout1.webp) */}
-          <div className="flex flex-col gap-1">
-            
-            <div className="border-t border-zinc-100 dark:border-zinc-800/80 my-1"></div>
+          {/* BAS : avatar ouvrant le menu profil, thème et déconnexion */}
+          <div className="relative flex flex-col gap-1" ref={desktopProfileRef}>
+            <div className="my-1 border-t border-zinc-100 dark:border-zinc-800/80" />
 
-            {/* Lien Profil */}
-            <Link 
-              to="/profil"
-              title={!isExpanded ? "Mon Profil" : ""}
-              className="flex items-center gap-3.5 px-3 py-2 rounded-2xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100 transition"
+            <button
+              type="button"
+              onClick={() => setIsDesktopProfileMenuOpen((open) => !open)}
+              aria-expanded={isDesktopProfileMenuOpen}
+              aria-label="Ouvrir le menu du compte"
+              title="Compte et préférences"
+              className={`flex w-full items-center gap-3 rounded-2xl border border-transparent p-2 text-left transition hover:border-orange-200 hover:bg-orange-50/70 dark:hover:border-orange-500/20 dark:hover:bg-zinc-800/80 ${isExpanded ? 'justify-start' : 'justify-center'}`}
             >
-              <i className="bi bi-person text-lg shrink-0"></i>
-              {isExpanded && <span className="text-xs font-medium truncate">Mon Profil</span>}
-            </Link>
-
-            {/* Bouton Dark Mode */}
-            <button 
-              onClick={toggleDarkMode}
-              title={!isExpanded ? `Mode ${darkMode ? 'Clair' : 'Sombre'}` : ""}
-              className="flex items-center gap-3.5 px-3 py-2 rounded-2xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100 transition w-full"
-            >
-              <i className={`bi ${darkMode ? 'bi-sun text-orange-400' : 'bi-moon-stars text-zinc-700'} text-lg shrink-0`}></i>
-              {isExpanded && (
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-xs font-medium truncate">Mode {darkMode ? 'Clair' : 'Sombre'}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                    {darkMode ? 'DARK' : 'LIGHT'}
-                  </span>
-                </div>
+              {getAvatarSrc(user) ? (
+                <img src={getAvatarSrc(user)} alt="Avatar du profil" className="h-9 w-9 shrink-0 rounded-xl object-cover ring-2 ring-orange-500/30" />
+              ) : (
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-xs font-bold text-white">
+                  {initials || <i className="bi bi-person" />}
+                </span>
               )}
+              {isExpanded && (
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">{user?.prenom} {user?.nom}</span>
+                  <span className="block truncate text-[10px] capitalize text-zinc-500 dark:text-zinc-400">{user?.role || 'Utilisateur'}</span>
+                </span>
+              )}
+              {isExpanded && <i className={`bi bi-chevron-${isDesktopProfileMenuOpen ? 'down' : 'up'} text-xs text-zinc-400`} />}
             </button>
 
-            {/* Carte Profil et Déconnexion en bas (Inspirée de layout1.webp) */}
-            <div className="mt-2 p-1.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between">
-              <div className="flex items-center gap-2.5 truncate">
-                {getAvatarSrc(user) ? (
-                  <img src={getAvatarSrc(user)} alt="Profil" className="h-8 w-8 shrink-0 rounded-xl object-cover ring-1 ring-orange-500/50" />
-                ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white text-xs font-bold">
-                    {initials || <i className="bi bi-person"></i>}
-                  </div>
-                )}
-                {isExpanded && (
-                  <div className="flex flex-col text-left truncate min-w-0">
-                    <span className="text-xs font-bold truncate text-zinc-900 dark:text-white">{user?.prenom} {user?.nom}</span>
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 capitalize truncate">{user?.role}</span>
-                  </div>
-                )}
-              </div>
+            {isDesktopProfileMenuOpen && (
+              <div className={`absolute bottom-full z-[60] mb-2 w-64 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 ${isExpanded ? 'left-0' : 'left-14'}`}>
+                <div className="border-b border-zinc-100 px-3 py-2.5 dark:border-zinc-800">
+                  <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">{user?.prenom} {user?.nom}</p>
+                  <p className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">{user?.email}</p>
+                </div>
 
-              {/* Bouton de Déconnexion */}
-              {isExpanded && (
-                <button
-                  onClick={handleLogout}
-                  title="Déconnexion"
-                  className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition"
+                <Link
+                  to="/profil"
+                  onClick={() => setIsDesktopProfileMenuOpen(false)}
+                  className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
-                  <i className="bi bi-box-arrow-right text-base"></i>
-                </button>
-              )}
-            </div>
+                  <i className="bi bi-person text-base text-zinc-500" />
+                  <span className="flex-1">Mon profil</span>
+                  <i className="bi bi-arrow-up-right text-[10px] text-zinc-400" />
+                </Link>
 
+                <button
+                  type="button"
+                  onClick={toggleDarkMode}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <i className={`bi ${darkMode ? 'bi-sun' : 'bi-moon-stars'} text-base text-orange-500`} />
+                  <span className="flex-1">Passer en mode {darkMode ? 'clair' : 'sombre'}</span>
+                  <span className="rounded-md bg-zinc-100 px-1.5 py-1 text-[9px] font-bold uppercase text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">{darkMode ? 'Dark' : 'Light'}</span>
+                </button>
+
+                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                >
+                  <i className="bi bi-box-arrow-right text-base" />
+                  Déconnexion
+                </button>
+              </div>
+            )}
           </div>
         </aside>
       )}
