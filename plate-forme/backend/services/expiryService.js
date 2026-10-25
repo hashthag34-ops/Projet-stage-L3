@@ -15,6 +15,16 @@ const runExpiryTasks = async () => {
      RETURNING id_formation`
   );
 
+  const startedFormationResult = await db.query(
+    `UPDATE formation
+     SET statut = 'EN_COURS',
+         date_modification = CURRENT_TIMESTAMP
+     WHERE statut = 'OUVERTE'
+       AND date_debut <= CURRENT_DATE
+       AND date_fin >= CURRENT_DATE
+     RETURNING id_formation`
+  );
+
   const absenceResult = await db.query(
     `INSERT INTO presence (id_apprenant, id_seance, date_scan, statut, commentaire)
      SELECT DISTINCT
@@ -46,7 +56,9 @@ const runExpiryTasks = async () => {
      RETURNING id_evaluation_sujet, id_formation`
   );
 
-  if (formationResult.rowCount > 0) emitRealtimeEvent('formations:changed', {});
+  if (formationResult.rowCount > 0 || startedFormationResult.rowCount > 0) {
+    emitRealtimeEvent('formations:changed', {});
+  }
   publicationResult.rows.forEach((evaluation) => {
     emitToRoles(['APPRENANT', 'FORMATEUR'], 'evaluations:changed', {
       id_formation: evaluation.id_formation,
@@ -71,7 +83,8 @@ const runExpiryTasks = async () => {
   );
 
   console.log(
-    `Vérification des échéances terminée : ${formationResult.rowCount} formation(s) terminée(s), ` +
+    `Vérification des échéances terminée : ${startedFormationResult.rowCount} formation(s) démarrée(s), ` +
+    `${formationResult.rowCount} formation(s) terminée(s), ` +
     `${absenceResult.rowCount} absence(s) enregistrée(s), ` +
     `${publicationResult.rowCount} évaluation(s) publiée(s), ` +
     `${expiredAttemptResult.rowCount} tentative(s) terminée(s).`

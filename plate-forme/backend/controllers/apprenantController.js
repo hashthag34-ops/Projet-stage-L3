@@ -21,6 +21,88 @@ exports.getMesFormations = async (req, res) => {
   }
 };
 
+exports.getHistoriqueFormations = async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT f.id_formation, f.titre, f.description, f.statut AS statut_formation,
+              f.date_debut, f.date_fin,
+              COALESCE(presences.total_seances, 0)::INTEGER AS total_seances,
+              COALESCE(presences.presentes, 0)::INTEGER AS presentes,
+              COALESCE(presences.absentes, 0)::INTEGER AS absentes,
+              COALESCE(presences.retards, 0)::INTEGER AS retards,
+              COALESCE(notes.evaluations, '[]'::json) AS notes,
+              COALESCE(certification.statut::TEXT, 'EN_ATTENTE') AS statut_certification,
+              certification.date_certification,
+              certification.numero_certification,
+              certification.fichier_certification
+       FROM apprenant a
+       JOIN inscription i ON i.id_candidat = a.id_candidat AND i.statut = 'ACCEPTEE'
+       JOIN formation f ON f.id_formation = i.id_formation
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*) FILTER (
+                  WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
+                )::INTEGER AS total_seances,
+                COUNT(*) FILTER (
+                  WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
+                    AND p.statut = 'PRESENT'
+                )::INTEGER AS presentes,
+                COUNT(*) FILTER (
+                  WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
+                    AND (p.statut = 'ABSENT' OR p.id_presence IS NULL)
+                )::INTEGER AS absentes,
+                COUNT(*) FILTER (
+                  WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
+                    AND p.statut = 'RETARD'
+                )::INTEGER AS retards
+         FROM seance s
+         LEFT JOIN presence p
+           ON p.id_seance = s.id_seance AND p.id_apprenant = a.id_apprenant
+         WHERE s.id_formation = f.id_formation
+       ) presences ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT json_agg(
+                  json_build_object(
+                    'id_note', notes.id_note,
+                    'type_evaluation', notes.type_evaluation,
+                    'note', notes.note,
+                    'date_evaluation', notes.date_evaluation,
+                    'commentaire', notes.commentaire,
+                    'origine', notes.origine
+                  )
+                  ORDER BY notes.date_evaluation DESC NULLS LAST, notes.id_note DESC
+                ) AS evaluations
+         FROM (
+           SELECT e.id_evaluation AS id_note, e.type_evaluation, e.note,
+                  e.date_evaluation, e.commentaire, 'MANUELLE' AS origine
+           FROM evaluation e
+           WHERE e.id_apprenant = a.id_apprenant
+             AND e.id_formation = f.id_formation
+             AND e.note IS NOT NULL
+           UNION ALL
+           SELECT et.id_tentative AS id_note, es.titre AS type_evaluation, et.note,
+                  et.date_fin::date AS date_evaluation, NULL::text AS commentaire,
+                  'ÉVALUATION' AS origine
+           FROM evaluation_tentative et
+           JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+           WHERE et.id_apprenant = a.id_apprenant
+             AND es.id_formation = f.id_formation
+             AND et.note IS NOT NULL
+         ) notes
+       ) notes ON TRUE
+       LEFT JOIN certification
+         ON certification.id_apprenant = a.id_apprenant
+        AND certification.id_formation = f.id_formation
+       WHERE a.id_utilisateur = $1
+       ORDER BY f.date_fin DESC, f.id_formation DESC`,
+      [req.user.id_utilisateur]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur historique des formations apprenant :', error);
+    res.status(500).json({ message: 'Erreur lors du chargement de votre historique de formations.' });
+  }
+};
+
 // 2. Récupérer les séances de cours de l'apprenant (Planning)
 exports.getMesSeances = async (req, res) => {
   try {

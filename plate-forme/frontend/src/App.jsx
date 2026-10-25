@@ -8,6 +8,7 @@ import MainLayout from './components/MainLayout';
 // Pages Visiteurs / Commun
 import Catalogue from './pages/Catalogue';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import Profil from './pages/Profil';
 import Postuler from './pages/Postuler';
 import SetupAccount from './pages/SetupAccount';
@@ -16,6 +17,7 @@ import SetupAccount from './pages/SetupAccount';
 import ApprenantPlanning from './pages/Apprenant/ApprenantPlanning';
 import ApprenantForum from './pages/Apprenant/ApprenantForum';
 import ApprenantEvaluations from './pages/Apprenant/ApprenantEvaluations';
+import ApprenantHistorique from './pages/Apprenant/ApprenantHistorique';
 
 // Admin
 import GsUsers from './pages/Admin/GsUsers';
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="/" element={<Catalogue />} />
           <Route path="/catalogue" element={<Catalogue />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
           <Route path="/postuler/:id_formation" element={<Postuler />} />
           <Route path="/setup-account" element={<SetupAccount />} />
           <Route path="/profil" element={<Profil />} />
@@ -56,6 +59,7 @@ export default function App() {
             <Route path="catalogue" element={<Catalogue />} />
             <Route path="planning" element={<ApprenantPlanning />} />
             <Route path="evaluations" element={<ApprenantEvaluations />} />
+            <Route path="historique" element={<ApprenantHistorique />} />
             <Route path="forum" element={<ApprenantForum />} />
             <Route path="profil" element={<Profil />} />
           </Route>

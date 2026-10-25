@@ -1,6 +1,6 @@
 // frontend/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import API from '../services/api';
 
 export default function Login() {
@@ -10,6 +10,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const resetMessage = location.state?.passwordResetMessage;
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
@@ -69,7 +71,7 @@ export default function Login() {
             type="button" 
             className="flex-1 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-zinc-900 rounded-xl shadow-sm transition"
           >
-            Sign In
+            Se connecter
           </button>
           <Link 
             to="/mot-de-passe-oublie" 
@@ -78,6 +80,12 @@ export default function Login() {
             Mot de passe oublié
           </Link>
         </div>
+
+        {resetMessage && (
+          <div role="status" className="mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400">
+            {resetMessage}
+          </div>
+        )}
 
         {/* Message d'erreur */}
         {error && (

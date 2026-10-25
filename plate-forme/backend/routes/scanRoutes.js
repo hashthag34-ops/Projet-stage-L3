@@ -9,8 +9,8 @@ router.use(verifyToken);
 router.post('/scan', async (req, res) => {
   const { id_seance, qr_data } = req.body;
 
-  if (!id_seance || !qr_data) {
-    return res.status(400).json({ error: 'Données manquantes' });
+  if (!Number.isInteger(id_seance) || id_seance <= 0 || !qr_data) {
+    return res.status(400).json({ error: 'Identifiant de séance ou données QR invalides' });
   }
 
   let parsedQr;
@@ -20,49 +20,57 @@ router.post('/scan', async (req, res) => {
     return res.status(400).json({ error: 'Format QR Code invalide' });
   }
 
-  // Contrôle du type
-  if (parsedQr.type !== 'BADGE_PRESENCE') {
+  if (!parsedQr || typeof parsedQr !== 'object' || parsedQr.type !== 'BADGE_PRESENCE') {
     return res.status(400).json({ error: 'QR Code non reconnu' });
   }
 
   const { id_apprenant, id_utilisateur } = parsedQr;
+  if (!Number.isInteger(id_apprenant) || id_apprenant <= 0 ||
+      !Number.isInteger(id_utilisateur) || id_utilisateur <= 0) {
+    return res.status(400).json({ error: 'QR Code non reconnu' });
+  }
 
   try {
-    // 1. Vérifier la cohérence de l'apprenant
-    const appCheck = await db.query(
-      `SELECT id_apprenant FROM apprenant WHERE id_apprenant = $1 AND id_utilisateur = $2`,
-      [id_apprenant, id_utilisateur]
-    );
-
-    if (appCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Apprenant introuvable' });
-    }
-
-    // 2. Enregistrer ou mettre à jour la présence (UPSERT grâce au UNIQUE(id_apprenant, id_seance))
     const query = `
-      INSERT INTO presence (id_apprenant, id_seance, date_scan, statut)
-      VALUES ($1, $2, NOW(), 'PRESENT')
-      ON CONFLICT (id_apprenant, id_seance) 
-      DO UPDATE SET 
-        -- Un scan tardif corrige aussi l'absence créée automatiquement.
-        statut = 'PRESENT',
-        date_scan = NOW()
-      RETURNING *;
+      WITH apprenant_eligible AS (
+        SELECT a.id_apprenant, u.nom, u.prenom
+        FROM seance s
+        JOIN inscription i
+          ON i.id_formation = s.id_formation
+         AND i.statut = 'ACCEPTEE'
+        JOIN apprenant a ON a.id_candidat = i.id_candidat
+        JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+        WHERE s.id_seance = $2
+          AND a.id_apprenant = $1
+          AND a.id_utilisateur = $3
+      ),
+      presence_enregistree AS (
+        INSERT INTO presence (id_apprenant, id_seance, date_scan, statut)
+        SELECT id_apprenant, $2, NOW(), 'PRESENT'
+        FROM apprenant_eligible
+        ON CONFLICT (id_apprenant, id_seance)
+        DO UPDATE SET
+          -- Un scan tardif corrige aussi l'absence créée automatiquement.
+          statut = 'PRESENT',
+          date_scan = NOW()
+        RETURNING *
+      )
+      SELECT presence_enregistree.*, apprenant_eligible.nom, apprenant_eligible.prenom
+      FROM presence_enregistree
+      JOIN apprenant_eligible USING (id_apprenant);
     `;
 
-    const result = await db.query(query, [id_apprenant, id_seance]);
+    const result = await db.query(query, [id_apprenant, id_seance, id_utilisateur]);
 
-    // 3. Récupérer les informations de l'apprenant pour le retour visuel
-    const userResult = await db.query(
-      `SELECT nom, prenom FROM utilisateur WHERE id_utilisateur = $1`,
-      [id_utilisateur]
-    );
-
-    const apprenantInfos = userResult.rows[0];
+    if (result.rows.length === 0) {
+      return res.status(403).json({
+        error: "Cet apprenant n'est pas inscrit à la formation de cette séance."
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: `Présence enregistrée pour ${apprenantInfos.prenom} ${apprenantInfos.nom}`,
+      message: `Présence enregistrée pour ${result.rows[0].prenom} ${result.rows[0].nom}`,
       presence: result.rows[0]
     });
 

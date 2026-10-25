@@ -15,6 +15,7 @@ const NAV_CONFIG = {
     { path: '/apprenant/catalogue', label: 'Catalogue', icon: 'bi-compass' },
     { path: '/apprenant/planning', label: 'Planning', icon: 'bi-calendar-week' },
     { path: '/apprenant/evaluations', label: 'Évaluations', icon: 'bi-check2-square' },
+    { path: '/apprenant/historique', label: 'Historique', icon: 'bi-clock-history' },
     { path: '/apprenant/forum', label: 'Forum', icon: 'bi-chat-left-text' },
   ],
   admin: [

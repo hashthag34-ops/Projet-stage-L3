@@ -11,6 +11,7 @@ router.use(verifyToken);
 
 // Endpoints Dashboard, Planning & Forums
 router.get('/mes-formations', apprenantController.getMesFormations);
+router.get('/historique-formations', apprenantController.getHistoriqueFormations);
 router.get('/seances', apprenantController.getMesSeances);
 router.get('/evaluations', apprenantController.getMesEvaluations);
 router.get('/evaluations/:id', apprenantController.getEvaluationApprenant);

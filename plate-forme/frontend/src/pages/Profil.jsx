@@ -40,6 +40,13 @@ export default function Profil() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [passwordMethod, setPasswordMethod] = useState('current');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [codeRequestLoading, setCodeRequestLoading] = useState(false);
 
   useEffect(() => {
     API.get('/auth/me')
@@ -91,7 +98,6 @@ export default function Profil() {
         ...res.data.user,
         photo_profil: res.data.photo_profil || profile.photo_profil
       };
-
       setProfile(updatedProfile);
       setPreview(null);
       setSelectedFile(null);
@@ -104,6 +110,54 @@ export default function Profil() {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Erreur lors de la mise à jour' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const requestPasswordCode = async () => {
+    setMessage({ type: '', text: '' });
+    setCodeRequestLoading(true);
+    try {
+      const response = await API.post('/auth/password/change/request-code');
+      setMessage({ type: 'success', text: response.data.message });
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || 'Impossible d’envoyer le code de vérification.'
+      });
+    } finally {
+      setCodeRequestLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setMessage({ type: '', text: '' });
+    if (newPassword !== passwordConfirmation) {
+      setMessage({ type: 'error', text: 'Les deux nouveaux mots de passe ne correspondent pas.' });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const payload = {
+        new_password: newPassword,
+        ...(passwordMethod === 'current'
+          ? { current_password: currentPassword }
+          : { code: verificationCode })
+      };
+      const response = await API.post('/auth/password/change', payload);
+      setCurrentPassword('');
+      setVerificationCode('');
+      setNewPassword('');
+      setPasswordConfirmation('');
+      setMessage({ type: 'success', text: response.data.message });
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || 'Erreur lors du changement de mot de passe.'
+      });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -329,6 +383,127 @@ export default function Profil() {
             </button>
           </div>
         </form>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-4">
+            <h2 className="text-xs uppercase tracking-wider text-slate-400">Sécurité</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">Choisissez comment confirmer le changement de mot de passe.</p>
+          </div>
+
+          <div className="mb-5 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setPasswordMethod('current')}
+              aria-pressed={passwordMethod === 'current'}
+              className={`rounded-xl border px-3 py-3 text-left text-xs transition ${
+                passwordMethod === 'current'
+                  ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+                  : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
+              }`}
+            >
+              Confirmer avec l’ancien mot de passe
+            </button>
+            <button
+              type="button"
+              onClick={() => setPasswordMethod('code')}
+              aria-pressed={passwordMethod === 'code'}
+              className={`rounded-xl border px-3 py-3 text-left text-xs transition ${
+                passwordMethod === 'code'
+                  ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+                  : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
+              }`}
+            >
+              Confirmer avec un code par e-mail
+            </button>
+          </div>
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            {passwordMethod === 'current' ? (
+              <div>
+                <label htmlFor="current-password" className={labelClass}>Ancien mot de passe</label>
+                <input
+                  id="current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  Un code à 8 chiffres sera envoyé à {profile.email}.
+                </p>
+                <button
+                  type="button"
+                  onClick={requestPasswordCode}
+                  disabled={codeRequestLoading}
+                  className="rounded-xl border border-orange-500/40 px-4 py-2.5 text-xs font-medium text-orange-700 transition hover:bg-orange-500/10 disabled:opacity-50 dark:text-orange-300"
+                >
+                  {codeRequestLoading ? 'Envoi en cours…' : 'Envoyer un code par e-mail'}
+                </button>
+                <div>
+                  <label htmlFor="password-verification-code" className={labelClass}>Code de vérification</label>
+                  <input
+                    id="password-verification-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{8}"
+                    maxLength={8}
+                    required
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="new-password" className={labelClass}>Nouveau mot de passe</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={72}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                />
+              </div>
+              <div>
+                <label htmlFor="new-password-confirmation" className={labelClass}>Confirmer le nouveau mot de passe</label>
+                <input
+                  id="new-password-confirmation"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={72}
+                  required
+                  value={passwordConfirmation}
+                  onChange={(e) => setPasswordConfirmation(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                />
+              </div>
+            </div>
+
+            <div className="flex border-t border-slate-100 pt-4 sm:justify-end dark:border-zinc-800">
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50 sm:w-auto ${focusRing}`}
+              >
+                {passwordLoading ? 'Modification…' : 'Changer le mot de passe'}
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
 
       {/* Modal badge QR */}
