@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict v0BobTHfqahPo1Ngi1RNw19iOl1NjQYuyxyMZoUblepQn6LaOqIZVf3RtJKYhWy
+\restrict GH7umWGTN8x6wFWOsPVP6fE79vvr3ekhMIAQzhecBQv032e9m9VZDhRpSSlHVWW
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -1092,7 +1092,15 @@ CREATE TABLE public.utilisateur (
     date_creation timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_derniere_connexion timestamp without time zone,
     date_derniere_deconnexion timestamp without time zone,
-    CONSTRAINT utilisateur_age_check CHECK ((age >= 0))
+    email_verifie boolean DEFAULT true NOT NULL,
+    jeton_activation_hash character(64),
+    jeton_activation_expiration timestamp without time zone,
+    password_reset_code_hash character varying(60),
+    password_reset_code_expiration timestamp without time zone,
+    password_reset_code_requested_at timestamp without time zone,
+    password_reset_code_attempts integer DEFAULT 0 NOT NULL,
+    CONSTRAINT utilisateur_age_check CHECK ((age >= 0)),
+    CONSTRAINT utilisateur_password_reset_code_attempts_check CHECK (((password_reset_code_attempts >= 0) AND (password_reset_code_attempts <= 5)))
 );
 
 
@@ -1379,6 +1387,14 @@ COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation,
 99	101	439	2026-05-31 16:19:47.584	ACTIF
 100	102	440	2026-05-31 16:19:47.584	ACTIF
 101	103	441	2026-07-29 16:19:47.584	ACTIF
+102	107	574	2026-07-21 08:24:44.612	ACTIF
+103	108	575	2026-06-27 08:24:44.612	ACTIF
+104	109	576	2026-05-14 08:24:44.612	ACTIF
+105	110	577	2026-05-14 08:24:44.612	ACTIF
+106	111	578	2026-06-01 08:24:44.612	ACTIF
+107	112	579	2026-07-29 08:24:44.612	ACTIF
+108	113	580	2026-06-09 08:24:44.612	ACTIF
+109	114	581	2026-10-05 08:24:44.612	ACTIF
 \.
 
 
@@ -1960,6 +1976,14 @@ COPY public.candidat (id_candidat, email, nom, prenom, age, genre, telephone, ni
 571	synthetic-6c8993fb-6f18-4d86-b66a-36732381dd2a@example.invalid	Rabe	Lova	28	Femme	000000000	Master	En recherche d’emploi	Établissement de test A	Marketing	2026-07-16 16:20:16.281
 572	synthetic-bce01b8d-fdda-46e8-9277-23dc1b8bbe8a@example.invalid	Rasoanaivo	Aina	34	Non renseigné	000000000	Licence	Étudiant	Établissement de test A	Marketing	2026-10-12 16:20:16.281
 573	synthetic-e78ca55e-a04f-42fa-9636-169778b68dc9@example.invalid	Rabe	Mialy	37	Femme	000000000	Licence	Étudiant	Établissement de test A	Communication	2026-08-23 16:20:16.281
+574	synthetic-9aa01769-2d2d-46e3-a94e-48ddab7d4811@example.invalid	Randria	Hery	28	Homme	000000000	Licence	En recherche d’emploi	Centre de formation fictif	Gestion	2026-07-21 08:24:44.612
+575	synthetic-da1523af-8a38-4971-bd46-8ee772bac009@example.invalid	Randria	Tiana	25	Non renseigné	000000000	Baccalauréat	Étudiant	Établissement de test B	Informatique	2026-06-27 08:24:44.612
+576	synthetic-77812fd9-0391-4844-b89b-2f92b2780481@example.invalid	Razafy	Tahina	28	Homme	000000000	Baccalauréat	Étudiant	Établissement de test A	Gestion	2026-05-14 08:24:44.612
+577	synthetic-5b7b6f48-b571-48aa-8ecb-db7645108f0c@example.invalid	Rakoto	Miora	34	Femme	000000000	Formation professionnelle	En recherche d’emploi	Établissement de test A	Communication	2026-05-14 08:24:44.612
+578	synthetic-2fdf86ac-f4ce-42fb-8c29-989c8d593edf@example.invalid	Rasoanaivo	Fara	32	Femme	000000000	Master	En recherche d’emploi	Établissement de test B	Marketing	2026-06-01 08:24:44.612
+579	synthetic-a8e94169-e542-4303-ae03-53985a2b2089@example.invalid	Andria	Mialy	23	Homme	000000000	Licence	Salarié	Établissement de test A	Informatique	2026-07-29 08:24:44.612
+580	synthetic-7e50dbdb-dcf8-4ce4-877c-ff198f6d1d3f@example.invalid	Raveloson	Mialy	35	Non renseigné	000000000	Baccalauréat	Étudiant	Centre de formation fictif	Gestion	2026-06-09 08:24:44.612
+581	synthetic-71c20f02-476c-43e9-8b98-85d657bbc064@example.invalid	Rasoanaivo	Mialy	38	Non renseigné	000000000	Formation professionnelle	Salarié	Centre de formation fictif	Gestion	2026-10-05 08:24:44.612
 \.
 
 
@@ -1968,6 +1992,44 @@ COPY public.candidat (id_candidat, email, nom, prenom, age, genre, telephone, ni
 --
 
 COPY public.certification (id_certification, id_apprenant, id_formation, date_certification, statut, fichier_certification, numero_certification, commentaire) FROM stdin;
+1	3	3	2026-10-22	CERTIFIE	\N	\N	\N
+2	85	3	\N	NON_CERTIFIE	\N	\N	\N
+3	86	3	2026-10-22	CERTIFIE	\N	\N	\N
+4	87	3	\N	NON_CERTIFIE	\N	\N	\N
+5	88	3	2026-10-22	CERTIFIE	\N	\N	\N
+6	89	3	\N	NON_CERTIFIE	\N	\N	\N
+7	90	3	\N	NON_CERTIFIE	\N	\N	\N
+8	91	3	2026-10-22	CERTIFIE	\N	\N	\N
+9	92	3	\N	NON_CERTIFIE	\N	\N	\N
+10	93	3	2026-10-22	CERTIFIE	\N	\N	\N
+11	94	3	2026-10-22	CERTIFIE	\N	\N	\N
+12	95	3	\N	NON_CERTIFIE	\N	\N	\N
+13	96	3	\N	NON_CERTIFIE	\N	\N	\N
+14	97	3	\N	NON_CERTIFIE	\N	\N	\N
+15	98	3	2026-10-22	CERTIFIE	\N	\N	\N
+16	99	3	2026-10-22	CERTIFIE	\N	\N	\N
+17	100	3	\N	NON_CERTIFIE	\N	\N	\N
+18	101	3	\N	NON_CERTIFIE	\N	\N	\N
+19	65	4	2026-10-22	CERTIFIE	\N	\N	\N
+20	66	4	2026-10-22	CERTIFIE	\N	\N	\N
+21	67	4	\N	NON_CERTIFIE	\N	\N	\N
+22	68	4	\N	NON_CERTIFIE	\N	\N	\N
+23	69	4	2026-10-22	CERTIFIE	\N	\N	\N
+24	70	4	2026-10-22	CERTIFIE	\N	\N	\N
+25	71	4	\N	NON_CERTIFIE	\N	\N	\N
+26	72	4	2026-10-22	CERTIFIE	\N	\N	\N
+27	73	4	\N	NON_CERTIFIE	\N	\N	\N
+28	74	4	\N	NON_CERTIFIE	\N	\N	\N
+29	75	4	2026-10-22	CERTIFIE	\N	\N	\N
+30	76	4	\N	NON_CERTIFIE	\N	\N	\N
+31	77	4	2026-10-22	CERTIFIE	\N	\N	\N
+32	78	4	2026-10-22	CERTIFIE	\N	\N	\N
+33	79	4	\N	NON_CERTIFIE	\N	\N	\N
+34	80	4	2026-10-22	CERTIFIE	\N	\N	\N
+35	81	4	2026-10-22	CERTIFIE	\N	\N	\N
+36	82	4	\N	NON_CERTIFIE	\N	\N	\N
+37	83	4	\N	NON_CERTIFIE	\N	\N	\N
+38	84	4	2026-10-22	CERTIFIE	\N	\N	\N
 \.
 
 
@@ -2145,6 +2207,10 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 43	10	26	65	5.00
 44	10	27	67	5.00
 45	10	28	70	0.00
+46	11	25	63	0.00
+47	11	26	65	5.00
+48	11	27	68	0.00
+49	11	28	70	0.00
 \.
 
 
@@ -2177,6 +2243,7 @@ COPY public.evaluation_tentative (id_tentative, id_evaluation_sujet, id_apprenan
 8	5	2	2026-10-16 08:15:20.964729	2026-10-16 08:15:26.57848	10.00	TERMINEE
 9	4	2	2026-10-21 11:57:45.105451	2026-10-21 11:57:53.158256	5.00	TERMINEE
 10	6	2	2026-10-21 12:05:14.863837	2026-10-21 12:05:28.14658	15.00	TERMINEE
+11	6	3	2026-10-22 06:06:46.849783	2026-10-22 06:07:27.415039	5.00	TERMINEE
 \.
 
 
@@ -2195,13 +2262,15 @@ COPY public.formateur (id_formateur, id_utilisateur, specialite, biographie, dat
 --
 
 COPY public.formation (id_formation, titre, description, image_url, date_debut, date_fin, date_limite_inscription, capacite_max, statut, date_creation, date_modification) FROM stdin;
+13	Automatisation	des traitement des données	/uploads/formations/a1d81b18c78d7869bc091127d0303883.jpg	2026-12-08	2026-12-11	2026-12-01	20	OUVERTE	2026-10-22 06:22:30.117365	\N
+8	Marketing Digital et Reseaux Sociaux	De la strategie de visibilité a la performance digitale mesurable	/uploads/formations/f93c93f6f6b340023d605eb59293008d.jpg	2026-10-24	2026-10-26	2026-10-21	10	EN_COURS	2026-10-12 07:25:34.372538	2026-10-25 07:58:47.276132
 11	Devenir un Leader d'Impact	formation sur le leadership	/uploads/formations/37785536d924444c9894d52366da750a.jpg	2026-11-21	2026-11-24	2026-11-18	15	OUVERTE	2026-10-12 07:33:03.164727	2026-10-21 14:27:40.421478
 10	Reseaux nouvelle generation	automatiser, programmer et securisez vos infrastructures	/uploads/formations/4f6cd8f26a94b0ed55d2be5946d53fb5.jpg	2026-11-14	2026-11-17	2026-11-11	10	OUVERTE	2026-10-12 07:30:41.73863	2026-10-21 14:28:58.885804
 9	SwiftUI et IOs	Construire des application moderne, rapides et connectés	/uploads/formations/5cf65831a7f35c47f0d642dbe25b69d4.jpg	2026-11-06	2026-11-09	2026-11-03	10	OUVERTE	2026-10-12 07:28:41.963612	2026-10-21 15:03:54.708993
-8	Marketing Digital et Reseaux Sociaux	De la strategie de visibilité a la performance digitale mesurable	/uploads/formations/f93c93f6f6b340023d605eb59293008d.jpg	2026-10-24	2026-10-26	2026-10-21	10	OUVERTE	2026-10-12 07:25:34.372538	2026-10-21 15:05:30.324067
 4	De l'idée à l'insistant intelligent	mettrisez l'IA generative et le Prompt Engineering 	/uploads/formations/7c3ac61aac90be2bd47bc00c766a0ac1.jpg	2026-07-29	2026-08-02	2026-07-25	20	TERMINEE	2026-10-01 16:46:18.181844	2026-10-21 15:08:34.82837
 3	API mastery avec Spring Boot	Concevez des backends rapides, sécurisé et prêt pour la production	/uploads/formations/778eb388939531f61c97eb470bef029c.jpg	2026-09-27	2026-09-30	2026-09-27	20	TERMINEE	2026-10-01 14:56:12.050024	2026-10-21 15:10:59.241701
 1	Intelligence émotionnel	Mieux se connaître, mieux vivre, mieux réussir 	/uploads/formations/9ad92ea1782ef33c12235432999b1fd8.jpg	2026-12-16	2026-12-20	2026-11-26	40	OUVERTE	2026-09-19 07:31:18.251346	2026-10-21 15:12:12.213439
+12	Piloter les Finance	d'un projet d'entreprise	/uploads/formations/3d11ba4a795365efe08cb0533f2719ef.jpg	2026-11-22	2026-11-26	2026-11-19	30	OUVERTE	2026-10-22 06:20:23.030425	2026-10-22 06:21:23.397165
 \.
 
 
@@ -2241,6 +2310,8 @@ COPY public.forum (id_forum, id_formation, nom, description, date_creation) FROM
 6	9	Forum BDG	Espace de discussion pour la formation BDG.	2026-10-12 07:28:41.963612
 7	10	Forum Sigma boy	Espace de discussion pour la formation Sigma boy.	2026-10-12 07:30:41.73863
 8	11	Forum Le fer aiguise le fer	Espace de discussion pour la formation Le fer aiguise le fer.	2026-10-12 07:33:03.164727
+9	12	Forum Piloter les Finance	Espace de discussion pour la formation Piloter les Finance.	2026-10-22 06:20:23.030425
+10	13	Forum Automatisation	Espace de discussion pour la formation Automatisation.	2026-10-22 06:22:30.117365
 \.
 
 
@@ -2825,6 +2896,14 @@ COPY public.inscription (id_inscription, id_candidat, id_formation, date_inscrip
 188	185	1	2026-08-13 16:15:58.823	REFUSEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	\N	\N	2026-10-21 14:24:42.214249
 166	163	1	2026-08-07 16:15:58.823	REFUSEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	\N	\N	2026-10-21 14:24:43.150945
 564	561	1	2026-08-06 16:20:16.281	REFUSEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	\N	\N	2026-10-21 14:24:44.13354
+577	574	8	2026-07-21 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-07-21 08:24:44.612	\N	\N
+578	575	8	2026-06-27 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-06-27 08:24:44.612	\N	\N
+579	576	8	2026-05-14 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-05-14 08:24:44.612	\N	\N
+580	577	8	2026-05-14 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-05-14 08:24:44.612	\N	\N
+581	578	8	2026-06-01 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-06-01 08:24:44.612	\N	\N
+582	579	8	2026-07-29 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-07-29 08:24:44.612	\N	\N
+583	580	8	2026-06-09 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-06-09 08:24:44.612	\N	\N
+584	581	8	2026-10-05 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-10-05 08:24:44.612	\N	\N
 \.
 
 
@@ -3056,6 +3135,15 @@ COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, c
 16803	101	40	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 16804	101	41	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 16805	101	42	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217942	102	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217943	103	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217944	104	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217945	105	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217946	106	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217947	107	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217948	108	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+217949	109	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+221838	3	30	2026-10-25 07:06:45.286576	PRESENT	\N
 \.
 
 
@@ -3065,6 +3153,7 @@ COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, c
 
 COPY public.responsable (id_responsable, id_utilisateur, fonction, date_creation) FROM stdin;
 1	2	Mandede	2026-09-19 06:58:23.190465
+2	104	\N	2026-10-21 16:18:48.286823
 \.
 
 
@@ -3132,109 +3221,118 @@ COPY public.support_cours (id_support, id_formation, id_formateur, nom_fichier, 
 -- Data for Name: utilisateur; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion, date_derniere_deconnexion) FROM stdin;
-7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-21 15:22:32.043515	2026-10-21 15:29:01.481696
-3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-21 14:21:27.504889	2026-10-21 14:22:20.550895
-6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-21 11:58:19.415597	2026-10-21 11:59:16.447308
-2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-21 15:02:36.740097	2026-10-21 15:19:05.188162
-5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-21 12:27:17.255988	2026-10-21 12:28:23.433217
-1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-21 15:20:01.951293	2026-10-21 15:22:25.868682
-8	synthetic-7bc07316-ef38-4222-876f-9c38d6eb636e@example.invalid	\N	\N	Rakoto	Aina	000000000	29	\N	\N	ACTIF	2026-05-16 16:14:55.971	\N	\N
-9	synthetic-a644d2c6-f8c5-40b9-80a4-996f1d095e16@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	20	\N	\N	ACTIF	2026-05-21 16:14:55.971	\N	\N
-10	synthetic-6c07b065-43bf-4c55-bbcc-8e54a0165bc9@example.invalid	\N	\N	Randria	Nomena	000000000	30	\N	\N	ACTIF	2026-09-28 16:14:55.971	\N	\N
-11	synthetic-8b5b6f1a-16da-49a8-901c-456cca7a4472@example.invalid	\N	\N	Raveloson	Tahina	000000000	31	\N	\N	ACTIF	2026-05-10 16:14:55.971	\N	\N
-12	synthetic-8cf09b75-3fc3-4ea4-9926-c569ce45c7cd@example.invalid	\N	\N	Rasoanaivo	Miora	000000000	25	\N	\N	ACTIF	2026-05-22 16:14:55.971	\N	\N
-13	synthetic-4a317a0a-03c8-4f93-8a43-66f344c060c7@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	18	\N	\N	ACTIF	2026-06-05 16:14:55.971	\N	\N
-14	synthetic-f341eafd-4a0e-4d32-9584-982f7aaea7ba@example.invalid	\N	\N	Randria	Hery	000000000	39	\N	\N	ACTIF	2026-08-23 16:14:55.971	\N	\N
-15	synthetic-5c289326-4c0d-486b-8182-90555e568990@example.invalid	\N	\N	Razafy	Lova	000000000	30	\N	\N	ACTIF	2026-08-21 16:14:55.971	\N	\N
-16	synthetic-b3ec4b16-2015-4b97-8451-5d2fee2ed731@example.invalid	\N	\N	Razafy	Mialy	000000000	32	\N	\N	ACTIF	2026-06-06 16:14:55.971	\N	\N
-17	synthetic-336fef65-8599-41a3-b4cf-ccd9d52ce9b0@example.invalid	\N	\N	Raveloson	Hery	000000000	18	\N	\N	ACTIF	2026-08-24 16:14:55.971	\N	\N
-18	synthetic-9a9afc0e-8f5d-4382-8a9b-d7c020b0389f@example.invalid	\N	\N	Raveloson	Tahina	000000000	24	\N	\N	ACTIF	2026-08-17 16:17:31.29	\N	\N
-19	synthetic-f869283a-e6b2-4f7d-a56c-1385e6847a44@example.invalid	\N	\N	Razafy	Miora	000000000	37	\N	\N	ACTIF	2026-07-15 16:17:31.29	\N	\N
-20	synthetic-015710e3-e865-413f-8bc0-f10ca5b94c68@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	31	\N	\N	ACTIF	2026-09-15 16:17:31.29	\N	\N
-21	synthetic-9adfe0b8-1817-4045-a089-cbef65384c13@example.invalid	\N	\N	Razafy	Soa	000000000	24	\N	\N	ACTIF	2026-07-16 16:17:31.29	\N	\N
-22	synthetic-98669a86-d9bd-40bf-a9f9-a4f8c8969176@example.invalid	\N	\N	Randria	Miora	000000000	18	\N	\N	ACTIF	2026-08-08 16:17:31.29	\N	\N
-23	synthetic-9945ff7d-6f2c-4e80-98ac-9af48604dd78@example.invalid	\N	\N	Razafy	Tiana	000000000	22	\N	\N	ACTIF	2026-05-18 16:17:31.29	\N	\N
-24	synthetic-e394fb08-9af9-4e75-883b-9ea5d37f694b@example.invalid	\N	\N	Rabe	Miora	000000000	39	\N	\N	ACTIF	2026-06-18 16:17:31.29	\N	\N
-25	synthetic-fac99716-61b6-436a-9f63-5fc414c4c135@example.invalid	\N	\N	Raveloson	Tahina	000000000	23	\N	\N	ACTIF	2026-06-06 16:17:31.29	\N	\N
-26	synthetic-514d5b17-36f2-4175-a578-b972b1bf7df9@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	32	\N	\N	ACTIF	2026-06-22 16:17:31.29	\N	\N
-27	synthetic-b8d8cc05-31a4-46b3-868d-9835e25d7388@example.invalid	\N	\N	Ramanantsoa	Miora	000000000	24	\N	\N	ACTIF	2026-04-26 16:17:31.29	\N	\N
-28	synthetic-852c04b9-cee3-4597-80de-410c3c269f96@example.invalid	\N	\N	Rasoanaivo	Hery	000000000	21	\N	\N	ACTIF	2026-04-29 16:17:31.29	\N	\N
-29	synthetic-8f8f967c-f81e-4c73-839c-814b5b2eaa95@example.invalid	\N	\N	Ramanantsoa	Miora	000000000	22	\N	\N	ACTIF	2026-07-12 16:17:31.29	\N	\N
-30	synthetic-8bcbd661-3573-4491-ba68-770fd32362c4@example.invalid	\N	\N	Raveloson	Aina	000000000	36	\N	\N	ACTIF	2026-06-19 16:17:31.29	\N	\N
-31	synthetic-018fbf99-9f92-431f-8a18-8496ba72036e@example.invalid	\N	\N	Raveloson	Tiana	000000000	31	\N	\N	ACTIF	2026-08-01 16:17:31.29	\N	\N
-32	synthetic-b3ac0521-3785-4961-bf77-aca09ce45742@example.invalid	\N	\N	Ramanantsoa	Fara	000000000	23	\N	\N	ACTIF	2026-05-03 16:17:31.29	\N	\N
-33	synthetic-93f1833f-e851-4bc4-9076-872a90009fa6@example.invalid	\N	\N	Andria	Mialy	000000000	28	\N	\N	ACTIF	2026-07-30 16:17:31.29	\N	\N
-34	synthetic-9c32258b-dcb4-4de8-bdbc-d0edf07dd4f2@example.invalid	\N	\N	Rasoanaivo	Hery	000000000	36	\N	\N	ACTIF	2026-05-24 16:17:31.29	\N	\N
-35	synthetic-05fd9b2c-0848-4314-952a-483ac3bae98b@example.invalid	\N	\N	Raveloson	Aina	000000000	30	\N	\N	ACTIF	2026-08-02 16:17:31.29	\N	\N
-36	synthetic-f310c886-3de2-46f0-a7bd-19dc5f41f689@example.invalid	\N	\N	Rakoto	Hery	000000000	24	\N	\N	ACTIF	2026-10-08 16:17:31.29	\N	\N
-37	synthetic-dbcfd2c0-80e6-4b16-908b-6898ae7252e1@example.invalid	\N	\N	Ramanantsoa	Hery	000000000	26	\N	\N	ACTIF	2026-07-24 16:17:31.29	\N	\N
-38	synthetic-1522ff31-5374-47f5-8bc2-e5feadd2189d@example.invalid	\N	\N	Randria	Tahina	000000000	37	\N	\N	ACTIF	2026-05-13 16:17:31.29	\N	\N
-39	synthetic-d5d3fcc9-4a9e-4747-b1de-6880efd6f377@example.invalid	\N	\N	Rakoto	Mialy	000000000	32	\N	\N	ACTIF	2026-10-05 16:17:31.29	\N	\N
-40	synthetic-4b097dc2-e88a-4088-be38-938222bfc964@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	28	\N	\N	ACTIF	2026-05-01 16:17:31.29	\N	\N
-41	synthetic-30575bfa-8921-4cbe-8bbb-5a0c42f3fc60@example.invalid	\N	\N	Razafy	Hery	000000000	36	\N	\N	ACTIF	2026-06-06 16:17:31.29	\N	\N
-42	synthetic-ed80bb4f-78ed-45fd-b76e-e30372b864e9@example.invalid	\N	\N	Raveloson	Miora	000000000	27	\N	\N	ACTIF	2026-09-17 16:17:31.29	\N	\N
-43	synthetic-907a72b5-cd89-4252-869a-c935b8a9d0ea@example.invalid	\N	\N	Rabe	Nomena	000000000	23	\N	\N	ACTIF	2026-09-18 16:17:31.29	\N	\N
-44	synthetic-578c0b9a-1270-4bea-898b-768935843406@example.invalid	\N	\N	Rasoanaivo	Tahina	000000000	29	\N	\N	ACTIF	2026-08-04 16:17:31.29	\N	\N
-45	synthetic-39ba5533-2c5e-44ed-a60f-57bdfed48c5c@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	25	\N	\N	ACTIF	2026-06-11 16:17:31.29	\N	\N
-46	synthetic-c73ffafa-68de-40b1-b2a1-74f1651789c1@example.invalid	\N	\N	Andria	Soa	000000000	22	\N	\N	ACTIF	2026-06-02 16:18:04.531	\N	\N
-47	synthetic-56d5f5d0-c49e-40cd-aa15-b56f12ca9a05@example.invalid	\N	\N	Raveloson	Miora	000000000	23	\N	\N	ACTIF	2026-08-11 16:18:04.531	\N	\N
-48	synthetic-b5fe14d6-6615-43e9-b3e9-10af1fa01918@example.invalid	\N	\N	Rasoanaivo	Aina	000000000	36	\N	\N	ACTIF	2026-05-27 16:18:04.531	\N	\N
-49	synthetic-d3d9967e-1a37-49ec-93be-6a52bc5c5f63@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	30	\N	\N	ACTIF	2026-07-26 16:18:04.531	\N	\N
-50	synthetic-16066f2a-9146-4ecf-ae28-86ddda0dcb90@example.invalid	\N	\N	Andria	Mialy	000000000	39	\N	\N	ACTIF	2026-08-20 16:18:04.531	\N	\N
-51	synthetic-cd67d3f1-c0c8-4b27-ae59-3e2849439564@example.invalid	\N	\N	Rasoanaivo	Nomena	000000000	29	\N	\N	ACTIF	2026-07-06 16:18:04.531	\N	\N
-52	synthetic-848ed68c-37c7-41e7-8dda-fb7d2118f8e0@example.invalid	\N	\N	Rabe	Lova	000000000	34	\N	\N	ACTIF	2026-08-29 16:18:04.531	\N	\N
-53	synthetic-71921398-e22d-47e0-b0d8-347d3294462f@example.invalid	\N	\N	Rakoto	Tiana	000000000	36	\N	\N	ACTIF	2026-10-14 16:18:04.531	\N	\N
-54	synthetic-f46cc6ac-bf5d-4755-a57e-b93fc550226d@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	18	\N	\N	ACTIF	2026-07-30 16:18:04.531	\N	\N
-55	synthetic-da9d9d6a-e497-4d15-84f8-ac66e416dcb0@example.invalid	\N	\N	Rakoto	Nomena	000000000	23	\N	\N	ACTIF	2026-07-10 16:18:04.531	\N	\N
-56	synthetic-28d42104-cb78-4ed5-9a19-b799f56d7e01@example.invalid	\N	\N	Andria	Fara	000000000	18	\N	\N	ACTIF	2026-09-03 16:18:04.531	\N	\N
-57	synthetic-c0b157c6-fca6-4579-8b0f-b5b18ab31781@example.invalid	\N	\N	Razafy	Tahina	000000000	36	\N	\N	ACTIF	2026-07-05 16:18:04.531	\N	\N
-58	synthetic-d31f1a82-8d4f-44d8-a687-52a77cfde6b8@example.invalid	\N	\N	Randria	Miora	000000000	33	\N	\N	ACTIF	2026-10-01 16:18:04.531	\N	\N
-59	synthetic-8a6c8470-328e-4d1b-8104-6be1cf620e72@example.invalid	\N	\N	Raveloson	Aina	000000000	38	\N	\N	ACTIF	2026-09-19 16:18:26.505	\N	\N
-60	synthetic-cc1f7b58-dc96-4ef5-977e-2a96ffcfdc8d@example.invalid	\N	\N	Ramanantsoa	Soa	000000000	21	\N	\N	ACTIF	2026-07-18 16:18:26.505	\N	\N
-61	synthetic-bd27ae42-0c8d-4688-aa49-4b8417791587@example.invalid	\N	\N	Rakoto	Miora	000000000	31	\N	\N	ACTIF	2026-07-23 16:18:26.505	\N	\N
-62	synthetic-8a31970a-d31c-4f55-b139-88f16f55b368@example.invalid	\N	\N	Rasoanaivo	Soa	000000000	40	\N	\N	ACTIF	2026-07-05 16:18:26.505	\N	\N
-63	synthetic-50ab7eb3-99d5-42c4-96bb-ce8f4075f250@example.invalid	\N	\N	Rabe	Lova	000000000	25	\N	\N	ACTIF	2026-05-12 16:18:26.505	\N	\N
-64	synthetic-5db9022b-3199-4dd7-98dc-5b38ed182327@example.invalid	\N	\N	Rabe	Aina	000000000	33	\N	\N	ACTIF	2026-10-16 16:18:26.505	\N	\N
-65	synthetic-354fd17b-02f6-440a-be4a-7adf05e23ff6@example.invalid	\N	\N	Andria	Aina	000000000	19	\N	\N	ACTIF	2026-07-09 16:18:26.505	\N	\N
-66	synthetic-ce682c75-c250-4024-9170-ce31f6a73f39@example.invalid	\N	\N	Rabe	Fara	000000000	30	\N	\N	ACTIF	2026-09-25 16:18:26.505	\N	\N
-67	synthetic-1b28996a-7402-44fd-9840-2e5802b103df@example.invalid	\N	\N	Andria	Soa	000000000	25	\N	\N	ACTIF	2026-08-28 16:19:20.463	\N	\N
-68	synthetic-27a966f0-d5ee-43fe-a54a-9339c6f7ecc9@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	35	\N	\N	ACTIF	2026-05-20 16:19:20.463	\N	\N
-69	synthetic-a77cfcef-8681-4feb-8ee5-e63ad8836159@example.invalid	\N	\N	Rakoto	Mialy	000000000	38	\N	\N	ACTIF	2026-09-20 16:19:20.463	\N	\N
-70	synthetic-b4466fc6-bd27-4acb-a78b-e882f9c6720c@example.invalid	\N	\N	Rakoto	Miora	000000000	23	\N	\N	ACTIF	2026-06-01 16:19:20.463	\N	\N
-71	synthetic-67729bac-d2bf-4204-8abc-6945316016f5@example.invalid	\N	\N	Andria	Fara	000000000	19	\N	\N	ACTIF	2026-05-04 16:19:20.463	\N	\N
-72	synthetic-098bfdd1-0b91-40a4-94ce-9f38802ab6e6@example.invalid	\N	\N	Rasoanaivo	Mialy	000000000	25	\N	\N	ACTIF	2026-07-18 16:19:20.463	\N	\N
-73	synthetic-90756004-4b45-4dfc-b707-a2cb8c6c53c1@example.invalid	\N	\N	Randria	Lova	000000000	36	\N	\N	ACTIF	2026-07-23 16:19:20.463	\N	\N
-74	synthetic-c9362a6f-9ca8-40a9-8655-257221167613@example.invalid	\N	\N	Rakoto	Miora	000000000	36	\N	\N	ACTIF	2026-06-27 16:19:20.463	\N	\N
-75	synthetic-f524b163-2916-4454-b14d-14b120bbb9f2@example.invalid	\N	\N	Rasoanaivo	Aina	000000000	27	\N	\N	ACTIF	2026-08-15 16:19:20.463	\N	\N
-76	synthetic-3285e278-a67d-4557-9a3d-24e4902684b1@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	40	\N	\N	ACTIF	2026-04-29 16:19:20.463	\N	\N
-77	synthetic-5f518ca1-2a2a-4013-ab63-92042134b6e7@example.invalid	\N	\N	Raveloson	Mialy	000000000	38	\N	\N	ACTIF	2026-06-13 16:19:20.463	\N	\N
-78	synthetic-c32c91de-7531-420c-af69-266a99e73c74@example.invalid	\N	\N	Andria	Tiana	000000000	29	\N	\N	ACTIF	2026-10-18 16:19:20.463	\N	\N
-79	synthetic-bb845778-8117-4116-9baf-ea54fb674288@example.invalid	\N	\N	Randria	Lova	000000000	38	\N	\N	ACTIF	2026-10-20 16:19:20.463	\N	\N
-80	synthetic-89f9c127-4562-4ce1-8551-a3a71b157487@example.invalid	\N	\N	Rakoto	Tahina	000000000	22	\N	\N	ACTIF	2026-05-17 16:19:20.463	\N	\N
-81	synthetic-dcc8b19e-95e1-4260-aacb-2a8e25104a24@example.invalid	\N	\N	Andria	Soa	000000000	34	\N	\N	ACTIF	2026-10-13 16:19:20.463	\N	\N
-82	synthetic-ee23d326-cf1b-4ffe-8faf-67d8f3283e69@example.invalid	\N	\N	Randria	Tiana	000000000	20	\N	\N	ACTIF	2026-08-09 16:19:20.463	\N	\N
-83	synthetic-6a9e2a4e-2977-4c3b-a017-ad15276bfc84@example.invalid	\N	\N	Ramanantsoa	Nomena	000000000	22	\N	\N	ACTIF	2026-09-06 16:19:20.463	\N	\N
-84	synthetic-0b764eb8-4a9e-464c-b736-59ebc8e0719a@example.invalid	\N	\N	Rasoanaivo	Miora	000000000	30	\N	\N	ACTIF	2026-08-05 16:19:20.463	\N	\N
-85	synthetic-f5008c77-9382-409d-9bd7-4ab1ca3f5fbe@example.invalid	\N	\N	Razafy	Soa	000000000	35	\N	\N	ACTIF	2026-07-20 16:19:20.463	\N	\N
-86	synthetic-26c33563-3cc6-4150-9e69-8dbf179e2542@example.invalid	\N	\N	Andria	Mialy	000000000	22	\N	\N	ACTIF	2026-05-22 16:19:20.463	\N	\N
-87	synthetic-67d7728b-f598-4437-9748-5f45a3864e74@example.invalid	\N	\N	Rakoto	Aina	000000000	33	\N	\N	ACTIF	2026-09-10 16:19:47.584	\N	\N
-88	synthetic-0b9c6254-c6ac-4e18-a2f6-879c66251dec@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	31	\N	\N	ACTIF	2026-09-25 16:19:47.584	\N	\N
-89	synthetic-8405366e-8aa2-4275-9a40-968aa1c14bc8@example.invalid	\N	\N	Raveloson	Aina	000000000	30	\N	\N	ACTIF	2026-07-30 16:19:47.584	\N	\N
-90	synthetic-31d77133-7670-4755-92f6-29c2431f686f@example.invalid	\N	\N	Ramanantsoa	Mialy	000000000	20	\N	\N	ACTIF	2026-09-13 16:19:47.584	\N	\N
-91	synthetic-a626f55d-87cb-419d-af85-b1c4ab728a97@example.invalid	\N	\N	Randria	Miora	000000000	39	\N	\N	ACTIF	2026-07-14 16:19:47.584	\N	\N
-92	synthetic-28035a1c-7008-43c4-9d1d-71face76bc37@example.invalid	\N	\N	Rakoto	Nomena	000000000	21	\N	\N	ACTIF	2026-09-06 16:19:47.584	\N	\N
-93	synthetic-05d97dd9-5e8b-4eb8-a4db-5dc4e3fb2e09@example.invalid	\N	\N	Rabe	Tiana	000000000	27	\N	\N	ACTIF	2026-07-06 16:19:47.584	\N	\N
-94	synthetic-0622dcda-a540-4946-a0c0-2308f302a71c@example.invalid	\N	\N	Razafy	Aina	000000000	36	\N	\N	ACTIF	2026-09-03 16:19:47.584	\N	\N
-95	synthetic-917b606d-4bac-4887-a6c9-fd435d824055@example.invalid	\N	\N	Andria	Hery	000000000	28	\N	\N	ACTIF	2026-09-10 16:19:47.584	\N	\N
-96	synthetic-244e647f-fdcc-4c6b-abbe-86206bdf5d79@example.invalid	\N	\N	Rakoto	Nomena	000000000	24	\N	\N	ACTIF	2026-04-27 16:19:47.584	\N	\N
-97	synthetic-5c29205b-148c-409b-9af6-f49959f16549@example.invalid	\N	\N	Randria	Soa	000000000	26	\N	\N	ACTIF	2026-08-08 16:19:47.584	\N	\N
-98	synthetic-1f1b381a-a026-4d63-8125-9e94c588c651@example.invalid	\N	\N	Randria	Nomena	000000000	31	\N	\N	ACTIF	2026-10-07 16:19:47.584	\N	\N
-99	synthetic-fd75b613-cd00-4920-8250-6ae92233f04b@example.invalid	\N	\N	Rakoto	Aina	000000000	38	\N	\N	ACTIF	2026-06-28 16:19:47.584	\N	\N
-100	synthetic-61861e00-0060-40c5-b8f9-15817163d78a@example.invalid	\N	\N	Andria	Tiana	000000000	25	\N	\N	ACTIF	2026-05-15 16:19:47.584	\N	\N
-101	synthetic-df0b3124-73d6-43c6-aae4-e7e6ea89e34e@example.invalid	\N	\N	Razafy	Aina	000000000	19	\N	\N	ACTIF	2026-05-31 16:19:47.584	\N	\N
-102	synthetic-d550040f-a9c6-4b4c-83c9-aed5cde469ec@example.invalid	\N	\N	Raveloson	Fara	000000000	19	\N	\N	ACTIF	2026-05-31 16:19:47.584	\N	\N
-103	synthetic-7f25e9d3-b8f2-45b9-8bbb-37f41dcb800d@example.invalid	\N	\N	Rabe	Tiana	000000000	24	\N	\N	ACTIF	2026-07-29 16:19:47.584	\N	\N
+COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion, date_derniere_deconnexion, email_verifie, jeton_activation_hash, jeton_activation_expiration, password_reset_code_hash, password_reset_code_expiration, password_reset_code_requested_at, password_reset_code_attempts) FROM stdin;
+3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-22 06:03:12.275965	2026-10-22 06:04:56.12197	t	\N	\N	\N	\N	\N	0
+2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-25 07:04:32.938027	2026-10-25 07:06:55.294826	t	\N	\N	\N	\N	\N	0
+5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-25 07:07:02.031218	2026-10-25 07:07:32.090651	t	\N	\N	\N	\N	\N	0
+1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-22 14:06:48.772545	2026-10-22 13:56:08.858289	t	\N	\N	\N	\N	\N	0
+7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-25 07:08:18.62848	2026-10-25 07:09:48.10167	t	\N	\N	\N	\N	\N	0
+6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-22 13:53:25.627427	2026-10-22 13:54:50.097503	t	\N	\N	\N	\N	\N	0
+8	synthetic-7bc07316-ef38-4222-876f-9c38d6eb636e@example.invalid	\N	\N	Rakoto	Aina	000000000	29	\N	\N	ACTIF	2026-05-16 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+9	synthetic-a644d2c6-f8c5-40b9-80a4-996f1d095e16@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	20	\N	\N	ACTIF	2026-05-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+10	synthetic-6c07b065-43bf-4c55-bbcc-8e54a0165bc9@example.invalid	\N	\N	Randria	Nomena	000000000	30	\N	\N	ACTIF	2026-09-28 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+11	synthetic-8b5b6f1a-16da-49a8-901c-456cca7a4472@example.invalid	\N	\N	Raveloson	Tahina	000000000	31	\N	\N	ACTIF	2026-05-10 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+12	synthetic-8cf09b75-3fc3-4ea4-9926-c569ce45c7cd@example.invalid	\N	\N	Rasoanaivo	Miora	000000000	25	\N	\N	ACTIF	2026-05-22 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+13	synthetic-4a317a0a-03c8-4f93-8a43-66f344c060c7@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	18	\N	\N	ACTIF	2026-06-05 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+14	synthetic-f341eafd-4a0e-4d32-9584-982f7aaea7ba@example.invalid	\N	\N	Randria	Hery	000000000	39	\N	\N	ACTIF	2026-08-23 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+15	synthetic-5c289326-4c0d-486b-8182-90555e568990@example.invalid	\N	\N	Razafy	Lova	000000000	30	\N	\N	ACTIF	2026-08-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+16	synthetic-b3ec4b16-2015-4b97-8451-5d2fee2ed731@example.invalid	\N	\N	Razafy	Mialy	000000000	32	\N	\N	ACTIF	2026-06-06 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+17	synthetic-336fef65-8599-41a3-b4cf-ccd9d52ce9b0@example.invalid	\N	\N	Raveloson	Hery	000000000	18	\N	\N	ACTIF	2026-08-24 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+18	synthetic-9a9afc0e-8f5d-4382-8a9b-d7c020b0389f@example.invalid	\N	\N	Raveloson	Tahina	000000000	24	\N	\N	ACTIF	2026-08-17 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+19	synthetic-f869283a-e6b2-4f7d-a56c-1385e6847a44@example.invalid	\N	\N	Razafy	Miora	000000000	37	\N	\N	ACTIF	2026-07-15 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+20	synthetic-015710e3-e865-413f-8bc0-f10ca5b94c68@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	31	\N	\N	ACTIF	2026-09-15 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+21	synthetic-9adfe0b8-1817-4045-a089-cbef65384c13@example.invalid	\N	\N	Razafy	Soa	000000000	24	\N	\N	ACTIF	2026-07-16 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+22	synthetic-98669a86-d9bd-40bf-a9f9-a4f8c8969176@example.invalid	\N	\N	Randria	Miora	000000000	18	\N	\N	ACTIF	2026-08-08 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+23	synthetic-9945ff7d-6f2c-4e80-98ac-9af48604dd78@example.invalid	\N	\N	Razafy	Tiana	000000000	22	\N	\N	ACTIF	2026-05-18 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+24	synthetic-e394fb08-9af9-4e75-883b-9ea5d37f694b@example.invalid	\N	\N	Rabe	Miora	000000000	39	\N	\N	ACTIF	2026-06-18 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+25	synthetic-fac99716-61b6-436a-9f63-5fc414c4c135@example.invalid	\N	\N	Raveloson	Tahina	000000000	23	\N	\N	ACTIF	2026-06-06 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+26	synthetic-514d5b17-36f2-4175-a578-b972b1bf7df9@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	32	\N	\N	ACTIF	2026-06-22 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+27	synthetic-b8d8cc05-31a4-46b3-868d-9835e25d7388@example.invalid	\N	\N	Ramanantsoa	Miora	000000000	24	\N	\N	ACTIF	2026-04-26 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+28	synthetic-852c04b9-cee3-4597-80de-410c3c269f96@example.invalid	\N	\N	Rasoanaivo	Hery	000000000	21	\N	\N	ACTIF	2026-04-29 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+29	synthetic-8f8f967c-f81e-4c73-839c-814b5b2eaa95@example.invalid	\N	\N	Ramanantsoa	Miora	000000000	22	\N	\N	ACTIF	2026-07-12 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+30	synthetic-8bcbd661-3573-4491-ba68-770fd32362c4@example.invalid	\N	\N	Raveloson	Aina	000000000	36	\N	\N	ACTIF	2026-06-19 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+31	synthetic-018fbf99-9f92-431f-8a18-8496ba72036e@example.invalid	\N	\N	Raveloson	Tiana	000000000	31	\N	\N	ACTIF	2026-08-01 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+32	synthetic-b3ac0521-3785-4961-bf77-aca09ce45742@example.invalid	\N	\N	Ramanantsoa	Fara	000000000	23	\N	\N	ACTIF	2026-05-03 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+33	synthetic-93f1833f-e851-4bc4-9076-872a90009fa6@example.invalid	\N	\N	Andria	Mialy	000000000	28	\N	\N	ACTIF	2026-07-30 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+34	synthetic-9c32258b-dcb4-4de8-bdbc-d0edf07dd4f2@example.invalid	\N	\N	Rasoanaivo	Hery	000000000	36	\N	\N	ACTIF	2026-05-24 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+35	synthetic-05fd9b2c-0848-4314-952a-483ac3bae98b@example.invalid	\N	\N	Raveloson	Aina	000000000	30	\N	\N	ACTIF	2026-08-02 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+36	synthetic-f310c886-3de2-46f0-a7bd-19dc5f41f689@example.invalid	\N	\N	Rakoto	Hery	000000000	24	\N	\N	ACTIF	2026-10-08 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+37	synthetic-dbcfd2c0-80e6-4b16-908b-6898ae7252e1@example.invalid	\N	\N	Ramanantsoa	Hery	000000000	26	\N	\N	ACTIF	2026-07-24 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+38	synthetic-1522ff31-5374-47f5-8bc2-e5feadd2189d@example.invalid	\N	\N	Randria	Tahina	000000000	37	\N	\N	ACTIF	2026-05-13 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+39	synthetic-d5d3fcc9-4a9e-4747-b1de-6880efd6f377@example.invalid	\N	\N	Rakoto	Mialy	000000000	32	\N	\N	ACTIF	2026-10-05 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+40	synthetic-4b097dc2-e88a-4088-be38-938222bfc964@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	28	\N	\N	ACTIF	2026-05-01 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+41	synthetic-30575bfa-8921-4cbe-8bbb-5a0c42f3fc60@example.invalid	\N	\N	Razafy	Hery	000000000	36	\N	\N	ACTIF	2026-06-06 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+42	synthetic-ed80bb4f-78ed-45fd-b76e-e30372b864e9@example.invalid	\N	\N	Raveloson	Miora	000000000	27	\N	\N	ACTIF	2026-09-17 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+43	synthetic-907a72b5-cd89-4252-869a-c935b8a9d0ea@example.invalid	\N	\N	Rabe	Nomena	000000000	23	\N	\N	ACTIF	2026-09-18 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+44	synthetic-578c0b9a-1270-4bea-898b-768935843406@example.invalid	\N	\N	Rasoanaivo	Tahina	000000000	29	\N	\N	ACTIF	2026-08-04 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+45	synthetic-39ba5533-2c5e-44ed-a60f-57bdfed48c5c@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	25	\N	\N	ACTIF	2026-06-11 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
+46	synthetic-c73ffafa-68de-40b1-b2a1-74f1651789c1@example.invalid	\N	\N	Andria	Soa	000000000	22	\N	\N	ACTIF	2026-06-02 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+47	synthetic-56d5f5d0-c49e-40cd-aa15-b56f12ca9a05@example.invalid	\N	\N	Raveloson	Miora	000000000	23	\N	\N	ACTIF	2026-08-11 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+48	synthetic-b5fe14d6-6615-43e9-b3e9-10af1fa01918@example.invalid	\N	\N	Rasoanaivo	Aina	000000000	36	\N	\N	ACTIF	2026-05-27 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+49	synthetic-d3d9967e-1a37-49ec-93be-6a52bc5c5f63@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	30	\N	\N	ACTIF	2026-07-26 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+50	synthetic-16066f2a-9146-4ecf-ae28-86ddda0dcb90@example.invalid	\N	\N	Andria	Mialy	000000000	39	\N	\N	ACTIF	2026-08-20 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+51	synthetic-cd67d3f1-c0c8-4b27-ae59-3e2849439564@example.invalid	\N	\N	Rasoanaivo	Nomena	000000000	29	\N	\N	ACTIF	2026-07-06 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+52	synthetic-848ed68c-37c7-41e7-8dda-fb7d2118f8e0@example.invalid	\N	\N	Rabe	Lova	000000000	34	\N	\N	ACTIF	2026-08-29 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+53	synthetic-71921398-e22d-47e0-b0d8-347d3294462f@example.invalid	\N	\N	Rakoto	Tiana	000000000	36	\N	\N	ACTIF	2026-10-14 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+54	synthetic-f46cc6ac-bf5d-4755-a57e-b93fc550226d@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	18	\N	\N	ACTIF	2026-07-30 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+55	synthetic-da9d9d6a-e497-4d15-84f8-ac66e416dcb0@example.invalid	\N	\N	Rakoto	Nomena	000000000	23	\N	\N	ACTIF	2026-07-10 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+56	synthetic-28d42104-cb78-4ed5-9a19-b799f56d7e01@example.invalid	\N	\N	Andria	Fara	000000000	18	\N	\N	ACTIF	2026-09-03 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+57	synthetic-c0b157c6-fca6-4579-8b0f-b5b18ab31781@example.invalid	\N	\N	Razafy	Tahina	000000000	36	\N	\N	ACTIF	2026-07-05 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+58	synthetic-d31f1a82-8d4f-44d8-a687-52a77cfde6b8@example.invalid	\N	\N	Randria	Miora	000000000	33	\N	\N	ACTIF	2026-10-01 16:18:04.531	\N	\N	t	\N	\N	\N	\N	\N	0
+59	synthetic-8a6c8470-328e-4d1b-8104-6be1cf620e72@example.invalid	\N	\N	Raveloson	Aina	000000000	38	\N	\N	ACTIF	2026-09-19 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+60	synthetic-cc1f7b58-dc96-4ef5-977e-2a96ffcfdc8d@example.invalid	\N	\N	Ramanantsoa	Soa	000000000	21	\N	\N	ACTIF	2026-07-18 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+61	synthetic-bd27ae42-0c8d-4688-aa49-4b8417791587@example.invalid	\N	\N	Rakoto	Miora	000000000	31	\N	\N	ACTIF	2026-07-23 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+62	synthetic-8a31970a-d31c-4f55-b139-88f16f55b368@example.invalid	\N	\N	Rasoanaivo	Soa	000000000	40	\N	\N	ACTIF	2026-07-05 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+63	synthetic-50ab7eb3-99d5-42c4-96bb-ce8f4075f250@example.invalid	\N	\N	Rabe	Lova	000000000	25	\N	\N	ACTIF	2026-05-12 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+64	synthetic-5db9022b-3199-4dd7-98dc-5b38ed182327@example.invalid	\N	\N	Rabe	Aina	000000000	33	\N	\N	ACTIF	2026-10-16 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+65	synthetic-354fd17b-02f6-440a-be4a-7adf05e23ff6@example.invalid	\N	\N	Andria	Aina	000000000	19	\N	\N	ACTIF	2026-07-09 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+66	synthetic-ce682c75-c250-4024-9170-ce31f6a73f39@example.invalid	\N	\N	Rabe	Fara	000000000	30	\N	\N	ACTIF	2026-09-25 16:18:26.505	\N	\N	t	\N	\N	\N	\N	\N	0
+67	synthetic-1b28996a-7402-44fd-9840-2e5802b103df@example.invalid	\N	\N	Andria	Soa	000000000	25	\N	\N	ACTIF	2026-08-28 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+68	synthetic-27a966f0-d5ee-43fe-a54a-9339c6f7ecc9@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	35	\N	\N	ACTIF	2026-05-20 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+69	synthetic-a77cfcef-8681-4feb-8ee5-e63ad8836159@example.invalid	\N	\N	Rakoto	Mialy	000000000	38	\N	\N	ACTIF	2026-09-20 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+70	synthetic-b4466fc6-bd27-4acb-a78b-e882f9c6720c@example.invalid	\N	\N	Rakoto	Miora	000000000	23	\N	\N	ACTIF	2026-06-01 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+71	synthetic-67729bac-d2bf-4204-8abc-6945316016f5@example.invalid	\N	\N	Andria	Fara	000000000	19	\N	\N	ACTIF	2026-05-04 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+72	synthetic-098bfdd1-0b91-40a4-94ce-9f38802ab6e6@example.invalid	\N	\N	Rasoanaivo	Mialy	000000000	25	\N	\N	ACTIF	2026-07-18 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+73	synthetic-90756004-4b45-4dfc-b707-a2cb8c6c53c1@example.invalid	\N	\N	Randria	Lova	000000000	36	\N	\N	ACTIF	2026-07-23 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+74	synthetic-c9362a6f-9ca8-40a9-8655-257221167613@example.invalid	\N	\N	Rakoto	Miora	000000000	36	\N	\N	ACTIF	2026-06-27 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+75	synthetic-f524b163-2916-4454-b14d-14b120bbb9f2@example.invalid	\N	\N	Rasoanaivo	Aina	000000000	27	\N	\N	ACTIF	2026-08-15 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+76	synthetic-3285e278-a67d-4557-9a3d-24e4902684b1@example.invalid	\N	\N	Ramanantsoa	Tahina	000000000	40	\N	\N	ACTIF	2026-04-29 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+77	synthetic-5f518ca1-2a2a-4013-ab63-92042134b6e7@example.invalid	\N	\N	Raveloson	Mialy	000000000	38	\N	\N	ACTIF	2026-06-13 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+78	synthetic-c32c91de-7531-420c-af69-266a99e73c74@example.invalid	\N	\N	Andria	Tiana	000000000	29	\N	\N	ACTIF	2026-10-18 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+79	synthetic-bb845778-8117-4116-9baf-ea54fb674288@example.invalid	\N	\N	Randria	Lova	000000000	38	\N	\N	ACTIF	2026-10-20 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+80	synthetic-89f9c127-4562-4ce1-8551-a3a71b157487@example.invalid	\N	\N	Rakoto	Tahina	000000000	22	\N	\N	ACTIF	2026-05-17 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+81	synthetic-dcc8b19e-95e1-4260-aacb-2a8e25104a24@example.invalid	\N	\N	Andria	Soa	000000000	34	\N	\N	ACTIF	2026-10-13 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+82	synthetic-ee23d326-cf1b-4ffe-8faf-67d8f3283e69@example.invalid	\N	\N	Randria	Tiana	000000000	20	\N	\N	ACTIF	2026-08-09 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+83	synthetic-6a9e2a4e-2977-4c3b-a017-ad15276bfc84@example.invalid	\N	\N	Ramanantsoa	Nomena	000000000	22	\N	\N	ACTIF	2026-09-06 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+84	synthetic-0b764eb8-4a9e-464c-b736-59ebc8e0719a@example.invalid	\N	\N	Rasoanaivo	Miora	000000000	30	\N	\N	ACTIF	2026-08-05 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+85	synthetic-f5008c77-9382-409d-9bd7-4ab1ca3f5fbe@example.invalid	\N	\N	Razafy	Soa	000000000	35	\N	\N	ACTIF	2026-07-20 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+86	synthetic-26c33563-3cc6-4150-9e69-8dbf179e2542@example.invalid	\N	\N	Andria	Mialy	000000000	22	\N	\N	ACTIF	2026-05-22 16:19:20.463	\N	\N	t	\N	\N	\N	\N	\N	0
+87	synthetic-67d7728b-f598-4437-9748-5f45a3864e74@example.invalid	\N	\N	Rakoto	Aina	000000000	33	\N	\N	ACTIF	2026-09-10 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+88	synthetic-0b9c6254-c6ac-4e18-a2f6-879c66251dec@example.invalid	\N	\N	Rasoanaivo	Tiana	000000000	31	\N	\N	ACTIF	2026-09-25 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+89	synthetic-8405366e-8aa2-4275-9a40-968aa1c14bc8@example.invalid	\N	\N	Raveloson	Aina	000000000	30	\N	\N	ACTIF	2026-07-30 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+90	synthetic-31d77133-7670-4755-92f6-29c2431f686f@example.invalid	\N	\N	Ramanantsoa	Mialy	000000000	20	\N	\N	ACTIF	2026-09-13 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+91	synthetic-a626f55d-87cb-419d-af85-b1c4ab728a97@example.invalid	\N	\N	Randria	Miora	000000000	39	\N	\N	ACTIF	2026-07-14 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+92	synthetic-28035a1c-7008-43c4-9d1d-71face76bc37@example.invalid	\N	\N	Rakoto	Nomena	000000000	21	\N	\N	ACTIF	2026-09-06 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+93	synthetic-05d97dd9-5e8b-4eb8-a4db-5dc4e3fb2e09@example.invalid	\N	\N	Rabe	Tiana	000000000	27	\N	\N	ACTIF	2026-07-06 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+94	synthetic-0622dcda-a540-4946-a0c0-2308f302a71c@example.invalid	\N	\N	Razafy	Aina	000000000	36	\N	\N	ACTIF	2026-09-03 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+95	synthetic-917b606d-4bac-4887-a6c9-fd435d824055@example.invalid	\N	\N	Andria	Hery	000000000	28	\N	\N	ACTIF	2026-09-10 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+96	synthetic-244e647f-fdcc-4c6b-abbe-86206bdf5d79@example.invalid	\N	\N	Rakoto	Nomena	000000000	24	\N	\N	ACTIF	2026-04-27 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+97	synthetic-5c29205b-148c-409b-9af6-f49959f16549@example.invalid	\N	\N	Randria	Soa	000000000	26	\N	\N	ACTIF	2026-08-08 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+98	synthetic-1f1b381a-a026-4d63-8125-9e94c588c651@example.invalid	\N	\N	Randria	Nomena	000000000	31	\N	\N	ACTIF	2026-10-07 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+99	synthetic-fd75b613-cd00-4920-8250-6ae92233f04b@example.invalid	\N	\N	Rakoto	Aina	000000000	38	\N	\N	ACTIF	2026-06-28 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+100	synthetic-61861e00-0060-40c5-b8f9-15817163d78a@example.invalid	\N	\N	Andria	Tiana	000000000	25	\N	\N	ACTIF	2026-05-15 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+101	synthetic-df0b3124-73d6-43c6-aae4-e7e6ea89e34e@example.invalid	\N	\N	Razafy	Aina	000000000	19	\N	\N	ACTIF	2026-05-31 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+102	synthetic-d550040f-a9c6-4b4c-83c9-aed5cde469ec@example.invalid	\N	\N	Raveloson	Fara	000000000	19	\N	\N	ACTIF	2026-05-31 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+103	synthetic-7f25e9d3-b8f2-45b9-8bbb-37f41dcb800d@example.invalid	\N	\N	Rabe	Tiana	000000000	24	\N	\N	ACTIF	2026-07-29 16:19:47.584	\N	\N	t	\N	\N	\N	\N	\N	0
+107	synthetic-9aa01769-2d2d-46e3-a94e-48ddab7d4811@example.invalid	\N	\N	Randria	Hery	000000000	28	\N	\N	ACTIF	2026-07-21 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+108	synthetic-da1523af-8a38-4971-bd46-8ee772bac009@example.invalid	\N	\N	Randria	Tiana	000000000	25	\N	\N	ACTIF	2026-06-27 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+109	synthetic-77812fd9-0391-4844-b89b-2f92b2780481@example.invalid	\N	\N	Razafy	Tahina	000000000	28	\N	\N	ACTIF	2026-05-14 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+110	synthetic-5b7b6f48-b571-48aa-8ecb-db7645108f0c@example.invalid	\N	\N	Rakoto	Miora	000000000	34	\N	\N	ACTIF	2026-05-14 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+111	synthetic-2fdf86ac-f4ce-42fb-8c29-989c8d593edf@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	32	\N	\N	ACTIF	2026-06-01 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+112	synthetic-a8e94169-e542-4303-ae03-53985a2b2089@example.invalid	\N	\N	Andria	Mialy	000000000	23	\N	\N	ACTIF	2026-07-29 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+113	synthetic-7e50dbdb-dcf8-4ce4-877c-ff198f6d1d3f@example.invalid	\N	\N	Raveloson	Mialy	000000000	35	\N	\N	ACTIF	2026-06-09 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+114	synthetic-71c20f02-476c-43e9-8b98-85d657bbc064@example.invalid	\N	\N	Rasoanaivo	Mialy	000000000	38	\N	\N	ACTIF	2026-10-05 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
+104	andriatsaraniarivogaming@gmail.com	$2b$10$5tWCzBkXjshWM5B7xY84m.a.Tha8dc9zE2tglJcHLAGKSZBeAKXKS	Md Narovana	Narovana	Andriamaminiaina	032 28 188 26	25	avatar-104-1792596109490-650532512.jpeg	\N	ACTIF	2026-10-21 16:18:48.286823	2026-10-25 08:08:29.571605	2026-10-25 08:23:43.98656	t	\N	\N	\N	\N	\N	0
 \.
 
 
@@ -3249,21 +3347,21 @@ SELECT pg_catalog.setval('public.administrateur_id_administrateur_seq', 1, true)
 -- Name: apprenant_id_apprenant_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 101, true);
+SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 109, true);
 
 
 --
 -- Name: candidat_id_candidat_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 573, true);
+SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 581, true);
 
 
 --
 -- Name: certification_id_certification_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.certification_id_certification_seq', 1, false);
+SELECT pg_catalog.setval('public.certification_id_certification_seq', 38, true);
 
 
 --
@@ -3291,7 +3389,7 @@ SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 30, true)
 -- Name: evaluation_reponse_id_reponse_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 45, true);
+SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 49, true);
 
 
 --
@@ -3305,7 +3403,7 @@ SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 6, t
 -- Name: evaluation_tentative_id_tentative_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 10, true);
+SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 11, true);
 
 
 --
@@ -3326,21 +3424,21 @@ SELECT pg_catalog.setval('public.formation_avis_id_avis_seq', 1, true);
 -- Name: formation_id_formation_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.formation_id_formation_seq', 11, true);
+SELECT pg_catalog.setval('public.formation_id_formation_seq', 13, true);
 
 
 --
 -- Name: forum_id_forum_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.forum_id_forum_seq', 8, true);
+SELECT pg_catalog.setval('public.forum_id_forum_seq', 10, true);
 
 
 --
 -- Name: inscription_id_inscription_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 576, true);
+SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 584, true);
 
 
 --
@@ -3354,14 +3452,14 @@ SELECT pg_catalog.setval('public.message_id_message_seq', 7, true);
 -- Name: presence_id_presence_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.presence_id_presence_seq', 74421, true);
+SELECT pg_catalog.setval('public.presence_id_presence_seq', 252510, true);
 
 
 --
 -- Name: responsable_id_responsable_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.responsable_id_responsable_seq', 1, true);
+SELECT pg_catalog.setval('public.responsable_id_responsable_seq', 2, true);
 
 
 --
@@ -3382,7 +3480,7 @@ SELECT pg_catalog.setval('public.support_cours_id_support_seq', 1, false);
 -- Name: utilisateur_id_utilisateur_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.utilisateur_id_utilisateur_seq', 103, true);
+SELECT pg_catalog.setval('public.utilisateur_id_utilisateur_seq', 114, true);
 
 
 --
@@ -4213,5 +4311,5 @@ ALTER TABLE ONLY public.evaluation_tentative
 -- PostgreSQL database dump complete
 --
 
-\unrestrict v0BobTHfqahPo1Ngi1RNw19iOl1NjQYuyxyMZoUblepQn6LaOqIZVf3RtJKYhWy
+\unrestrict GH7umWGTN8x6wFWOsPVP6fE79vvr3ekhMIAQzhecBQv032e9m9VZDhRpSSlHVWW
 
