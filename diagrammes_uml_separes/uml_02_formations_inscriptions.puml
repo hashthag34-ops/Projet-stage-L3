@@ -1,0 +1,100 @@
+@startuml
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty methods
+hide circle
+
+title Diagramme de classes — Formations et inscriptions
+
+class formation {
+  +id_formation : integer <<PK>>
+  +titre : varchar(255)
+  +description : text
+  +image_url : varchar(500)
+  +date_debut : date
+  +date_fin : date
+  +date_limite_inscription : date
+  +capacite_max : integer
+  +statut : statut_formation
+  +date_creation : timestamp
+  +date_modification : timestamp
+}
+class inscription {
+  +id_inscription : integer <<PK>>
+  +id_candidat : integer <<FK>>
+  +id_formation : integer <<FK>>
+  +date_inscription : timestamp
+  +statut : statut_inscription
+  +motivation : text
+  +objectif : text
+  +projet_apres_formation : text
+  +source_information : varchar(255)
+  +a_deja_suivi_formation : boolean
+  +formation_precedente : varchar(255)
+  +retour_suggestion : text
+  +conditions_acceptees : boolean
+  +date_decision : timestamp
+  +motif_decision : text
+  +date_modification : timestamp
+}
+class formation_formateur {
+  +id_formation : integer <<PK, FK>>
+  +id_formateur : integer <<PK, FK>>
+  +date_affectation : timestamp
+  +role_formateur : varchar(100)
+}
+class seance {
+  +id_seance : integer <<PK>>
+  +id_formation : integer <<FK>>
+  +titre : varchar(255)
+  +description : text
+  +date_seance : date
+  +heure_debut : time
+  +heure_fin : time
+  +type_seance : varchar(100)
+  +salle : varchar(150)
+}
+class presence {
+  +id_presence : integer <<PK>>
+  +id_apprenant : integer <<FK>>
+  +id_seance : integer <<FK>>
+  +date_scan : timestamp
+  +statut : statut_presence
+  +commentaire : text
+}
+class certification {
+  +id_certification : integer <<PK>>
+  +id_apprenant : integer <<FK>>
+  +id_formation : integer <<FK>>
+  +date_certification : date
+  +statut : statut_certification
+  +fichier_certification : varchar(500)
+  +numero_certification : varchar(100)
+  +commentaire : text
+}
+class formation_avis {
+  +id_avis : integer <<PK>>
+  +id_formation : integer <<FK>>
+  +id_apprenant : integer <<FK>>
+  +note : smallint
+  +commentaire : text
+  +date_creation : timestamp
+}
+class candidat
+class apprenant
+class formateur
+
+candidat "1" -- "0..*" inscription : candidatures
+formation "1" -- "0..*" inscription : reçoit
+formation "1" -- "0..*" seance : comprend
+apprenant "1" -- "0..*" presence : présence
+seance "1" -- "0..*" presence : concerne
+apprenant "1" -- "0..*" certification : obtient
+formation "1" -- "0..*" certification : associée à
+apprenant "1" -- "0..*" formation_avis : publie
+formation "1" -- "0..*" formation_avis : reçoit
+formation "1" -- "0..*" formation_formateur : affectation
+formateur "1" -- "0..*" formation_formateur : affectation
+
+@enduml

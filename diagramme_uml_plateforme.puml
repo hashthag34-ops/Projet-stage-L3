@@ -1,0 +1,283 @@
+@startuml
+title Diagramme de classes généré à partir du schéma PostgreSQL
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty methods
+hide circle
+
+legend right
+|= Marque |= Signification |
+| <<PK>> | Clé primaire |
+| <<FK>> | Clé étrangère |
+| <<PK, FK>> | Clé primaire et étrangère |
+endlegend
+
+package "Utilisateurs et profils" {
+  class utilisateur {
+    +id_utilisateur : integer <<PK>>
+    +email : character varying(255)
+    +mot_de_passe : character varying(255)
+    +username : character varying(100)
+    +nom : character varying(100)
+    +prenom : character varying(100)
+    +telephone : character varying(30)
+    +age : integer
+    +photo_profil : character varying(500)
+    +qr_code : text
+    +statut_compte : public.statut_compte
+    +date_creation : timestamp without time zone
+    +date_derniere_connexion : timestamp without time zone
+    +date_derniere_deconnexion : timestamp without time zone
+  }
+  class administrateur {
+    +id_administrateur : integer <<PK>>
+    +id_utilisateur : integer <<FK>>
+    +date_creation : timestamp without time zone
+  }
+  class responsable {
+    +id_responsable : integer <<PK>>
+    +id_utilisateur : integer <<FK>>
+    +fonction : character varying(150)
+    +date_creation : timestamp without time zone
+  }
+  class formateur {
+    +id_formateur : integer <<PK>>
+    +id_utilisateur : integer <<FK>>
+    +specialite : character varying(255)
+    +biographie : text
+    +date_creation : timestamp without time zone
+  }
+  class candidat {
+    +id_candidat : integer <<PK>>
+    +email : character varying(255)
+    +nom : character varying(100)
+    +prenom : character varying(100)
+    +age : integer
+    +genre : character varying(50)
+    +telephone : character varying(30)
+    +niveau_etude : character varying(150)
+    +situation_professionnelle : character varying(150)
+    +etablissement : character varying(255)
+    +filiere : character varying(150)
+    +date_creation : timestamp without time zone
+  }
+  class apprenant {
+    +id_apprenant : integer <<PK>>
+    +id_utilisateur : integer <<FK>>
+    +id_candidat : integer <<FK>>
+    +date_creation : timestamp without time zone
+    +statut : character varying(50)
+  }
+}
+
+package "Formations et inscriptions" {
+  class formation {
+    +id_formation : integer <<PK>>
+    +titre : character varying(255)
+    +description : text
+    +image_url : character varying(500)
+    +date_debut : date
+    +date_fin : date
+    +date_limite_inscription : date
+    +capacite_max : integer
+    +statut : public.statut_formation
+    +date_creation : timestamp without time zone
+    +date_modification : timestamp without time zone
+  }
+  class formation_formateur {
+    +id_formation : integer <<PK, FK>>
+    +id_formateur : integer <<PK, FK>>
+    +date_affectation : timestamp without time zone
+    +role_formateur : character varying(100)
+  }
+  class inscription {
+    +id_inscription : integer <<PK>>
+    +id_candidat : integer <<FK>>
+    +id_formation : integer <<FK>>
+    +date_inscription : timestamp without time zone
+    +statut : public.statut_inscription
+    +motivation : text
+    +objectif : text
+    +projet_apres_formation : text
+    +source_information : character varying(255)
+    +a_deja_suivi_formation : boolean
+    +formation_precedente : character varying(255)
+    +retour_suggestion : text
+    +conditions_acceptees : boolean
+    +date_decision : timestamp without time zone
+    +motif_decision : text
+    +date_modification : timestamp without time zone
+  }
+  class seance {
+    +id_seance : integer <<PK>>
+    +id_formation : integer <<FK>>
+    +titre : character varying(255)
+    +description : text
+    +date_seance : date
+    +heure_debut : time without time zone
+    +heure_fin : time without time zone
+    +type_seance : character varying(100)
+    +salle : character varying(150)
+  }
+  class presence {
+    +id_presence : integer <<PK>>
+    +id_apprenant : integer <<FK>>
+    +id_seance : integer <<FK>>
+    +date_scan : timestamp without time zone
+    +statut : public.statut_presence
+    +commentaire : text
+  }
+  class certification {
+    +id_certification : integer <<PK>>
+    +id_apprenant : integer <<FK>>
+    +id_formation : integer <<FK>>
+    +date_certification : date
+    +statut : public.statut_certification
+    +fichier_certification : character varying(500)
+    +numero_certification : character varying(100)
+    +commentaire : text
+  }
+  class formation_avis {
+    +id_avis : integer <<PK>>
+    +id_formation : integer <<FK>>
+    +id_apprenant : integer <<FK>>
+    +note : smallint
+    +commentaire : text
+    +date_creation : timestamp without time zone
+  }
+}
+
+package "Cours et évaluations" {
+  class support_cours {
+    +id_support : integer <<PK>>
+    +id_formation : integer <<FK>>
+    +id_formateur : integer <<FK>>
+    +nom_fichier : character varying(255)
+    +type_fichier : character varying(100)
+    +chemin_fichier : character varying(500)
+    +date_publication : timestamp without time zone
+    +description : text
+  }
+  class evaluation {
+    +id_evaluation : integer <<PK>>
+    +id_apprenant : integer <<FK>>
+    +id_formation : integer <<FK>>
+    +id_formateur : integer <<FK>>
+    +id_evaluation_sujet : integer
+    +type_evaluation : character varying(150)
+    +note : numeric(5,2)
+    +date_evaluation : date
+    +commentaire : text
+  }
+  class evaluation_sujet {
+    +id_evaluation_sujet : integer <<PK>>
+    +id_formation : integer <<FK>>
+    +id_formateur : integer <<FK>>
+    +titre : character varying(255)
+    +description : text
+    +duree_minutes : integer
+    +obligatoire : boolean
+    +statut : public.statut_evaluation
+    +total_points : numeric(5,2)
+    +date_creation : timestamp without time zone
+    +date_modification : timestamp without time zone
+    +date_publication : timestamp without time zone
+  }
+  class evaluation_question {
+    +id_question : integer <<PK>>
+    +id_evaluation_sujet : integer <<FK>>
+    +numero_question : integer
+    +enonce : text
+    +points : numeric(5,2)
+    +date_creation : timestamp without time zone
+  }
+  class evaluation_choix {
+    +id_choix : integer <<PK>>
+    +id_question : integer <<FK>>
+    +libelle : text
+    +est_correct : boolean
+    +ordre : integer
+  }
+  class evaluation_tentative {
+    +id_tentative : integer <<PK>>
+    +id_evaluation_sujet : integer <<FK>>
+    +id_apprenant : integer <<FK>>
+    +date_debut : timestamp without time zone
+    +date_fin : timestamp without time zone
+    +note : numeric(5,2)
+    +statut : public.statut_tentative
+  }
+  class evaluation_reponse {
+    +id_reponse : integer <<PK>>
+    +id_tentative : integer <<FK>>
+    +id_question : integer <<FK>>
+    +id_choix : integer <<FK>>
+    +points_obtenus : numeric(5,2)
+  }
+}
+
+package "Forum et messages" {
+  class forum {
+    +id_forum : integer <<PK>>
+    +id_formation : integer <<FK>>
+    +nom : character varying(255)
+    +description : text
+    +date_creation : timestamp without time zone
+  }
+  class message {
+    +id_message : integer <<PK>>
+    +id_forum : integer <<FK>>
+    +id_utilisateur : integer <<FK>>
+    +contenu : text
+    +date_envoi : timestamp without time zone
+    +date_modification : timestamp without time zone
+    +message_parent : integer <<FK>>
+  }
+}
+
+utilisateur "1" -- "0..1" administrateur : profil administrateur
+candidat "1" -- "0..1" apprenant : profil apprenant
+utilisateur "1" -- "0..1" apprenant : profil apprenant
+apprenant "1" -- "0..*" certification
+formation "1" -- "0..*" certification
+evaluation_question "1" -- "0..*" evaluation_choix
+apprenant "1" -- "0..*" evaluation
+formateur "1" -- "0..*" evaluation
+formation "1" -- "0..*" evaluation
+formateur "1" -- "0..*" formation_formateur : affectation
+formation "1" -- "0..*" formation_formateur : affectation
+utilisateur "1" -- "0..1" formateur : profil formateur
+apprenant "1" -- "0..*" formation_avis
+formation "1" -- "0..*" formation_avis
+formation "1" -- "0..1" forum
+candidat "1" -- "0..*" inscription : candidature
+formation "1" -- "0..*" inscription : candidature
+forum "1" -- "0..*" message : messages
+Message "0..1" <-- "0..*" Message : message_parent
+utilisateur "1" -- "0..*" message : messages
+apprenant "1" -- "0..*" presence : présence
+seance "1" -- "0..*" presence : présence
+evaluation_sujet "1" -- "0..*" evaluation_question
+evaluation_choix "1" -- "0..*" evaluation_reponse : réponses
+evaluation_question "1" -- "0..*" evaluation_reponse : réponses
+evaluation_tentative "1" -- "0..*" evaluation_reponse : réponses
+utilisateur "1" -- "0..1" responsable : profil responsable
+formation "1" -- "0..*" seance
+formateur "1" -- "0..*" evaluation_sujet
+formation "1" -- "0..*" evaluation_sujet
+formateur "1" -- "0..*" support_cours
+formation "1" -- "0..*" support_cours
+apprenant "1" -- "0..*" evaluation_tentative : tentatives
+evaluation_sujet "1" -- "0..*" evaluation_tentative : tentatives
+
+note bottom of evaluation_reponse
+La base impose aussi une contrainte composite : le choix sélectionné doit appartenir à la question à laquelle il répond.
+end note
+
+note bottom of apprenant
+Les profils administrateur, responsable, formateur et apprenant référencent un utilisateur.
+La table apprenant référence également un candidat, avec une contrainte d'unicité sur id_candidat.
+end note
+
+@enduml

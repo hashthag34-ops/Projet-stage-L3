@@ -1,0 +1,34 @@
+@startuml
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty methods
+hide circle
+
+title Diagramme de classes — Forum et messagerie
+
+class forum {
+  +id_forum : integer <<PK>>
+  +id_formation : integer <<FK>>
+  +nom : varchar(255)
+  +description : text
+  +date_creation : timestamp
+}
+class message {
+  +id_message : integer <<PK>>
+  +id_forum : integer <<FK>>
+  +id_utilisateur : integer <<FK>>
+  +contenu : text
+  +date_envoi : timestamp
+  +date_modification : timestamp
+  +message_parent : integer <<FK>>
+}
+class formation
+class utilisateur
+
+formation "1" -- "0..1" forum : espace de discussion
+forum "1" -- "0..*" message : contient
+utilisateur "1" -- "0..*" message : écrit
+message "0..1" <-- "0..*" message : réponse à
+
+@enduml

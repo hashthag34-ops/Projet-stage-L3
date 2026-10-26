@@ -1,0 +1,71 @@
+@startuml
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty methods
+hide circle
+
+title Diagramme de classes — Utilisateurs et profils
+
+class utilisateur {
+  +id_utilisateur : integer <<PK>>
+  +email : varchar(255)
+  +mot_de_passe : varchar(255)
+  +username : varchar(100)
+  +nom : varchar(100)
+  +prenom : varchar(100)
+  +telephone : varchar(30)
+  +age : integer
+  +photo_profil : varchar(500)
+  +qr_code : text
+  +statut_compte : statut_compte
+  +date_creation : timestamp
+  +date_derniere_connexion : timestamp
+  +date_derniere_deconnexion : timestamp
+}
+class administrateur {
+  +id_administrateur : integer <<PK>>
+  +id_utilisateur : integer <<FK>>
+  +date_creation : timestamp
+}
+class responsable {
+  +id_responsable : integer <<PK>>
+  +id_utilisateur : integer <<FK>>
+  +fonction : varchar(150)
+  +date_creation : timestamp
+}
+class formateur {
+  +id_formateur : integer <<PK>>
+  +id_utilisateur : integer <<FK>>
+  +specialite : varchar(255)
+  +biographie : text
+  +date_creation : timestamp
+}
+class candidat {
+  +id_candidat : integer <<PK>>
+  +email : varchar(255)
+  +nom : varchar(100)
+  +prenom : varchar(100)
+  +age : integer
+  +genre : varchar(50)
+  +telephone : varchar(30)
+  +niveau_etude : varchar(150)
+  +situation_professionnelle : varchar(150)
+  +etablissement : varchar(255)
+  +filiere : varchar(150)
+  +date_creation : timestamp
+}
+class apprenant {
+  +id_apprenant : integer <<PK>>
+  +id_utilisateur : integer <<FK>>
+  +id_candidat : integer <<FK>>
+  +date_creation : timestamp
+  +statut : varchar(50)
+}
+utilisateur "1" -- "0..1" administrateur : profil
+utilisateur "1" -- "0..1" responsable : profil
+utilisateur "1" -- "0..1" formateur : profil
+utilisateur "1" -- "0..1" apprenant : profil
+candidat "1" -- "0..1" apprenant : devient apprenant
+
+@enduml
