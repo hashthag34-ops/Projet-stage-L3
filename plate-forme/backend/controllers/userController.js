@@ -1,6 +1,7 @@
 // backend/controllers/userController.js
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const { emitToRoles, disconnectUser } = require('../services/realtime');
 
 // 1. Récupérer les utilisateurs avec leur rôle déduit
 exports.getAllUsers = async (req, res) => {
@@ -83,28 +84,43 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// 3. Supprimer un utilisateur (Cascade automatique si ON DELETE CASCADE sur la table rôle)
+// 3. Supprimer un compte en conservant les historiques du profil apprenant
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
+  let client;
+  let transactionStarted = false;
+
   try {
-    // Si la clé étrangère est en ON DELETE RESTRICT, on nettoie d'abord les rôles
-    await db.query('BEGIN');
-    await db.query('DELETE FROM formateur WHERE id_utilisateur = $1', [id]);
-    await db.query('DELETE FROM responsable WHERE id_utilisateur = $1', [id]);
-    await db.query('DELETE FROM administrateur WHERE id_utilisateur = $1', [id]);
-    await db.query('DELETE FROM apprenant WHERE id_utilisateur = $1', [id]);
+    client = await db.connect();
+    await client.query('BEGIN');
+    transactionStarted = true;
+    await client.query('DELETE FROM formateur WHERE id_utilisateur = $1', [id]);
+    await client.query('DELETE FROM responsable WHERE id_utilisateur = $1', [id]);
+    await client.query('DELETE FROM administrateur WHERE id_utilisateur = $1', [id]);
     
-    const { rowCount } = await db.query('DELETE FROM utilisateur WHERE id_utilisateur = $1', [id]);
-    await db.query('COMMIT');
+    // Keep the learner profile so its attendance, evaluations and certifications remain linked.
+    const { rowCount } = await client.query('DELETE FROM utilisateur WHERE id_utilisateur = $1', [id]);
+    await client.query('COMMIT');
+    transactionStarted = false;
 
     if (rowCount === 0) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
+    disconnectUser(id);
+    emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
     res.status(200).json({ message: "Utilisateur supprimé avec succès" });
   } catch (error) {
-    await db.query('ROLLBACK');
+    if (transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Erreur lors de l’annulation de la suppression :', rollbackError);
+      }
+    }
     console.error("Erreur deleteUser :", error);
     res.status(500).json({ message: "Erreur lors de la suppression" });
+  } finally {
+    client?.release();
   }
 };
 

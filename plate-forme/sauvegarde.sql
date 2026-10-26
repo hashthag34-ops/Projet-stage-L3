@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict GH7umWGTN8x6wFWOsPVP6fE79vvr3ekhMIAQzhecBQv032e9m9VZDhRpSSlHVWW
+\restrict T500f2JL62MXu6NyhfhWf0h4R4OTfar8LNJDhFcFVlNAp92Qh1JcXTiDdNXBnXd
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -295,7 +295,7 @@ ALTER SEQUENCE public.administrateur_id_administrateur_seq OWNED BY public.admin
 
 CREATE TABLE public.apprenant (
     id_apprenant integer NOT NULL,
-    id_utilisateur integer NOT NULL,
+    id_utilisateur integer,
     id_candidat integer NOT NULL,
     date_creation timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     statut character varying(50) DEFAULT 'ACTIF'::character varying NOT NULL
@@ -885,11 +885,13 @@ ALTER SEQUENCE public.inscription_id_inscription_seq OWNED BY public.inscription
 CREATE TABLE public.message (
     id_message integer NOT NULL,
     id_forum integer NOT NULL,
-    id_utilisateur integer NOT NULL,
+    id_utilisateur integer,
     contenu text NOT NULL,
     date_envoi timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_modification timestamp without time zone,
-    message_parent integer
+    message_parent integer,
+    auteur_nom_archive character varying(100),
+    auteur_prenom_archive character varying(100)
 );
 
 
@@ -1289,7 +1291,6 @@ COPY public.administrateur (id_administrateur, id_utilisateur, date_creation) FR
 --
 
 COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation, statut) FROM stdin;
-3	6	2	2026-10-01 15:05:48.503126	ACTIF
 2	5	1	2026-09-19 09:59:04.428199	ACTIF
 6	8	136	2026-05-16 16:14:55.971	ACTIF
 7	9	137	2026-05-21 16:14:55.971	ACTIF
@@ -1395,6 +1396,7 @@ COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation,
 107	112	579	2026-07-29 08:24:44.612	ACTIF
 108	113	580	2026-06-09 08:24:44.612	ACTIF
 109	114	581	2026-10-05 08:24:44.612	ACTIF
+3	\N	2	2026-10-01 15:05:48.503126	ACTIF
 \.
 
 
@@ -2911,14 +2913,15 @@ COPY public.inscription (id_inscription, id_candidat, id_formation, date_inscrip
 -- Data for Name: message; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.message (id_message, id_forum, id_utilisateur, contenu, date_envoi, date_modification, message_parent) FROM stdin;
-1	2	3	Kaiza doll	2026-10-02 06:22:34.200513	\N	\N
-2	2	6	Kaiza bro	2026-10-02 06:23:16.439669	\N	\N
-3	2	3	__FORUM_ATTACHMENT_V1__:{"contenu":"ito de ianaro le note","nom_fichier":"Princess Mononoke - Main Theme [Fingerstyle].pdf","chemin_fichier":"ba743650-06a5-4a39-aca9-f64edc6c4b72.pdf","type_fichier":"application/pdf","taille_fichier":70466}	2026-10-02 06:29:53.523401	\N	\N
-4	2	6	Ok	2026-10-02 06:30:21.106933	\N	\N
-5	2	3	gg	2026-10-12 07:11:38.23131	\N	\N
-6	1	6	salut a tous	2026-10-12 16:40:59.438678	\N	\N
-7	1	5	salut a toi aussi	2026-10-21 11:58:41.018331	\N	\N
+COPY public.message (id_message, id_forum, id_utilisateur, contenu, date_envoi, date_modification, message_parent, auteur_nom_archive, auteur_prenom_archive) FROM stdin;
+5	2	3	gg	2026-10-12 07:11:38.23131	\N	\N	RAZAFIMANDIMBY	Santatra
+3	2	3	__FORUM_ATTACHMENT_V1__:{"contenu":"ito de ianaro le note","nom_fichier":"Princess Mononoke - Main Theme [Fingerstyle].pdf","chemin_fichier":"ba743650-06a5-4a39-aca9-f64edc6c4b72.pdf","type_fichier":"application/pdf","taille_fichier":70466}	2026-10-02 06:29:53.523401	\N	\N	RAZAFIMANDIMBY	Santatra
+1	2	3	Kaiza doll	2026-10-02 06:22:34.200513	\N	\N	RAZAFIMANDIMBY	Santatra
+7	1	5	salut a toi aussi	2026-10-21 11:58:41.018331	\N	\N	Sarah	Cameroon
+6	1	\N	salut a tous	2026-10-12 16:40:59.438678	\N	\N	Cristiano	Ronaldo
+4	2	\N	Ok	2026-10-02 06:30:21.106933	\N	\N	Cristiano	Ronaldo
+2	2	\N	Kaiza bro	2026-10-02 06:23:16.439669	\N	\N	Cristiano	Ronaldo
+8	1	\N	salut	2026-10-26 04:13:27.665195	\N	\N	\N	\N
 \.
 
 
@@ -3144,6 +3147,14 @@ COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, c
 217948	108	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 217949	109	45	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 221838	3	30	2026-10-25 07:06:45.286576	PRESENT	\N
+252719	102	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252721	103	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252723	104	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252725	105	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252727	106	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252729	107	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252731	108	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+252733	109	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 \.
 
 
@@ -3222,12 +3233,10 @@ COPY public.support_cours (id_support, id_formation, id_formateur, nom_fichier, 
 --
 
 COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion, date_derniere_deconnexion, email_verifie, jeton_activation_hash, jeton_activation_expiration, password_reset_code_hash, password_reset_code_expiration, password_reset_code_requested_at, password_reset_code_attempts) FROM stdin;
-3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-22 06:03:12.275965	2026-10-22 06:04:56.12197	t	\N	\N	\N	\N	\N	0
-2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-25 07:04:32.938027	2026-10-25 07:06:55.294826	t	\N	\N	\N	\N	\N	0
-5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-25 07:07:02.031218	2026-10-25 07:07:32.090651	t	\N	\N	\N	\N	\N	0
-1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-22 14:06:48.772545	2026-10-22 13:56:08.858289	t	\N	\N	\N	\N	\N	0
-7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-25 07:08:18.62848	2026-10-25 07:09:48.10167	t	\N	\N	\N	\N	\N	0
-6	bebemartiora@gmail.com	$2b$10$ZroDXZmDumueCBnYq12NQOGle.iS7q/Ta5cVAGT2Is7hPWVK4IYpy	CR7	Cristiano	Ronaldo	032 28 188 26	19	avatar-anon-1790863751300-648994721.jpg	data:image/png;base64,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	ACTIF	2026-10-01 15:05:48.503126	2026-10-22 13:53:25.627427	2026-10-22 13:54:50.097503	t	\N	\N	\N	\N	\N	0
+5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-25 21:10:52.144666	2026-10-25 21:11:36.19046	t	\N	\N	\N	\N	\N	0
+2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-26 04:26:55.181507	2026-10-26 04:29:46.088533	t	\N	\N	\N	\N	\N	0
+1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-26 04:13:37.162276	2026-10-26 04:14:40.906483	t	\N	\N	\N	\N	\N	0
+3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-26 04:14:47.538894	2026-10-26 04:16:47.800733	t	\N	\N	\N	\N	\N	0
 8	synthetic-7bc07316-ef38-4222-876f-9c38d6eb636e@example.invalid	\N	\N	Rakoto	Aina	000000000	29	\N	\N	ACTIF	2026-05-16 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 9	synthetic-a644d2c6-f8c5-40b9-80a4-996f1d095e16@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	20	\N	\N	ACTIF	2026-05-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 10	synthetic-6c07b065-43bf-4c55-bbcc-8e54a0165bc9@example.invalid	\N	\N	Randria	Nomena	000000000	30	\N	\N	ACTIF	2026-09-28 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
@@ -3236,6 +3245,7 @@ COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, pre
 13	synthetic-4a317a0a-03c8-4f93-8a43-66f344c060c7@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	18	\N	\N	ACTIF	2026-06-05 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 14	synthetic-f341eafd-4a0e-4d32-9584-982f7aaea7ba@example.invalid	\N	\N	Randria	Hery	000000000	39	\N	\N	ACTIF	2026-08-23 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 15	synthetic-5c289326-4c0d-486b-8182-90555e568990@example.invalid	\N	\N	Razafy	Lova	000000000	30	\N	\N	ACTIF	2026-08-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
+7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-26 04:16:54.94024	2026-10-26 04:17:14.515663	t	\N	\N	\N	\N	\N	0
 16	synthetic-b3ec4b16-2015-4b97-8451-5d2fee2ed731@example.invalid	\N	\N	Razafy	Mialy	000000000	32	\N	\N	ACTIF	2026-06-06 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 17	synthetic-336fef65-8599-41a3-b4cf-ccd9d52ce9b0@example.invalid	\N	\N	Raveloson	Hery	000000000	18	\N	\N	ACTIF	2026-08-24 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 18	synthetic-9a9afc0e-8f5d-4382-8a9b-d7c020b0389f@example.invalid	\N	\N	Raveloson	Tahina	000000000	24	\N	\N	ACTIF	2026-08-17 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
@@ -3445,14 +3455,14 @@ SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 584, true);
 -- Name: message_id_message_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.message_id_message_seq', 7, true);
+SELECT pg_catalog.setval('public.message_id_message_seq', 8, true);
 
 
 --
 -- Name: presence_id_presence_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.presence_id_presence_seq', 252510, true);
+SELECT pg_catalog.setval('public.presence_id_presence_seq', 271102, true);
 
 
 --
@@ -4048,7 +4058,7 @@ ALTER TABLE ONLY public.apprenant
 --
 
 ALTER TABLE ONLY public.apprenant
-    ADD CONSTRAINT fk_apprenant_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES public.utilisateur(id_utilisateur) ON DELETE RESTRICT;
+    ADD CONSTRAINT fk_apprenant_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES public.utilisateur(id_utilisateur) ON DELETE SET NULL;
 
 
 --
@@ -4184,7 +4194,7 @@ ALTER TABLE ONLY public.message
 --
 
 ALTER TABLE ONLY public.message
-    ADD CONSTRAINT fk_message_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES public.utilisateur(id_utilisateur) ON DELETE RESTRICT;
+    ADD CONSTRAINT fk_message_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES public.utilisateur(id_utilisateur) ON DELETE SET NULL;
 
 
 --
@@ -4311,5 +4321,5 @@ ALTER TABLE ONLY public.evaluation_tentative
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GH7umWGTN8x6wFWOsPVP6fE79vvr3ekhMIAQzhecBQv032e9m9VZDhRpSSlHVWW
+\unrestrict T500f2JL62MXu6NyhfhWf0h4R4OTfar8LNJDhFcFVlNAp92Qh1JcXTiDdNXBnXd
 

@@ -9,7 +9,7 @@ const getClosedFormation = async (client, formationId, lock = false) => {
   const result = await client.query(
     `SELECT id_formation, titre, date_debut, date_fin
      FROM formation
-     WHERE id_formation = $1 AND date_fin <= CURRENT_DATE${lock ? ' FOR UPDATE' : ''}`,
+     WHERE id_formation = $1 AND statut = 'TERMINEE'${lock ? ' FOR UPDATE' : ''}`,
     [formationId]
   );
   return result.rows[0] || null;
@@ -29,7 +29,7 @@ exports.getClosedFormations = async (_req, res) => {
        LEFT JOIN apprenant a ON a.id_candidat = i.id_candidat
        LEFT JOIN certification c
          ON c.id_formation = f.id_formation AND c.id_apprenant = a.id_apprenant
-       WHERE f.date_fin <= CURRENT_DATE
+       WHERE f.statut = 'TERMINEE'
        GROUP BY f.id_formation
        ORDER BY f.date_fin DESC, f.id_formation DESC`
     );
@@ -61,7 +61,7 @@ exports.getAdminCertificationFormations = async (_req, res) => {
        LEFT JOIN apprenant a ON a.id_candidat = i.id_candidat
        LEFT JOIN certification c
          ON c.id_formation = f.id_formation AND c.id_apprenant = a.id_apprenant
-       WHERE f.date_fin <= CURRENT_DATE
+       WHERE f.statut = 'TERMINEE'
        GROUP BY f.id_formation
        ORDER BY f.date_fin DESC, f.id_formation DESC`
     );

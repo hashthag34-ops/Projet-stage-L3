@@ -119,6 +119,7 @@ export default function GsUsers() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [monthlyActivity, setMonthlyActivity] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
@@ -281,6 +282,30 @@ export default function GsUsers() {
       fetchUsers();
     } catch (err) {
       alert('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser || isDeletingUser) return;
+    const userName = `${selectedUser.prenom || ''} ${selectedUser.nom || ''}`.trim();
+    if (!window.confirm(`Voulez-vous vraiment supprimer le compte de ${userName} ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    setIsDeletingUser(true);
+    try {
+      await API.delete(`/admin/users/${selectedUser.id_utilisateur}`);
+      setUsers((currentUsers) => currentUsers.filter(
+        (user) => user.id_utilisateur !== selectedUser.id_utilisateur
+      ));
+      presenceByUser.current.delete(selectedUser.id_utilisateur);
+      fetchMonthlyActivity();
+      handleCloseDrawer();
+      alert('Utilisateur supprimé avec succès.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de la suppression de l’utilisateur.');
+    } finally {
+      setIsDeletingUser(false);
     }
   };
 
@@ -773,6 +798,16 @@ export default function GsUsers() {
                   <option value="SUSPENDU">SUSPENDU</option>
                 </select>
               </div>
+
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={isDeletingUser}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 py-3 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900 dark:text-rose-400 dark:hover:bg-rose-950/40"
+              >
+                <Trash2 size={14} />
+                {isDeletingUser ? 'Suppression...' : 'Supprimer cet utilisateur'}
+              </button>
 
               <button
                 onClick={handleCloseDrawer}

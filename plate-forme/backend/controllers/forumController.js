@@ -74,9 +74,10 @@ exports.getMessagesByForum = async (req, res) => {
     }
     const query = `
       SELECT m.id_message, m.contenu, m.date_envoi AS created_at, m.id_utilisateur,
-             u.nom AS nom_expediteur, u.prenom
+             COALESCE(u.nom, m.auteur_nom_archive) AS nom_expediteur,
+             COALESCE(u.prenom, m.auteur_prenom_archive) AS prenom
       FROM message m
-      JOIN utilisateur u ON m.id_utilisateur = u.id_utilisateur
+      LEFT JOIN utilisateur u ON m.id_utilisateur = u.id_utilisateur
       WHERE m.id_forum = $1
       ORDER BY m.date_envoi ASC
     `;

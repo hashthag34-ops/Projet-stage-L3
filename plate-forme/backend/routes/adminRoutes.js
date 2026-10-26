@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const userController = require('../controllers/userController');
 const certificationController = require('../controllers/certificationController');
 const verifyToken = require('../middleware/authMiddleware');
 
@@ -22,6 +23,12 @@ router.get('/certifications/formations/:id_formation/apprenants', certificationC
 router.get('/user-activity', adminController.getUserActivityByMonth);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
+router.delete('/users/:id', (req, res, next) => {
+  if (Number(req.params.id) === Number(req.user.id_utilisateur)) {
+    return res.status(400).json({ message: 'Vous ne pouvez pas supprimer votre propre compte.' });
+  }
+  return userController.deleteUser(req, res, next);
+});
 router.patch('/users/:id/status', adminController.updateUserStatus);
 router.get('/synthetic-data/formations', adminController.getSyntheticDataFormations);
 router.post('/synthetic-data/candidates', adminController.createSyntheticCandidates);
