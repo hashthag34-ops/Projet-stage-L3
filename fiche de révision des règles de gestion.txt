@@ -1,0 +1,180 @@
+# Récapitulatif général — Règles de gestion de la plateforme de formation
+
+## 1. Administrateur
+
+### Règles retenues
+
+- **RG-ADM-01 — Création des comptes professionnels :** l’Administrateur crée manuellement les comptes des utilisateurs professionnels.
+- **RG-ADM-02 — État des comptes :** il peut activer et désactiver les comptes.
+- **RG-ADM-03 — Attribution des rôles :** le rôle est défini à la création du compte et ne peut plus être modifié par la suite.
+- **RG-ADM-04 — Gestion des Administrateurs et Responsables :** il peut créer, activer, désactiver et supprimer leurs comptes.
+- **RG-ADM-05 — Suppression des comptes :** il peut supprimer un compte utilisateur sans supprimer les données historiques qui doivent être conservées.
+- **RG-ADM-06 — Conservation de l’historique :** les candidatures, présences, résultats d’évaluations et certifications sont conservés après la suppression d’un compte.
+- **RG-ADM-07 — Consultation des candidatures :** il peut consulter les informations relatives aux candidatures des candidats inscrits aux formations.
+- **RG-ADM-08 — Consultation des formations :** il peut consulter les informations sur les formations et leurs statistiques.
+- **RG-ADM-09 — Accès aux formations terminées :** les fonctionnalités associées à une formation terminée, notamment son forum, sont limitées, sans bloquer l’accès aux autres formations de l’apprenant.
+
+### Points à vérifier plus tard
+
+- [ ] La suppression d’un compte doit-elle être définitive ou faut-il privilégier la désactivation ?
+- [ ] Quels champs du compte peuvent être modifiés après sa création ?
+- [ ] Quelles statistiques exactes l’Administrateur peut-il consulter ?
+- [ ] L’Administrateur peut-il consulter toutes les candidatures ou uniquement celles liées aux formations ?
+- [ ] La restriction des forums après la fin d’une formation est-elle automatique ?
+- [ ] Les règles de suppression doivent-elles être identiques pour tous les rôles ?
+
+### Vérifications techniques déjà effectuées
+
+La migration PostgreSQL a été appliquée pour permettre de conserver certains enregistrements historiques après la suppression d’un compte utilisateur.
+
+Les changements concernaient notamment :
+- la conservation du profil Apprenant avec une référence utilisateur devenue `NULL` ;
+- la conservation des messages et de noms d’auteurs archivés lorsque le compte associé est supprimé.
+
+**À vérifier si nécessaire :** les autres clés étrangères liées à `utilisateur`, ainsi que les éventuelles contraintes qui pourraient encore empêcher la suppression d’un compte.
+
+---
+
+## 2. Responsable
+
+### Règles retenues
+
+- **RG-RES-01 — Consultation des candidatures :** consulter les dossiers soumis.
+- **RG-RES-02 — Présélection :** présélectionner des candidats avant la décision finale.
+- **RG-RES-03 — Décision :** accepter ou refuser les candidatures après la présélection.
+- **RG-RES-04 — Création des formations :** créer de nouvelles formations.
+- **RG-RES-05 — Modification des formations :** modifier les informations des formations.
+- **RG-RES-06 — Suppression des formations :** supprimer une formation uniquement si elle n’est pas terminée.
+- **RG-RES-07 — Statut des formations :** modifier le statut d’une formation.
+- **RG-RES-08 — Affectation des formateurs :** affecter plusieurs formateurs à une formation et modifier leurs affectations.
+- **RG-RES-09 — Création des séances :** créer les séances d’une formation.
+- **RG-RES-10 — Modification des séances :** modifier les informations des séances existantes.
+- **RG-RES-11 — Suppression des séances :** supprimer une séance uniquement si elle n’est pas terminée.
+- **RG-RES-12 — Certification :** la décision implique plusieurs personnes, mais leurs rôles et les modalités de décision ne sont pas encore définis.
+
+### Points à vérifier plus tard
+
+- [ ] Quels critères sont utilisés pour présélectionner les candidats ?
+- [ ] Le Responsable peut-il revenir sur une présélection ?
+- [ ] Peut-il accepter ou refuser plusieurs candidats en une seule opération ?
+- [ ] Peut-il modifier une décision déjà prise ?
+- [ ] Peut-il supprimer une formation ayant déjà des inscriptions, même si elle n’est pas terminée ?
+- [ ] Une formation ayant des inscriptions doit-elle plutôt être archivée que supprimée ?
+- [ ] Une séance ayant déjà des présences ou des évaluations peut-elle être supprimée si elle n’est pas terminée ?
+- [ ] Quels sont les statuts exacts accessibles au Responsable ?
+- [ ] Qui intervient dans la certification, et selon quels critères ?
+
+### Point important
+
+La règle de non-suppression des formations et séances terminées est confirmée. En revanche, le comportement à appliquer aux formations et séances **non terminées mais déjà liées à des données** reste à préciser.
+
+---
+
+## 3. Formateur
+
+### Règles retenues
+
+- **RG-FOR-01 — Supports de cours :** ajouter, modifier et supprimer les supports de ses formations.
+- **RG-FOR-02 — Évaluations :** créer, modifier et supprimer les évaluations.
+- **RG-FOR-03 — Résultats :** consulter et corriger les résultats des évaluations.
+- **RG-FOR-04 — Présences :** consulter les présences des apprenants de ses formations.
+- **RG-FOR-05 — Planning :** consulter le planning de ses formations.
+- **RG-FOR-06 — Gestion du planning :** après son affectation à une formation, gérer le planning de celle-ci. Le Responsable peut aussi s’en charger si le planning convient au Formateur. Le Formateur peut le modifier en cas de changement d’horaire ou de disponibilité.
+- **RG-FOR-07 — Informations des apprenants :** consulter les informations relatives aux apprenants de ses formations.
+- **RG-FOR-08 — Forum :** participer aux échanges du forum associé à ses formations.
+- **RG-FOR-09 — Compte personnel :** gérer son propre compte selon les fonctionnalités disponibles.
+- **RG-FOR-10 — Certification :** rôle du Formateur non défini à ce stade.
+
+### Points à vérifier plus tard
+
+- [ ] Quels types de fichiers le Formateur peut-il déposer comme supports de cours ?
+- [ ] Peut-il publier ou fermer une évaluation ?
+- [ ] Peut-il modifier les résultats après leur validation ?
+- [ ] Peut-il supprimer une évaluation déjà passée par des apprenants ?
+- [ ] Quelles informations personnelles ou scolaires des apprenants peut-il consulter ?
+- [ ] Les modifications de planning nécessitent-elles la validation du Responsable ?
+- [ ] Le Formateur peut-il modifier toutes les séances de ses formations ou seulement celles dont il est responsable ?
+- [ ] Quel sera son rôle dans la certification ?
+
+### Point important
+
+Le Formateur peut gérer le planning de ses formations, mais **les droits de modification et la nécessité d’une validation par le Responsable ne sont pas encore définis précisément**.
+
+---
+
+## 4. Apprenant
+
+### Règles retenues
+
+- **RG-APP-01 — Accès aux formations :** accéder aux fonctionnalités et ressources des formations auxquelles il est inscrit.
+- **RG-APP-02 — Ressources pédagogiques :** consulter et télécharger les supports de cours.
+- **RG-APP-03 — Évaluations :** passer les évaluations et consulter ses résultats.
+- **RG-APP-04 — Profil :** modifier son compte et son profil, mais pas sa candidature ni les données scolaires qui y sont liées.
+- **RG-APP-05 — Présences :** la présence est enregistrée par scan de QR code effectué par le Responsable, à l’entrée ou à la sortie.
+- **RG-APP-06 — Unicité du scan :** un seul scan par apprenant et par séance, à l’entrée ou à la sortie.
+- **RG-APP-07 — Espace de communication :** accéder à un espace interne regroupant les échanges et les supports de cours.
+- **RG-APP-08 — Formations terminées :** accès aux fonctionnalités d’une formation terminée limité, notamment pour le forum, sans bloquer les autres formations en cours ou à venir.
+- **RG-APP-09 — Certification :** consulter le statut de certification, mais l’accès au certificat sur la plateforme n’est pas défini.
+- **RG-APP-10 — Avis :** noter et commenter une formation.
+
+### Points à vérifier plus tard
+
+- [ ] Le scan de présence doit-il obligatoirement être réalisé par le Responsable, ou d’autres personnes autorisées peuvent-elles le faire ?
+- [ ] Comment le système distingue-t-il une entrée d’une sortie ?
+- [ ] Si le scan est effectué à la sortie, comment la présence est-elle enregistrée pour la séance ?
+- [ ] Que se passe-t-il si un apprenant oublie son QR code ou si le scan échoue ?
+- [ ] Les résultats d’évaluation sont-ils visibles immédiatement ou après validation du Formateur ?
+- [ ] Quels champs du profil l’Apprenant peut-il modifier ?
+- [ ] Combien de temps les anciens supports et messages restent-ils accessibles ?
+- [ ] Un apprenant peut-il donner un avis avant la fin de sa formation ?
+- [ ] Qui délivre le certificat et comment l’Apprenant le reçoit-il ?
+
+### Point important sur la présence
+
+La règle retenue est bien **un seul scan par séance, à l’entrée ou à la sortie**, selon la disponibilité du Responsable.
+
+Cela signifie qu’un second scan n’est pas prévu pour cette même séance. Il reste à préciser comment le système enregistre l’événement et comment il gère les oublis ou les erreurs.
+
+### Point important sur le forum
+
+Le forum n’est pas seulement un espace de discussion. Il regroupe également les supports de cours et les échanges entre les Formateurs et les Apprenants, dans un fonctionnement proche d’une messagerie interne.
+
+Il faut donc éviter de présenter le forum et les supports comme deux espaces totalement indépendants dans la conception.
+
+---
+
+## 5. Candidat
+
+### Règles retenues
+
+- **RG-CAN-01 — Consultation des formations :** tout visiteur peut consulter le catalogue et les détails des formations sans compte.
+- **RG-CAN-02 — Candidatures :** un candidat peut candidater à plusieurs formations, mais une seule candidature est autorisée par candidat et par formation.
+- **RG-CAN-03 — Modification :** le candidat peut modifier sa candidature jusqu’à la date limite d’inscription. Après cette date, les modifications sont interdites.
+- **RG-CAN-04 — Notification :** le candidat reçoit un e-mail en cas d’acceptation. Aucun e-mail de refus n’est prévu dans le fonctionnement actuellement défini.
+- **RG-CAN-05 — Création du compte Apprenant :** après acceptation, le compte Apprenant est créé automatiquement. Le candidat doit ensuite terminer sa configuration, notamment son nom d’utilisateur et son mot de passe.
+- **RG-CAN-06 — Candidature refusée :** la candidature refusée est conservée dans l’historique. Elle ne déclenche pas la création d’un nouveau compte Apprenant.
+- **RG-CAN-07 — Adresse électronique existante :** la plateforme détecte l’adresse existante et empêche une candidature en double pour la même formation.
+- **RG-CAN-08 — Informations antérieures :** lors d’une candidature à une nouvelle formation avec une adresse déjà connue, la plateforme propose de conserver les anciennes informations ou de les mettre à jour.
+- **RG-CAN-09 — Réutilisation du compte :** si une personne disposant déjà d’un compte Apprenant est acceptée dans une nouvelle formation, la formation est associée au compte existant. Aucun nouveau compte Apprenant n’est créé.
+
+### Points à vérifier plus tard
+
+- [ ] Que se passe-t-il si la date limite est atteinte pendant que le candidat remplit son formulaire ?
+- [ ] Le candidat peut-il annuler sa candidature avant la date limite ?
+- [ ] Peut-il soumettre une nouvelle candidature à la même formation après un refus ?
+- [ ] La notification d’acceptation contient-elle un lien de configuration du compte ?
+- [ ] Combien de temps le candidat dispose-t-il pour terminer la configuration de son compte ?
+- [ ] Que se passe-t-il s’il ne configure jamais son compte ?
+- [ ] Comment le système vérifie-t-il que la personne possède bien l’adresse électronique indiquée ?
+- [ ] Lorsqu’il choisit de mettre à jour ses informations, quelles données sont modifiées : uniquement ses données personnelles ou également les réponses de sa candidature précédente ?
+- [ ] Les anciennes réponses de candidature doivent-elles être conservées indépendamment des informations personnelles actualisées ?
+- [ ] Comment le système traite-t-il une candidature à une nouvelle formation si la personne possède déjà un compte, mais n’a pas terminé sa configuration ?
+
+### Point important sur les informations antérieures
+
+Il faut distinguer deux catégories :
+
+1. **Les données personnelles**, qui peuvent évoluer et être actualisées.
+2. **Les réponses et informations propres à une candidature passée**, qui peuvent être nécessaires pour conserver l’historique de cette candidature.
+
+Le choix proposé au candidat entre conserver ou actualiser les informations doit être précisé pour éviter qu’une mise à jour n’altère involontairement l’historique d’une ancienne candidature.
