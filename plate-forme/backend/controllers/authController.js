@@ -48,7 +48,8 @@ exports.setupAccount = async (req, res) => {
       )
       : await db.query(
         `UPDATE utilisateur AS u
-         SET username = $1, mot_de_passe = $2, photo_profil = $3
+         SET username = $1, mot_de_passe = $2, photo_profil = $3,
+             email_verifie = TRUE
          WHERE u.email = $4
            AND u.mot_de_passe IS NULL
            AND EXISTS (

@@ -202,14 +202,14 @@ export default function Certification() {
       return `"${safeText.replace(/"/g, '""')}"`;
     };
     const rows = [
-      ['Apprenant', 'E-mail', 'Moyenne / 20', 'Présences', 'Séances', 'Taux de présence'],
-      ...certifiedLearners.map((learner) => [
-        `${learner.prenom} ${learner.nom}`,
+      ['N°', 'Nom', 'Prénom', 'E-mail', 'Téléphone', 'Genre'],
+      ...certifiedLearners.map((learner, index) => [
+        index + 1,
+        learner.nom,
+        learner.prenom,
         learner.email,
-        learner.moyenne == null ? '' : Number(learner.moyenne).toFixed(2),
-        learner.seances_presentes,
-        learner.seances_total,
-        learner.taux_presence == null ? '' : `${Number(learner.taux_presence).toFixed(1)} %`
+        learner.telephone,
+        learner.genre
       ])
     ];
     const csv = `\uFEFF${rows.map((row) => row.map(csvValue).join(';')).join('\r\n')}`;
@@ -377,7 +377,7 @@ export default function Certification() {
           </div>
 
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-zinc-500">Le choix est libre : les notes et présences sont affichées à titre indicatif.</p>
+            <p className="text-sm text-zinc-500">La liste privilégie les meilleures moyennes et assiduités, tout en laissant le responsable libre de sélectionner tout apprenant.</p>
             <label className="relative block w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={17} />
               <input

@@ -26,11 +26,32 @@ const verifyEmailTransport = async () => {
 };
 
 const sendAcceptanceEmail = async (candidate, frontendBaseUrl) => {
-  const configLink = `${frontendBaseUrl}/setup-account?email=${encodeURIComponent(candidate.email)}`;
-  const subject = candidate.isExistingUser
-    ? `🎉 Candidature acceptée pour ${candidate.formation_titre} !`
-    : '🎉 Candidature acceptée - Activez votre compte & votre Badge';
-  const bodyHtml = candidate.isExistingUser
+  const needsSetup = candidate.needsSetup === true;
+  const configLink = needsSetup
+    ? `${frontendBaseUrl}/setup-account?token=${encodeURIComponent(candidate.setupToken)}`
+    : `${frontendBaseUrl}/setup-account?email=${encodeURIComponent(candidate.email)}`;
+  const subject = needsSetup
+    ? '🎉 Candidature acceptée - Finalisez la configuration de votre compte'
+    : `🎉 Candidature acceptée pour ${candidate.formation_titre} !`;
+  const bodyHtml = needsSetup
+    ? `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Bonjour ${candidate.prenom} ${candidate.nom},</h2>
+        <p>Félicitations ! Votre candidature pour <strong>${candidate.formation_titre}</strong> a été acceptée.</p>
+        <p>Votre compte existe déjà sur la plateforme, mais sa configuration n'est pas terminée. Utilisez le lien ci-dessous pour créer votre nom d’utilisateur et votre mot de passe :</p>
+        <p style="margin: 20px 0;">
+          <a href="${configLink}" style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Configurer mon compte
+          </a>
+        </p>
+        <p style="font-size: 12px; color: #666;">Ce lien est personnel, valable pendant 24 heures et ne pourra être utilisé qu’une seule fois.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <h3>Votre Badge d'accès :</h3>
+        <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
+        <img src="cid:qrcode_badge" alt="QR Code Badge" style="width: 180px; height: 180px;" />
+      </div>
+    `
+    : candidate.isExistingUser
     ? `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
         <h2>Bonjour ${candidate.prenom} ${candidate.nom},</h2>
@@ -119,11 +140,17 @@ exports.validerCandidature = async (req, res) => {
     // 3. Récupérer ou créer l'utilisateur + Détecter s'il existait déjà
     let id_utilisateur;
     let isExistingUser = false;
-    const resUser = await client.query(`SELECT id_utilisateur FROM utilisateur WHERE email = $1`, [cand.email]);
+    let needsSetup = false;
+    let setupToken = null;
+    const resUser = await client.query(
+      `SELECT id_utilisateur, mot_de_passe FROM utilisateur WHERE LOWER(email) = LOWER($1)`,
+      [cand.email]
+    );
 
     if (resUser.rows.length > 0) {
       id_utilisateur = resUser.rows[0].id_utilisateur;
-      isExistingUser = true; // L'utilisateur a déjà un compte
+      isExistingUser = true;
+      needsSetup = !resUser.rows[0].mot_de_passe;
     } else {
       const resNewUser = await client.query(
         `INSERT INTO utilisateur (email, nom, prenom, telephone, age, statut_compte)
@@ -132,7 +159,20 @@ exports.validerCandidature = async (req, res) => {
         [cand.email, cand.nom, cand.prenom, cand.telephone, cand.age]
       );
       id_utilisateur = resNewUser.rows[0].id_utilisateur;
-      isExistingUser = false; // Nouveaut utilisateur
+      isExistingUser = false;
+      needsSetup = true;
+    }
+
+    if (needsSetup) {
+      setupToken = crypto.randomBytes(32).toString('hex');
+      const setupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
+      await client.query(
+        `UPDATE utilisateur
+         SET jeton_activation_hash = $1,
+             jeton_activation_expiration = CURRENT_TIMESTAMP + INTERVAL '24 hours'
+         WHERE id_utilisateur = $2`,
+        [setupTokenHash, id_utilisateur]
+      );
     }
 
     // 4. Créer l'entrée apprenant liée à l'utilisateur
@@ -172,6 +212,8 @@ exports.validerCandidature = async (req, res) => {
       prenom: cand.prenom,
       formation_titre: cand.formation_titre,
       isExistingUser,
+      needsSetup,
+      setupToken,
       qrCodeDataURL
     }, frontendBaseUrl);
 
@@ -344,11 +386,17 @@ exports.validerPromotion = async (req, res) => {
 
       let id_utilisateur;
       let isExistingUser = false;
-      const resUser = await client.query(`SELECT id_utilisateur FROM utilisateur WHERE email = $1`, [cand.email]);
+      let needsSetup = false;
+      let setupToken = null;
+      const resUser = await client.query(
+        `SELECT id_utilisateur, mot_de_passe FROM utilisateur WHERE LOWER(email) = LOWER($1)`,
+        [cand.email]
+      );
 
       if (resUser.rows.length > 0) {
         id_utilisateur = resUser.rows[0].id_utilisateur;
         isExistingUser = true;
+        needsSetup = !resUser.rows[0].mot_de_passe;
         await client.query(
           `UPDATE utilisateur SET statut_compte = 'ACTIF', nom = $1, prenom = $2, telephone = $3, age = $4
            WHERE id_utilisateur = $5`,
@@ -363,6 +411,19 @@ exports.validerPromotion = async (req, res) => {
         );
         id_utilisateur = resNewUser.rows[0].id_utilisateur;
         isExistingUser = false;
+        needsSetup = true;
+      }
+
+      if (needsSetup) {
+        setupToken = crypto.randomBytes(32).toString('hex');
+        const setupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
+        await client.query(
+          `UPDATE utilisateur
+           SET jeton_activation_hash = $1,
+               jeton_activation_expiration = CURRENT_TIMESTAMP + INTERVAL '24 hours'
+           WHERE id_utilisateur = $2`,
+          [setupTokenHash, id_utilisateur]
+        );
       }
 
       const resApprenant = await client.query(
@@ -398,6 +459,8 @@ exports.validerPromotion = async (req, res) => {
         prenom: cand.prenom,
         formation_titre: cand.formation_titre,
         isExistingUser,
+        needsSetup,
+        setupToken,
         qrCodeDataURL
       });
     }

@@ -56,10 +56,26 @@ const runExpiryTasks = async () => {
      RETURNING id_evaluation_sujet, id_formation`
   );
 
+  const closureResult = await db.query(
+    `UPDATE evaluation_sujet
+     SET statut = 'FERMEE',
+         date_modification = CURRENT_TIMESTAMP
+     WHERE statut = 'PUBLIEE'
+       AND date_fermeture IS NOT NULL
+       AND date_fermeture <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+     RETURNING id_evaluation_sujet, id_formation`
+  );
+
   if (formationResult.rowCount > 0 || startedFormationResult.rowCount > 0) {
     emitRealtimeEvent('formations:changed', {});
   }
   publicationResult.rows.forEach((evaluation) => {
+    emitToRoles(['APPRENANT', 'FORMATEUR'], 'evaluations:changed', {
+      id_formation: evaluation.id_formation,
+      id_evaluation_sujet: evaluation.id_evaluation_sujet
+    });
+  });
+  closureResult.rows.forEach((evaluation) => {
     emitToRoles(['APPRENANT', 'FORMATEUR'], 'evaluations:changed', {
       id_formation: evaluation.id_formation,
       id_evaluation_sujet: evaluation.id_evaluation_sujet

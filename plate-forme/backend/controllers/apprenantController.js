@@ -184,6 +184,7 @@ exports.getMesEvaluations = async (req, res) => {
        FROM apprenant a
        JOIN inscription i ON i.id_candidat = a.id_candidat AND i.statut = 'ACCEPTEE'
        JOIN evaluation_sujet es ON es.id_formation = i.id_formation AND es.statut = 'PUBLIEE'
+         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
        JOIN formation f ON f.id_formation = es.id_formation
        LEFT JOIN LATERAL (
          SELECT et.id_tentative, et.statut, et.note, et.date_debut, et.date_fin
@@ -214,7 +215,7 @@ exports.getEvaluationApprenant = async (req, res) => {
        JOIN formation f ON f.id_formation = es.id_formation
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       WHERE es.id_evaluation_sujet = $1 AND es.statut = 'PUBLIEE'
+       WHERE es.id_evaluation_sujet = $1 AND es.statut = 'PUBLIEE'         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
          AND a.id_utilisateur = $2`,
       [req.params.id, req.user.id_utilisateur]
     );
@@ -249,6 +250,7 @@ exports.startEvaluationAttempt = async (req, res) => {
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
        WHERE es.id_evaluation_sujet = $1 AND es.statut = 'PUBLIEE'
+         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
          AND a.id_utilisateur = $2`,
       [req.params.id, req.user.id_utilisateur]
     );

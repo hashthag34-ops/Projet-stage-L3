@@ -294,15 +294,42 @@ exports.updateFormation = async (req, res) => {
 exports.deleteFormation = async (req, res) => {
   const { id } = req.params;
   try {
-    const { rowCount } = await db.query('DELETE FROM formation WHERE id_formation = $1', [id]);
-    if (rowCount === 0) {
-      return res.status(404).json({ message: "Formation non trouvée" });
+    const formation = await db.query(
+      `SELECT statut,
+        EXISTS (SELECT 1 FROM inscription WHERE id_formation = $1) OR
+        EXISTS (SELECT 1 FROM seance WHERE id_formation = $1) OR
+        EXISTS (SELECT 1 FROM formation_formateur WHERE id_formation = $1) OR
+        EXISTS (SELECT 1 FROM evaluation_sujet WHERE id_formation = $1) OR
+        EXISTS (SELECT 1 FROM formation_avis WHERE id_formation = $1) OR
+        EXISTS (SELECT 1 FROM forum WHERE id_formation = $1) AS has_data
+       FROM formation WHERE id_formation = $1`,
+      [id]
+    );
+    if (!formation.rows[0]) return res.status(404).json({ message: 'Formation non trouvée.' });
+
+    if (formation.rows[0].has_data) {
+      const archived = await db.query(
+        `UPDATE formation SET statut = 'ARCHIVEE', date_modification = CURRENT_TIMESTAMP
+         WHERE id_formation = $1 AND statut <> 'ARCHIVEE'
+         RETURNING id_formation`,
+        [id]
+      );
+      emitRealtimeEvent('formations:changed', {});
+      return res.status(200).json({
+        archived: true,
+        message: archived.rows.length
+          ? 'La formation contient des données. Elle a été archivée et retirée du catalogue public.'
+          : 'La formation est déjà archivée et ses données sont conservées.'
+      });
     }
+
+    const { rowCount } = await db.query('DELETE FROM formation WHERE id_formation = $1', [id]);
+    if (rowCount === 0) return res.status(404).json({ message: 'Formation non trouvée.' });
     emitRealtimeEvent('formations:changed', {});
-    res.status(200).json({ message: "Formation supprimée avec succès !" });
+    return res.status(200).json({ archived: false, message: 'Formation vierge supprimée définitivement.' });
   } catch (error) {
-    console.error("Erreur deleteFormation :", error);
-    res.status(500).json({ message: "Erreur lors de la suppression" });
+    console.error('Erreur deleteFormation :', error);
+    return res.status(500).json({ message: 'Erreur lors de la suppression ou de l’archivage.' });
   }
 };
 

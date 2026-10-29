@@ -413,8 +413,9 @@ exports.getEvaluations = async (req, res) => {
     const { rows } = await db.query(
       `SELECT es.id_evaluation_sujet, es.id_formation, es.titre, es.description,
               es.duree_minutes, es.obligatoire, es.statut, es.total_points,
-              es.date_creation, es.date_publication, f.titre AS formation_titre,
+              es.date_creation, es.date_publication, es.date_fermeture, f.titre AS formation_titre,
               to_char(es.date_publication, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_publication_utc,
+              to_char(es.date_fermeture, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_fermeture_utc,
               COUNT(DISTINCT eq.id_question)::INTEGER AS questions_count,
               COUNT(DISTINCT et.id_tentative)::INTEGER AS tentatives_count
        FROM evaluation_sujet es
@@ -435,10 +436,14 @@ exports.getEvaluations = async (req, res) => {
 };
 
 exports.createEvaluation = async (req, res) => {
-  const { id_formation, titre, description, duree_minutes, obligatoire } = req.body;
+  const { id_formation, titre, description, duree_minutes, obligatoire, date_fermeture } = req.body;
   const duration = Number(duree_minutes);
   if (!Number.isInteger(duration) || duration < 1) {
     return res.status(400).json({ message: 'La durée doit être un nombre entier de minutes supérieur à zéro.' });
+  }
+  const closingTime = date_fermeture ? new Date(date_fermeture).getTime() : NaN;
+  if (!Number.isFinite(closingTime) || closingTime <= Date.now()) {
+    return res.status(400).json({ message: 'Choisissez une date et une heure de fermeture futures.' });
   }
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
@@ -447,10 +452,10 @@ exports.createEvaluation = async (req, res) => {
 
     const { rows } = await db.query(
       `INSERT INTO evaluation_sujet
-       (id_formation, id_formateur, titre, description, duree_minutes, obligatoire)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       (id_formation, id_formateur, titre, description, duree_minutes, obligatoire, date_fermeture)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [id_formation, formateurId, titre, description || null, duration, obligatoire !== false]
+      [id_formation, formateurId, titre, description || null, duration, obligatoire !== false, new Date(closingTime).toISOString()]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
@@ -465,7 +470,8 @@ exports.getEvaluation = async (req, res) => {
     const { id } = req.params;
     const sujet = await db.query(
       `SELECT es.*, f.titre AS formation_titre,
-              to_char(es.date_publication, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_publication_utc
+              to_char(es.date_publication, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_publication_utc,
+              to_char(es.date_fermeture, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS date_fermeture_utc
        FROM evaluation_sujet es
        JOIN formation f ON f.id_formation = es.id_formation
        WHERE es.id_evaluation_sujet = $1 AND es.id_formateur = $2`,
@@ -531,6 +537,36 @@ exports.addQuestion = async (req, res) => {
   } catch (error) {
     console.error('Erreur ajout question :', error);
     res.status(400).json({ message: error.message || 'Impossible d’ajouter la question.' });
+  }
+};
+
+exports.updateEvaluation = async (req, res) => {
+  const { titre, description, duree_minutes, obligatoire, date_fermeture } = req.body;
+  const duration = Number(duree_minutes);
+  const closingTime = new Date(date_fermeture).getTime();
+  if (!titre?.trim()) return res.status(400).json({ message: 'Le titre est obligatoire.' });
+  if (!Number.isInteger(duration) || duration < 1) {
+    return res.status(400).json({ message: 'La durée doit être un nombre entier de minutes supérieur à zéro.' });
+  }
+  if (!Number.isFinite(closingTime) || closingTime <= Date.now()) {
+    return res.status(400).json({ message: 'Choisissez une date et une heure de fermeture futures.' });
+  }
+
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const { rows } = await db.query(
+      `UPDATE evaluation_sujet
+       SET titre = $1, description = $2, duree_minutes = $3,
+           obligatoire = $4, date_fermeture = $5, date_modification = CURRENT_TIMESTAMP
+       WHERE id_evaluation_sujet = $6 AND id_formateur = $7 AND statut = 'BROUILLON'
+       RETURNING *`,
+      [titre.trim(), description || null, duration, obligatoire !== false, new Date(closingTime).toISOString(), req.params.id, formateurId]
+    );
+    if (!rows[0]) return res.status(409).json({ message: 'Seules les évaluations en brouillon peuvent être modifiées.' });
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Erreur modification évaluation :', error);
+    res.status(500).json({ message: 'Impossible de modifier cette évaluation.' });
   }
 };
 

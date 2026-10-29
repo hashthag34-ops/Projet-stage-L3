@@ -7,6 +7,14 @@ import API from '../../services/api';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-slate-800 dark:text-zinc-100';
 
+const toDateTimeLocal = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
 export default function GsEvaluation() {
   const [searchParams] = useSearchParams();
   const [formations, setFormations] = useState([]);
@@ -18,7 +26,8 @@ export default function GsEvaluation() {
   const [showQuestion, setShowQuestion] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [publicationAt, setPublicationAt] = useState('');
-  const [subject, setSubject] = useState({ id_formation: searchParams.get('formation') || '', titre: '', description: '', duree_minutes: 60, obligatoire: true });
+  const [editDraft, setEditDraft] = useState(null);
+  const [subject, setSubject] = useState({ id_formation: searchParams.get('formation') || '', titre: '', description: '', duree_minutes: 60, obligatoire: true, date_fermeture: '' });
   const [question, setQuestion] = useState({ enonce: '', points: 5, choix: [{ libelle: '', est_correct: true }, { libelle: '', est_correct: false }] });
 
   const load = async () => {
@@ -71,7 +80,7 @@ export default function GsEvaluation() {
     try { 
       const response = await API.post('/formateur/evaluations', subject); 
       setShowCreate(false); 
-      setSubject({ id_formation: '', titre: '', description: '', duree_minutes: 60, obligatoire: true }); 
+      setSubject({ id_formation: '', titre: '', description: '', duree_minutes: 60, obligatoire: true, date_fermeture: '' }); 
       setSelectedId(response.data.id_evaluation_sujet); 
       await load(); 
       setMessage({ type: 'success', text: 'Évaluation créée. Ajoutez maintenant ses questions.' }); 
@@ -119,6 +128,30 @@ export default function GsEvaluation() {
       setDetail(response.data);
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.message || 'Programmation impossible.' });
+    }
+  };
+
+  const openEdit = () => {
+    setEditDraft({
+      titre: detail.titre || '',
+      description: detail.description || '',
+      duree_minutes: detail.duree_minutes || 60,
+      obligatoire: detail.obligatoire !== false,
+      date_fermeture: toDateTimeLocal(detail.date_fermeture_utc || detail.date_fermeture)
+    });
+  };
+
+  const updateSubject = async (event) => {
+    event.preventDefault();
+    try {
+      await API.patch(`/formateur/evaluations/${selectedId}`, editDraft);
+      const response = await API.get(`/formateur/evaluations/${selectedId}`);
+      setDetail(response.data);
+      setEditDraft(null);
+      await load();
+      setMessage({ type: 'success', text: 'Évaluation modifiée.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Modification impossible.' });
     }
   };
 
@@ -271,6 +304,15 @@ export default function GsEvaluation() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {detail.statut === 'BROUILLON' && (
+                            <button
+                              type="button"
+                              onClick={openEdit}
+                              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                            >
+                              <i className="bi bi-pencil text-sm"></i> Modifier
+                            </button>
+                          )}
+                          {detail.statut === 'BROUILLON' && (
                             <button 
                               onClick={publish} 
                               className="flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3 py-2 text-xs text-white transition"
@@ -411,11 +453,47 @@ export default function GsEvaluation() {
               </label>
             </div>
 
+            <label className="block text-xs text-slate-700 dark:text-zinc-300">
+              Date et heure de fermeture
+              <input className={`${inputClass} mt-1`} type="datetime-local" value={subject.date_fermeture} onChange={(event) => setSubject({ ...subject, date_fermeture: event.target.value })} required />
+            </label>
+
             <p className="text-[11px] text-slate-400">Après la création, ajoutez les questions puis publiez immédiatement ou programmez la date et l’heure.</p>
 
             <button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white transition shadow-sm">
               Créer le sujet
             </button>
+          </form>
+        </div>
+      )}
+
+      {/* Modal Modification du brouillon */}
+      {editDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <form onSubmit={updateSubject} className="w-full max-w-lg space-y-4 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg text-slate-900 dark:text-white">Modifier l’évaluation</h2>
+              <button type="button" onClick={() => setEditDraft(null)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <i className="bi bi-x-lg text-sm"></i>
+              </button>
+            </div>
+
+            <input className={inputClass} placeholder="Titre de l’évaluation" value={editDraft.titre} onChange={(event) => setEditDraft({ ...editDraft, titre: event.target.value })} required />
+            <textarea className={`${inputClass} resize-none`} placeholder="Description" value={editDraft.description} onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })} rows="3" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Durée</label>
+                <input className={inputClass} type="number" min="1" step="1" value={editDraft.duree_minutes} onChange={(event) => setEditDraft({ ...editDraft, duree_minutes: event.target.value })} required />
+              </div>
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 text-xs self-end h-[42px]">
+                <input type="checkbox" checked={editDraft.obligatoire} onChange={(event) => setEditDraft({ ...editDraft, obligatoire: event.target.checked })} /> Obligatoire
+              </label>
+            </div>
+            <label className="block text-xs text-slate-700 dark:text-zinc-300">
+              Date et heure de fermeture
+              <input className={`${inputClass} mt-1`} type="datetime-local" value={editDraft.date_fermeture} onChange={(event) => setEditDraft({ ...editDraft, date_fermeture: event.target.value })} required />
+            </label>
+            <button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white transition">Enregistrer les modifications</button>
           </form>
         </div>
       )}

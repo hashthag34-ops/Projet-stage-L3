@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict T500f2JL62MXu6NyhfhWf0h4R4OTfar8LNJDhFcFVlNAp92Qh1JcXTiDdNXBnXd
+\restrict mapDWL9D6GLeL2CBn6GhM2G70NZhr13iqYwr1d6Np8pp2cdxhsKbq5clIPmKbig
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -586,6 +586,7 @@ CREATE TABLE public.evaluation_sujet (
     date_creation timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_modification timestamp without time zone,
     date_publication timestamp without time zone,
+    date_fermeture timestamp without time zone,
     CONSTRAINT chk_sujet_duree CHECK (((duree_minutes IS NULL) OR (duree_minutes > 0))),
     CONSTRAINT chk_sujet_total_points CHECK (((total_points >= (0)::numeric) AND (total_points <= (20)::numeric)))
 );
@@ -1302,7 +1303,6 @@ COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation,
 13	15	143	2026-08-21 16:14:55.971	ACTIF
 14	16	144	2026-06-06 16:14:55.971	ACTIF
 15	17	145	2026-08-24 16:14:55.971	ACTIF
-16	18	216	2026-08-17 16:17:31.29	ACTIF
 17	19	217	2026-07-15 16:17:31.29	ACTIF
 18	20	218	2026-09-15 16:17:31.29	ACTIF
 19	21	219	2026-07-16 16:17:31.29	ACTIF
@@ -1397,6 +1397,8 @@ COPY public.apprenant (id_apprenant, id_utilisateur, id_candidat, date_creation,
 108	113	580	2026-06-09 08:24:44.612	ACTIF
 109	114	581	2026-10-05 08:24:44.612	ACTIF
 3	\N	2	2026-10-01 15:05:48.503126	ACTIF
+110	115	582	2026-10-29 19:39:21.285289	ACTIF
+16	\N	216	2026-08-17 16:17:31.29	ACTIF
 \.
 
 
@@ -1986,6 +1988,7 @@ COPY public.candidat (id_candidat, email, nom, prenom, age, genre, telephone, ni
 579	synthetic-a8e94169-e542-4303-ae03-53985a2b2089@example.invalid	Andria	Mialy	23	Homme	000000000	Licence	Salarié	Établissement de test A	Informatique	2026-07-29 08:24:44.612
 580	synthetic-7e50dbdb-dcf8-4ce4-877c-ff198f6d1d3f@example.invalid	Raveloson	Mialy	35	Non renseigné	000000000	Baccalauréat	Étudiant	Centre de formation fictif	Gestion	2026-06-09 08:24:44.612
 581	synthetic-71c20f02-476c-43e9-8b98-85d657bbc064@example.invalid	Rasoanaivo	Mialy	38	Non renseigné	000000000	Formation professionnelle	Salarié	Centre de formation fictif	Gestion	2026-10-05 08:24:44.612
+582	hashthag34@gmail.com	Joseph Aimé	Andriatsaraniarivo	20	Homme	0320485739	M1	Etudiant	EMIT	DA2I	2026-10-29 19:34:21.227809
 \.
 
 
@@ -2032,6 +2035,14 @@ COPY public.certification (id_certification, id_apprenant, id_formation, date_ce
 36	82	4	\N	NON_CERTIFIE	\N	\N	\N
 37	83	4	\N	NON_CERTIFIE	\N	\N	\N
 38	84	4	2026-10-22	CERTIFIE	\N	\N	\N
+39	102	8	2026-10-29	CERTIFIE	\N	\N	\N
+40	103	8	\N	NON_CERTIFIE	\N	\N	\N
+41	104	8	\N	NON_CERTIFIE	\N	\N	\N
+42	105	8	2026-10-29	CERTIFIE	\N	\N	\N
+43	106	8	\N	NON_CERTIFIE	\N	\N	\N
+44	107	8	2026-10-29	CERTIFIE	\N	\N	\N
+45	108	8	\N	NON_CERTIFIE	\N	\N	\N
+46	109	8	\N	NON_CERTIFIE	\N	\N	\N
 \.
 
 
@@ -2121,6 +2132,12 @@ COPY public.evaluation_choix (id_choix, id_question, libelle, est_correct, ordre
 70	28	Abraham	f	1
 71	28	Jean paul	t	2
 72	28	Cristiano	f	3
+73	31	gg	t	1
+74	31	dd	f	2
+75	32	adda	t	1
+76	32	da	f	2
+77	33	sx	t	1
+78	33	xS	f	2
 \.
 
 
@@ -2156,6 +2173,9 @@ COPY public.evaluation_question (id_question, id_evaluation_sujet, numero_questi
 26	6	2	qui est makima	5.00	2026-10-21 12:01:42.851393
 27	6	3	qui est le père de boruto ?	5.00	2026-10-21 12:02:40.613038
 28	6	4	comment s'appele le fils du père d'abraham ?	5.00	2026-10-21 12:03:32.272027
+31	7	1	test	10.00	2026-10-29 19:50:22.14025
+32	7	2	adsa	5.00	2026-10-29 19:50:36.249145
+33	7	3	x	5.00	2026-10-29 19:50:55.031564
 \.
 
 
@@ -2213,6 +2233,9 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 47	11	26	65	5.00
 48	11	27	68	0.00
 49	11	28	70	0.00
+50	12	31	73	10.00
+51	12	32	75	5.00
+52	12	33	78	0.00
 \.
 
 
@@ -2220,13 +2243,14 @@ COPY public.evaluation_reponse (id_reponse, id_tentative, id_question, id_choix,
 -- Data for Name: evaluation_sujet; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.evaluation_sujet (id_evaluation_sujet, id_formation, id_formateur, titre, description, duree_minutes, obligatoire, statut, total_points, date_creation, date_modification, date_publication) FROM stdin;
-2	3	1	Q	Quiz Bleach	20	t	PUBLIEE	20.00	2026-10-01 15:15:27.008985	2026-10-01 15:24:24.528683	2026-10-01 15:24:24.528683
-1	1	1	exam	bla	20	t	PUBLIEE	20.00	2026-09-19 07:50:04.889609	2026-10-07 08:31:04.359483	2026-10-07 08:31:04.359483
-3	3	1	question au piff	bla bla	2	t	PUBLIEE	20.00	2026-10-07 08:36:05.756265	2026-10-07 08:39:04.671957	2026-10-07 08:39:04.671957
-4	1	1	fc	\N	10	t	PUBLIEE	20.00	2026-10-12 08:06:07.625201	2026-10-12 08:09:07.156098	2026-10-12 08:09:07.156098
-5	1	1	EXAM 2	bla bla	1	t	PUBLIEE	20.00	2026-10-14 08:17:21.235841	2026-10-14 08:20:07.060289	2026-10-14 08:20:07.060289
-6	1	1	miam	\N	2	t	PUBLIEE	20.00	2026-10-20 05:25:28.76247	2026-10-21 12:05:09.569456	2026-10-21 12:05:09.569456
+COPY public.evaluation_sujet (id_evaluation_sujet, id_formation, id_formateur, titre, description, duree_minutes, obligatoire, statut, total_points, date_creation, date_modification, date_publication, date_fermeture) FROM stdin;
+2	3	1	Q	Quiz Bleach	20	t	PUBLIEE	20.00	2026-10-01 15:15:27.008985	2026-10-01 15:24:24.528683	2026-10-01 15:24:24.528683	\N
+1	1	1	exam	bla	20	t	PUBLIEE	20.00	2026-09-19 07:50:04.889609	2026-10-07 08:31:04.359483	2026-10-07 08:31:04.359483	\N
+3	3	1	question au piff	bla bla	2	t	PUBLIEE	20.00	2026-10-07 08:36:05.756265	2026-10-07 08:39:04.671957	2026-10-07 08:39:04.671957	\N
+4	1	1	fc	\N	10	t	PUBLIEE	20.00	2026-10-12 08:06:07.625201	2026-10-12 08:09:07.156098	2026-10-12 08:09:07.156098	\N
+5	1	1	EXAM 2	bla bla	1	t	PUBLIEE	20.00	2026-10-14 08:17:21.235841	2026-10-14 08:20:07.060289	2026-10-14 08:20:07.060289	\N
+6	1	1	miam	\N	2	t	PUBLIEE	20.00	2026-10-20 05:25:28.76247	2026-10-21 12:05:09.569456	2026-10-21 12:05:09.569456	\N
+7	1	1	td	\N	2	t	FERMEE	20.00	2026-10-29 19:49:38.626821	2026-10-29 20:02:03.74578	2026-10-29 19:55:03.441736	2026-10-29 19:02:00
 \.
 
 
@@ -2246,6 +2270,7 @@ COPY public.evaluation_tentative (id_tentative, id_evaluation_sujet, id_apprenan
 9	4	2	2026-10-21 11:57:45.105451	2026-10-21 11:57:53.158256	5.00	TERMINEE
 10	6	2	2026-10-21 12:05:14.863837	2026-10-21 12:05:28.14658	15.00	TERMINEE
 11	6	3	2026-10-22 06:06:46.849783	2026-10-22 06:07:27.415039	5.00	TERMINEE
+12	7	2	2026-10-29 19:55:09.38546	2026-10-29 19:55:51.761834	15.00	TERMINEE
 \.
 
 
@@ -2265,11 +2290,11 @@ COPY public.formateur (id_formateur, id_utilisateur, specialite, biographie, dat
 
 COPY public.formation (id_formation, titre, description, image_url, date_debut, date_fin, date_limite_inscription, capacite_max, statut, date_creation, date_modification) FROM stdin;
 13	Automatisation	des traitement des données	/uploads/formations/a1d81b18c78d7869bc091127d0303883.jpg	2026-12-08	2026-12-11	2026-12-01	20	OUVERTE	2026-10-22 06:22:30.117365	\N
-8	Marketing Digital et Reseaux Sociaux	De la strategie de visibilité a la performance digitale mesurable	/uploads/formations/f93c93f6f6b340023d605eb59293008d.jpg	2026-10-24	2026-10-26	2026-10-21	10	EN_COURS	2026-10-12 07:25:34.372538	2026-10-25 07:58:47.276132
+8	Marketing Digital et Reseaux Sociaux	De la strategie de visibilité a la performance digitale mesurable	/uploads/formations/f93c93f6f6b340023d605eb59293008d.jpg	2026-10-24	2026-10-26	2026-10-21	10	TERMINEE	2026-10-12 07:25:34.372538	2026-10-27 07:57:09.345066
+4	De l'idée à l'insistant intelligent	mettrisez l'IA generative et le Prompt Engineering 	/uploads/formations/7c3ac61aac90be2bd47bc00c766a0ac1.jpg	2026-07-29	2026-08-02	2026-07-25	20	ARCHIVEE	2026-10-01 16:46:18.181844	2026-10-29 19:43:39.660495
 11	Devenir un Leader d'Impact	formation sur le leadership	/uploads/formations/37785536d924444c9894d52366da750a.jpg	2026-11-21	2026-11-24	2026-11-18	15	OUVERTE	2026-10-12 07:33:03.164727	2026-10-21 14:27:40.421478
 10	Reseaux nouvelle generation	automatiser, programmer et securisez vos infrastructures	/uploads/formations/4f6cd8f26a94b0ed55d2be5946d53fb5.jpg	2026-11-14	2026-11-17	2026-11-11	10	OUVERTE	2026-10-12 07:30:41.73863	2026-10-21 14:28:58.885804
 9	SwiftUI et IOs	Construire des application moderne, rapides et connectés	/uploads/formations/5cf65831a7f35c47f0d642dbe25b69d4.jpg	2026-11-06	2026-11-09	2026-11-03	10	OUVERTE	2026-10-12 07:28:41.963612	2026-10-21 15:03:54.708993
-4	De l'idée à l'insistant intelligent	mettrisez l'IA generative et le Prompt Engineering 	/uploads/formations/7c3ac61aac90be2bd47bc00c766a0ac1.jpg	2026-07-29	2026-08-02	2026-07-25	20	TERMINEE	2026-10-01 16:46:18.181844	2026-10-21 15:08:34.82837
 3	API mastery avec Spring Boot	Concevez des backends rapides, sécurisé et prêt pour la production	/uploads/formations/778eb388939531f61c97eb470bef029c.jpg	2026-09-27	2026-09-30	2026-09-27	20	TERMINEE	2026-10-01 14:56:12.050024	2026-10-21 15:10:59.241701
 1	Intelligence émotionnel	Mieux se connaître, mieux vivre, mieux réussir 	/uploads/formations/9ad92ea1782ef33c12235432999b1fd8.jpg	2026-12-16	2026-12-20	2026-11-26	40	OUVERTE	2026-09-19 07:31:18.251346	2026-10-21 15:12:12.213439
 12	Piloter les Finance	d'un projet d'entreprise	/uploads/formations/3d11ba4a795365efe08cb0533f2719ef.jpg	2026-11-22	2026-11-26	2026-11-19	30	OUVERTE	2026-10-22 06:20:23.030425	2026-10-22 06:21:23.397165
@@ -2906,6 +2931,7 @@ COPY public.inscription (id_inscription, id_candidat, id_formation, date_inscrip
 582	579	8	2026-07-29 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-07-29 08:24:44.612	\N	\N
 583	580	8	2026-06-09 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-06-09 08:24:44.612	\N	\N
 584	581	8	2026-10-05 08:24:44.612	ACCEPTEE	Candidature de démonstration générée par l’administration.	Développer des compétences dans cette formation.	Mettre en pratique les compétences acquises.	Jeu de données synthétique	f	\N	\N	t	2026-10-05 08:24:44.612	\N	\N
+585	582	9	2026-10-29 19:34:21.227809	ACCEPTEE	je veut etre capable de faire un bon design par moi meme	l'art du design	poursuite de mes etudes		f			t	2026-10-29 19:39:21.285289	\N	2026-10-29 19:39:21.285289
 \.
 
 
@@ -3155,6 +3181,22 @@ COPY public.presence (id_presence, id_apprenant, id_seance, date_scan, statut, c
 252729	107	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 252731	108	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 252733	109	30	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271312	102	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271315	103	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271318	104	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271321	105	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271324	106	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271327	107	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271330	108	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+271333	109	31	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295441	102	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295445	103	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295449	104	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295453	105	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295457	106	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295461	107	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295465	108	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
+295469	109	32	\N	ABSENT	Absence automatique : aucun scan enregistré après la séance.
 \.
 
 
@@ -3233,10 +3275,11 @@ COPY public.support_cours (id_support, id_formation, id_formateur, nom_fichier, 
 --
 
 COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, prenom, telephone, age, photo_profil, qr_code, statut_compte, date_creation, date_derniere_connexion, date_derniere_deconnexion, email_verifie, jeton_activation_hash, jeton_activation_expiration, password_reset_code_hash, password_reset_code_expiration, password_reset_code_requested_at, password_reset_code_attempts) FROM stdin;
-5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-25 21:10:52.144666	2026-10-25 21:11:36.19046	t	\N	\N	\N	\N	\N	0
-2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-26 04:26:55.181507	2026-10-26 04:29:46.088533	t	\N	\N	\N	\N	\N	0
-1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-26 04:13:37.162276	2026-10-26 04:14:40.906483	t	\N	\N	\N	\N	\N	0
-3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-26 04:14:47.538894	2026-10-26 04:16:47.800733	t	\N	\N	\N	\N	\N	0
+7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-29 19:59:07.689183	2026-10-29 19:59:43.151482	t	\N	\N	\N	\N	\N	0
+2	nyandry245@gmail.com	$2b$10$kFIo..o3jQT70hpFLNLoGupNKaqpXjegUzHhScI06ZK6sYs4rW51C	\N	RAKEMBA	Ny Andry Anao	032 28 188 26	12	avatar-2-1791130048181-183261829.jpg	\N	ACTIF	2026-09-19 06:58:23.190465	2026-10-27 08:01:00.523893	2026-10-27 08:03:25.891005	t	\N	\N	\N	\N	\N	0
+5	hashthag10@gmail.com	$2b$10$Fjw6ktwCOcRpayJgMBRXbuO86tGzeaF53uIJ4Z6hsVIngG50w4zIa	SARAH34	Sarah	Cameroon	0322818826	19	avatar-5-1792582100001-995129409.jpg	data:image/png;base64,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	ACTIF	2026-09-19 09:59:04.428199	2026-10-29 19:54:14.622963	2026-10-29 19:56:19.213626	t	\N	\N	\N	\N	\N	0
+1	admin@plateforme.com	$2b$10$TZhK/cGGoSOh7P3HBwbuduktxXqm4Vr4mTQ.sPdgdMASTFp9Qu00O	THAG34	ANDRIATSARANIARIVO	Joseph Aimé	0340643598	20	avatar-1-1791130104838-35049754.jpg	\N	ACTIF	2026-09-19 06:37:06.503891	2026-10-29 20:00:09.153409	2026-10-29 20:03:31.711708	t	\N	\N	\N	\N	\N	0
+3	formateur@gmail.com	$2b$10$rIkm30SEGO1t.3sNxd5zw.RXp/kqLByDCDOvmQPmgUAQd2ObVg/W6	\N	RAZAFIMANDIMBY	Santatra	032 28 188 29	34	avatar-3-1791130143606-550573786.jpg	\N	ACTIF	2026-09-19 07:38:34.017289	2026-10-29 20:03:38.850722	2026-10-29 19:57:02.505617	t	\N	\N	\N	\N	\N	0
 8	synthetic-7bc07316-ef38-4222-876f-9c38d6eb636e@example.invalid	\N	\N	Rakoto	Aina	000000000	29	\N	\N	ACTIF	2026-05-16 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 9	synthetic-a644d2c6-f8c5-40b9-80a4-996f1d095e16@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	20	\N	\N	ACTIF	2026-05-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 10	synthetic-6c07b065-43bf-4c55-bbcc-8e54a0165bc9@example.invalid	\N	\N	Randria	Nomena	000000000	30	\N	\N	ACTIF	2026-09-28 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
@@ -3245,10 +3288,8 @@ COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, pre
 13	synthetic-4a317a0a-03c8-4f93-8a43-66f344c060c7@example.invalid	\N	\N	Rasoanaivo	Lova	000000000	18	\N	\N	ACTIF	2026-06-05 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 14	synthetic-f341eafd-4a0e-4d32-9584-982f7aaea7ba@example.invalid	\N	\N	Randria	Hery	000000000	39	\N	\N	ACTIF	2026-08-23 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 15	synthetic-5c289326-4c0d-486b-8182-90555e568990@example.invalid	\N	\N	Razafy	Lova	000000000	30	\N	\N	ACTIF	2026-08-21 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
-7	papanaoformation@gmail.com	$2b$10$c4pefLTQ/yAh8yGULQYdwODf.JMa9j2uvriVCmtwE9gkO9mWueXoS	\N	Ultime	Charo	0323546786	23	avatar-7-1792581216125-761018945.jpg	\N	ACTIF	2026-10-21 12:11:36.449635	2026-10-26 04:16:54.94024	2026-10-26 04:17:14.515663	t	\N	\N	\N	\N	\N	0
 16	synthetic-b3ec4b16-2015-4b97-8451-5d2fee2ed731@example.invalid	\N	\N	Razafy	Mialy	000000000	32	\N	\N	ACTIF	2026-06-06 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
 17	synthetic-336fef65-8599-41a3-b4cf-ccd9d52ce9b0@example.invalid	\N	\N	Raveloson	Hery	000000000	18	\N	\N	ACTIF	2026-08-24 16:14:55.971	\N	\N	t	\N	\N	\N	\N	\N	0
-18	synthetic-9a9afc0e-8f5d-4382-8a9b-d7c020b0389f@example.invalid	\N	\N	Raveloson	Tahina	000000000	24	\N	\N	ACTIF	2026-08-17 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
 19	synthetic-f869283a-e6b2-4f7d-a56c-1385e6847a44@example.invalid	\N	\N	Razafy	Miora	000000000	37	\N	\N	ACTIF	2026-07-15 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
 20	synthetic-015710e3-e865-413f-8bc0-f10ca5b94c68@example.invalid	\N	\N	Rasoanaivo	Fara	000000000	31	\N	\N	ACTIF	2026-09-15 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
 21	synthetic-9adfe0b8-1817-4045-a089-cbef65384c13@example.invalid	\N	\N	Razafy	Soa	000000000	24	\N	\N	ACTIF	2026-07-16 16:17:31.29	\N	\N	t	\N	\N	\N	\N	\N	0
@@ -3342,7 +3383,8 @@ COPY public.utilisateur (id_utilisateur, email, mot_de_passe, username, nom, pre
 112	synthetic-a8e94169-e542-4303-ae03-53985a2b2089@example.invalid	\N	\N	Andria	Mialy	000000000	23	\N	\N	ACTIF	2026-07-29 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
 113	synthetic-7e50dbdb-dcf8-4ce4-877c-ff198f6d1d3f@example.invalid	\N	\N	Raveloson	Mialy	000000000	35	\N	\N	ACTIF	2026-06-09 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
 114	synthetic-71c20f02-476c-43e9-8b98-85d657bbc064@example.invalid	\N	\N	Rasoanaivo	Mialy	000000000	38	\N	\N	ACTIF	2026-10-05 08:24:44.612	\N	\N	t	\N	\N	\N	\N	\N	0
-104	andriatsaraniarivogaming@gmail.com	$2b$10$5tWCzBkXjshWM5B7xY84m.a.Tha8dc9zE2tglJcHLAGKSZBeAKXKS	Md Narovana	Narovana	Andriamaminiaina	032 28 188 26	25	avatar-104-1792596109490-650532512.jpeg	\N	ACTIF	2026-10-21 16:18:48.286823	2026-10-25 08:08:29.571605	2026-10-25 08:23:43.98656	t	\N	\N	\N	\N	\N	0
+104	andriatsaraniarivogaming@gmail.com	$2b$10$5tWCzBkXjshWM5B7xY84m.a.Tha8dc9zE2tglJcHLAGKSZBeAKXKS	Md Narovana	Narovana	Andriamaminiaina	032 28 188 26	25	avatar-104-1792596109490-650532512.jpeg	\N	ACTIF	2026-10-21 16:18:48.286823	2026-10-29 19:39:49.108374	2026-10-29 19:45:37.979459	t	\N	\N	\N	\N	\N	0
+115	hashthag34@gmail.com	$2b$10$JjhDsA8Dbqn2ZNQX9uuQAenulT4AphJP.qphanM1OQyk6WLU1PVEK	Hash-Thag	Joseph Aimé	Andriatsaraniarivo	0320485739	20	avatar-115-1793299621504-698210343.webp	data:image/png;base64,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	ACTIF	2026-10-29 19:39:21.285289	2026-10-29 19:59:49.628951	2026-10-29 19:59:59.31543	t	\N	\N	\N	\N	\N	0
 \.
 
 
@@ -3357,28 +3399,28 @@ SELECT pg_catalog.setval('public.administrateur_id_administrateur_seq', 1, true)
 -- Name: apprenant_id_apprenant_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 109, true);
+SELECT pg_catalog.setval('public.apprenant_id_apprenant_seq', 110, true);
 
 
 --
 -- Name: candidat_id_candidat_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 581, true);
+SELECT pg_catalog.setval('public.candidat_id_candidat_seq', 582, true);
 
 
 --
 -- Name: certification_id_certification_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.certification_id_certification_seq', 38, true);
+SELECT pg_catalog.setval('public.certification_id_certification_seq', 46, true);
 
 
 --
 -- Name: evaluation_choix_id_choix_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 72, true);
+SELECT pg_catalog.setval('public.evaluation_choix_id_choix_seq', 78, true);
 
 
 --
@@ -3392,28 +3434,28 @@ SELECT pg_catalog.setval('public.evaluation_id_evaluation_seq', 4, true);
 -- Name: evaluation_question_id_question_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 30, true);
+SELECT pg_catalog.setval('public.evaluation_question_id_question_seq', 33, true);
 
 
 --
 -- Name: evaluation_reponse_id_reponse_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 49, true);
+SELECT pg_catalog.setval('public.evaluation_reponse_id_reponse_seq', 52, true);
 
 
 --
 -- Name: evaluation_sujet_id_evaluation_sujet_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 6, true);
+SELECT pg_catalog.setval('public.evaluation_sujet_id_evaluation_sujet_seq', 7, true);
 
 
 --
 -- Name: evaluation_tentative_id_tentative_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 11, true);
+SELECT pg_catalog.setval('public.evaluation_tentative_id_tentative_seq', 12, true);
 
 
 --
@@ -3448,7 +3490,7 @@ SELECT pg_catalog.setval('public.forum_id_forum_seq', 10, true);
 -- Name: inscription_id_inscription_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 584, true);
+SELECT pg_catalog.setval('public.inscription_id_inscription_seq', 585, true);
 
 
 --
@@ -3462,7 +3504,7 @@ SELECT pg_catalog.setval('public.message_id_message_seq', 8, true);
 -- Name: presence_id_presence_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.presence_id_presence_seq', 271102, true);
+SELECT pg_catalog.setval('public.presence_id_presence_seq', 333150, true);
 
 
 --
@@ -3490,7 +3532,7 @@ SELECT pg_catalog.setval('public.support_cours_id_support_seq', 1, false);
 -- Name: utilisateur_id_utilisateur_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.utilisateur_id_utilisateur_seq', 114, true);
+SELECT pg_catalog.setval('public.utilisateur_id_utilisateur_seq', 115, true);
 
 
 --
@@ -4321,5 +4363,5 @@ ALTER TABLE ONLY public.evaluation_tentative
 -- PostgreSQL database dump complete
 --
 
-\unrestrict T500f2JL62MXu6NyhfhWf0h4R4OTfar8LNJDhFcFVlNAp92Qh1JcXTiDdNXBnXd
+\unrestrict mapDWL9D6GLeL2CBn6GhM2G70NZhr13iqYwr1d6Np8pp2cdxhsKbq5clIPmKbig
 

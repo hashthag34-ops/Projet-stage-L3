@@ -11,7 +11,8 @@ import {
   Target, 
   X, 
   AlertCircle,
-  ClipboardCheck
+  ClipboardCheck,
+  Trash2
 } from 'lucide-react';
 import API from '../services/api';
 
@@ -71,6 +72,8 @@ export default function Postuler() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const editToken = searchParams.get('edit_token');
+  const cancellationRequested = searchParams.get('action') === 'cancel';
+  const [cancelling, setCancelling] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
   const [situationChoice, setSituationChoice] = useState('');
   const [situationAutre, setSituationAutre] = useState('');
@@ -146,6 +149,20 @@ export default function Postuler() {
     const digits = normalizeMadagascarPhone(event.target.value);
     if (isAllowedPhonePrefix(digits)) {
       setFormData((current) => ({ ...current, telephone: digits }));
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!window.confirm('Voulez-vous vraiment annuler cette candidature ? Cette action est définitive.')) return;
+
+    setCancelling(true);
+    try {
+      const res = await API.delete('/candidats/candidature', { params: { token: editToken } });
+      setNotice({ type: 'success', text: res.data.message });
+    } catch (err) {
+      setNotice({ type: 'error', text: err.response?.data?.message || 'Impossible d’annuler la candidature.' });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -428,20 +445,33 @@ export default function Postuler() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-black shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? (
-                <LoaderCircle size={18} className="animate-spin" />
-              ) : editToken ? (
-                <CheckCircle2 size={18} />
-              ) : (
-                <ArrowRight size={18} />
-              )}
-              {loading ? 'Traitement en cours...' : editToken ? 'Enregistrer les modifications' : 'Soumettre ma candidature'}
-            </button>
+            {editToken && cancellationRequested && (
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={handleCancel}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 py-3.5 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"
+              >
+                <Trash2 size={18} />
+                {cancelling ? 'Annulation en cours...' : 'Annuler définitivement ma candidature'}
+              </button>
+            )}
+            {!cancellationRequested && (
+              <button 
+                type="submit" 
+                disabled={loading} 
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-black shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? (
+                  <LoaderCircle size={18} className="animate-spin" />
+                ) : editToken ? (
+                  <CheckCircle2 size={18} />
+                ) : (
+                  <ArrowRight size={18} />
+                )}
+                {loading ? 'Traitement en cours...' : editToken ? 'Enregistrer les modifications' : 'Soumettre ma candidature'}
+              </button>
+            )}
           </div>
 
         </form>

@@ -43,6 +43,7 @@ const isApplicationEditable = (candidature) => (
 
 const sendReceiptEmail = async (candidature, editToken, frontendBaseUrl) => {
   const editLink = `${frontendBaseUrl}/postuler/${candidature.id_formation}?edit_token=${encodeURIComponent(editToken)}`;
+  const cancelLink = `${editLink}&action=cancel`;
   await transporter.sendMail({
     from: '"Plateforme Formations" <no-reply@formation.com>',
     to: candidature.email,
@@ -52,7 +53,8 @@ const sendReceiptEmail = async (candidature, editToken, frontendBaseUrl) => {
       <p>Nous avons bien reçu votre candidature pour <strong>${candidature.formation_titre}</strong>.</p>
       <p>Vous pouvez modifier vos informations jusqu'au <strong>${new Date(candidature.date_limite_inscription).toLocaleDateString('fr-FR')}</strong>.</p>
       <p style="margin:24px 0"><a href="${editLink}" style="background:#f97316;color:#000;padding:12px 18px;text-decoration:none;border-radius:8px;font-weight:bold">Modifier ma candidature</a></p>
-      <p style="font-size:12px;color:#666">Ce lien est personnel. Si vous n'êtes pas à l'origine de cette candidature, ignorez ce message.</p>
+      <p style="margin:24px 0"><a href="${cancelLink}" style="color:#dc2626;font-weight:bold">Annuler ma candidature</a></p>
+      <p style="font-size:12px;color:#666">Ces liens sont personnels. Annuler ou modifier une candidature reste possible jusqu’à la date limite de la formation.</p>
     </div>`
   });
 };
@@ -183,6 +185,44 @@ exports.getCandidatureForEdit = async (req, res) => {
     res.json(candidature);
   } catch (err) {
     res.status(401).json({ message: 'Le lien de modification est invalide ou expiré.' });
+  }
+};
+
+exports.cancelCandidature = async (req, res) => {
+  try {
+    const payload = jwt.verify(req.query.token, process.env.JWT_SECRET || 'votre_secret_key');
+    if (payload.purpose !== 'edit-candidature') {
+      return res.status(401).json({ message: 'Lien invalide.' });
+    }
+
+    const result = await db.query(
+      `UPDATE inscription i
+       SET statut = 'ANNULEE', date_decision = CURRENT_TIMESTAMP
+       FROM candidat c, formation f
+       WHERE i.id_candidat = c.id_candidat
+         AND i.id_formation = f.id_formation
+         AND i.id_inscription = $1
+         AND LOWER(c.email) = LOWER($2)
+         AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
+         AND f.date_limite_inscription >= CURRENT_DATE
+       RETURNING i.id_inscription, i.id_formation`,
+      [payload.id_inscription, payload.email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ message: 'La candidature est déjà traitée, annulée, ou la date limite est dépassée.' });
+    }
+
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
+      id_formation: result.rows[0].id_formation
+    });
+    return res.json({ message: 'Votre candidature a été annulée.' });
+  } catch (err) {
+    console.error('Erreur annulation candidature :', err);
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Le lien d’annulation est invalide ou expiré.' });
+    }
+    return res.status(500).json({ message: 'Erreur lors de l’annulation de la candidature.' });
   }
 };
 

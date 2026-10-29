@@ -428,14 +428,19 @@ export default function ResponsableFormations() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Es-tu sûr de vouloir supprimer cette formation ?")) {
-      try {
-        await API.delete(`/formations/${id}`);
-        fetchFormations();
-      } catch (err) {
-        alert("Erreur lors de la suppression");
-      }
+  const handleDelete = async (formation) => {
+    const hasUsefulData = formation.statut !== 'BROUILLON';
+    const confirmation = hasUsefulData
+      ? `La formation « ${formation.titre} » contient potentiellement des données utiles. Confirmer son archivage ?`
+      : `Supprimer définitivement la formation vierge « ${formation.titre} » ?`;
+    if (!window.confirm(confirmation)) return;
+
+    try {
+      const res = await API.delete(`/formations/${formation.id_formation}`);
+      alert(res.data.message);
+      await fetchFormations();
+    } catch (err) {
+      alert(err.response?.data?.message || "Erreur lors de la suppression ou de l’archivage");
     }
   };
 
@@ -628,9 +633,9 @@ export default function ResponsableFormations() {
                           </button>
 
                           <button 
-                            onClick={() => handleDelete(f.id_formation)} 
+                            onClick={() => handleDelete(f)} 
                             className={`rounded-xl p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 ${focusRing}`}
-                            title="Supprimer"
+                            title="Supprimer ou archiver"
                           >
                             <Trash2 size={15} />
                           </button>
@@ -704,9 +709,9 @@ export default function ResponsableFormations() {
                     <Edit3 size={14} />
                   </button>
                   <button 
-                    onClick={() => handleDelete(f.id_formation)} 
+                    onClick={() => handleDelete(f)} 
                     className={`rounded-xl border border-slate-200 p-1.5 text-rose-600 hover:bg-rose-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-rose-400 ${focusRing}`}
-                    title="Supprimer"
+                    title="Supprimer ou archiver"
                   >
                     <Trash2 size={14} />
                   </button>

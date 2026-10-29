@@ -113,12 +113,13 @@ exports.getFormationLearners = async (req, res) => {
 
     const { rows } = await db.query(
       `WITH inscrits AS (
-         SELECT DISTINCT a.id_apprenant, u.nom, u.prenom, u.email, u.telephone
+        SELECT DISTINCT a.id_apprenant, u.nom, u.prenom, u.email, u.telephone, ca.genre
          FROM inscription i
          JOIN apprenant a ON a.id_candidat = i.id_candidat
          JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
-         WHERE i.id_formation = $1 AND i.statut = 'ACCEPTEE'
-       ),
+        JOIN candidat ca ON ca.id_candidat = a.id_candidat
+        WHERE i.id_formation = $1 AND i.statut = 'ACCEPTEE'
+      ),
        notes AS (
          SELECT e.id_apprenant, e.type_evaluation AS titre, e.note,
                 e.date_evaluation AS date_note
@@ -150,7 +151,7 @@ exports.getFormationLearners = async (req, res) => {
            ON p.id_seance = s.id_seance AND p.id_apprenant = i.id_apprenant
          GROUP BY i.id_apprenant
        )
-       SELECT i.id_apprenant, i.nom, i.prenom, i.email, i.telephone,
+       SELECT i.id_apprenant, i.nom, i.prenom, i.email, i.telephone, i.genre,
               ROUND(n.moyenne, 2) AS moyenne,
               COALESCE(n.notes, '[]'::json) AS notes,
               p.seances_total,
@@ -167,7 +168,13 @@ exports.getFormationLearners = async (req, res) => {
        LEFT JOIN presences_agregees p ON p.id_apprenant = i.id_apprenant
        LEFT JOIN certification c
          ON c.id_formation = $1 AND c.id_apprenant = i.id_apprenant
-       ORDER BY i.nom, i.prenom`,
+       ORDER BY
+         ROUND(n.moyenne, 2) DESC NULLS LAST,
+         CASE
+           WHEN p.seances_total = 0 THEN NULL
+           ELSE ROUND(100.0 * p.seances_presentes / p.seances_total, 1)
+         END DESC NULLS LAST,
+         i.nom, i.prenom`, 
       [formationId]
     );
 

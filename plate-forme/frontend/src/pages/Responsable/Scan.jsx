@@ -10,6 +10,10 @@ export default function Scan() {
   const [showAllSeances, setShowAllSeances] = useState(false);
   const [scanMessage, setScanMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(true);
+  const [attendanceMode, setAttendanceMode] = useState('scan');
+  const [manualLearners, setManualLearners] = useState([]);
+  const [manualSelected, setManualSelected] = useState([]);
+  const [manualLoading, setManualLoading] = useState(false);
 
   // Ref pour bloquer les scans en boucle rapide (anti-rebond)
   const isProcessingRef = useRef(false);
@@ -100,6 +104,46 @@ export default function Scan() {
       scanner.clear().catch(error => console.error("Erreur arrêt scanner :", error));
     };
   }, [selectedSeance]);
+
+  useEffect(() => {
+    if (!selectedSeance) {
+      setManualLearners([]);
+      setManualSelected([]);
+      return;
+    }
+    const fetchLearners = async () => {
+      setManualLoading(true);
+      try {
+        const res = await API.get(`/presences/seances/${selectedSeance}/apprenants`);
+        const learners = Array.isArray(res.data) ? res.data : [];
+        setManualLearners(learners);
+        setManualSelected(learners.filter((learner) => learner.statut_presence === 'PRESENT').map((learner) => learner.id_apprenant));
+      } catch (err) {
+        setScanMessage({ type: 'error', text: err.response?.data?.error || 'Impossible de charger la liste des apprenants.' });
+      } finally {
+        setManualLoading(false);
+      }
+    };
+    fetchLearners();
+  }, [selectedSeance]);
+
+  const toggleManualLearner = (idApprenant) => {
+    setManualSelected((current) => current.includes(idApprenant)
+      ? current.filter((id) => id !== idApprenant)
+      : [...current, idApprenant]);
+  };
+
+  const saveManualAttendance = async () => {
+    try {
+      const res = await API.post('/presences/manuel', {
+        id_seance: Number(selectedSeance),
+        id_apprenants: manualSelected
+      });
+      setScanMessage({ type: 'success', text: res.data.message });
+    } catch (err) {
+      setScanMessage({ type: 'error', text: err.response?.data?.error || 'Impossible d’enregistrer les présences.' });
+    }
+  };
 
   const activeSeanceDetails = seances.find(s => String(s.id_seance) === String(selectedSeance));
   const displayList = showAllSeances ? seances : todaysSeances;
@@ -220,8 +264,34 @@ export default function Scan() {
           </div>
         )}
 
-        {/* Zone Scanner */}
+        {/* Mode d'émargement */}
+        {selectedSeance && (
+          <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-black/[0.04] p-1 dark:bg-white/[0.06]">
+            <button type="button" onClick={() => setAttendanceMode('scan')} className={`rounded-lg px-3 py-2 text-xs font-bold ${attendanceMode === 'scan' ? 'bg-orange-500 text-black' : 'text-black/60 dark:text-white/60'}`}>Scanner QR</button>
+            <button type="button" onClick={() => setAttendanceMode('manual')} className={`rounded-lg px-3 py-2 text-xs font-bold ${attendanceMode === 'manual' ? 'bg-orange-500 text-black' : 'text-black/60 dark:text-white/60'}`}>Présence manuelle</button>
+          </div>
+        )}
+
+        {/* Zone Scanner ou liste manuelle */}
         {selectedSeance ? (
+          attendanceMode === 'manual' ? (
+            <div className="space-y-3">
+              <div className="max-h-80 overflow-y-auto rounded-2xl border border-black/10 dark:border-white/10">
+                {manualLoading ? (
+                  <p className="p-5 text-center text-xs text-black/50 dark:text-white/50">Chargement de la liste...</p>
+                ) : manualLearners.length === 0 ? (
+                  <p className="p-5 text-center text-xs text-black/50 dark:text-white/50">Aucun apprenant accepté pour cette séance.</p>
+                ) : manualLearners.map((learner) => (
+                  <label key={learner.id_apprenant} className="flex cursor-pointer items-center gap-3 border-b border-black/10 px-4 py-3 last:border-b-0 dark:border-white/10">
+                    <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => toggleManualLearner(learner.id_apprenant)} className="h-4 w-4 accent-orange-500" />
+                    <span className="min-w-0 flex-1 text-sm font-semibold">{learner.prenom} {learner.nom}</span>
+                    <span className="truncate text-[11px] text-black/40 dark:text-white/40">{learner.email}</span>
+                  </label>
+                ))}
+              </div>
+              <button type="button" onClick={saveManualAttendance} disabled={manualLoading || manualLearners.length === 0} className="w-full rounded-xl bg-orange-500 py-3 text-xs font-bold text-black disabled:opacity-50">Enregistrer les présences cochées</button>
+            </div>
+          ) : (
           <div className="space-y-4">
             <div className="overflow-hidden rounded-2xl border-2 border-dashed border-orange-500/40 bg-black/5 p-2 dark:bg-white/5">
               <div id="reader" className="w-full overflow-hidden rounded-xl"></div>
@@ -254,6 +324,7 @@ export default function Scan() {
               </div>
             )}
           </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/15 bg-black/[0.02] py-12 text-center text-black/40 dark:border-white/15 dark:bg-white/[0.02] dark:text-white/40">
             <QrCode size={40} className="mb-2 stroke-1 text-black/30 dark:text-white/30" />
