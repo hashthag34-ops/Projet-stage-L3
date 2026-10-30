@@ -1,7 +1,9 @@
+// frontend/src/pages/Responsable/Scan.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { QrCode, Calendar, Clock, MapPin, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import API from '../../services/api';
+import '../css/ResponsableScan.css'; // Importation du CSS classique
 
 export default function Scan() {
   const [seances, setSeances] = useState([]);
@@ -149,18 +151,18 @@ export default function Scan() {
   const displayList = showAllSeances ? seances : todaysSeances;
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl bg-white px-4 py-8 text-black transition-colors duration-300 dark:bg-black dark:text-white sm:px-6">
+    <div className="fs-container">
       
-      {/* Masquer visuellement le bouton natif inutilisé de Html5Qrcode */}
+      {/* Styles d'injection pour le scanner Html5Qrcode natif */}
       <style>{`
         #reader button {
           background-color: #f97316 !important;
-          color: #000 !important;
-          font-weight: 700 !important;
+          color: #18181b !important;
+          font-weight: 800 !important;
           border: none !important;
-          border-radius: 0.75rem !important;
-          padding: 0.5rem 1rem !important;
-          margin-top: 0.5rem !important;
+          border-radius: 12px !important;
+          padding: 8px 16px !important;
+          margin-top: 8px !important;
           cursor: pointer !important;
         }
         #reader img[alt="Info icon"] { display: none !important; }
@@ -168,22 +170,22 @@ export default function Scan() {
       `}</style>
 
       {/* En-tête */}
-      <div className="mb-6 flex items-center gap-3 rounded-2xl border border-black/10 bg-black/[0.03] p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-        <div className="rounded-xl bg-orange-500 p-3 text-black shadow-lg shadow-orange-500/20 shrink-0">
-          <QrCode size={28} />
+      <div className="fs-header-card">
+        <div className="fs-header-icon-wrap">
+          <QrCode size={26} />
         </div>
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Émargement par QR Code</h1>
-          <p className="text-xs text-black/55 dark:text-white/55">Scannez le badge étudiant pour valider la présence</p>
+          <h1 className="fs-title">Émargement par QR Code</h1>
+          <p className="fs-subtitle">Scannez le badge étudiant pour valider la présence</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-zinc-950">
+      <div className="fs-main-panel">
         
         {/* Sélecteur de Séance */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
+        <div className="fs-select-group">
+          <div className="fs-select-header">
+            <label className="fs-label flex items-center gap-1.5">
               <Calendar size={14} className="text-orange-500" />
               Séance rattachée
             </label>
@@ -191,7 +193,7 @@ export default function Scan() {
               <button
                 type="button"
                 onClick={() => setShowAllSeances(!showAllSeances)}
-                className="text-[11px] font-semibold text-orange-600 hover:underline dark:text-orange-400"
+                className="fs-filter-toggle"
               >
                 {showAllSeances ? "Filtrer sur aujourd'hui" : "Voir toutes les séances"}
               </button>
@@ -199,7 +201,7 @@ export default function Scan() {
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-black/10 p-3 text-center text-xs text-black/40 dark:border-white/10 dark:text-white/40">
+            <div className="fs-loading-box">
               Chargement des séances...
             </div>
           ) : (
@@ -209,7 +211,7 @@ export default function Scan() {
                 setSelectedSeance(e.target.value);
                 setScanMessage({ type: '', text: '' });
               }}
-              className="w-full rounded-xl border border-black/15 bg-black/[0.02] p-3 text-sm font-semibold outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-white/20 dark:bg-white/[0.05] dark:text-white"
+              className="fs-select"
             >
               <option value="">-- Sélectionner une séance --</option>
               {displayList.map((s) => {
@@ -225,12 +227,12 @@ export default function Scan() {
 
           {/* Indication si aucune séance le jour même */}
           {!loading && todaysSeances.length === 0 && !showAllSeances && (
-            <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-400">
+            <div className="fs-warning-banner">
               <AlertCircle size={15} className="shrink-0" />
               <span>Aucune séance n'est programmée pour aujourd'hui.</span>
               <button
                 onClick={() => setShowAllSeances(true)}
-                className="ml-auto font-bold underline shrink-0"
+                className="fs-warning-action"
               >
                 Afficher tout
               </button>
@@ -240,22 +242,22 @@ export default function Scan() {
 
         {/* Détails de la séance sélectionnée */}
         {activeSeanceDetails && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-black/10 bg-black/[0.03] p-3.5 text-xs dark:border-white/10 dark:bg-white/[0.04]">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-orange-500/20 px-2 py-0.5 font-bold text-orange-700 dark:text-orange-400">
+          <div className="fs-details-banner">
+            <div className="fs-details-left">
+              <span className="fs-details-badge">
                 {activeSeanceDetails.type_seance || 'Séance'}
               </span>
-              <span className="font-bold text-black/80 dark:text-white/80 truncate max-w-[200px]">
+              <span className="fs-details-name" title={activeSeanceDetails.formation_titre || activeSeanceDetails.titre}>
                 {activeSeanceDetails.formation_titre || activeSeanceDetails.titre}
               </span>
             </div>
-            <div className="flex items-center gap-3 text-black/60 dark:text-white/60">
-              <div className="flex items-center gap-1">
+            <div className="fs-details-right">
+              <div className="fs-details-meta">
                 <Clock size={13} className="text-orange-500" />
                 <span>{activeSeanceDetails.heure_debut?.substring(0, 5)} - {activeSeanceDetails.heure_fin?.substring(0, 5)}</span>
               </div>
               {activeSeanceDetails.salle && (
-                <div className="flex items-center gap-1">
+                <div className="fs-details-meta">
                   <MapPin size={13} className="text-orange-500" />
                   <span>{activeSeanceDetails.salle}</span>
                 </div>
@@ -266,47 +268,43 @@ export default function Scan() {
 
         {/* Mode d'émargement */}
         {selectedSeance && (
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-black/[0.04] p-1 dark:bg-white/[0.06]">
-            <button type="button" onClick={() => setAttendanceMode('scan')} className={`rounded-lg px-3 py-2 text-xs font-bold ${attendanceMode === 'scan' ? 'bg-orange-500 text-black' : 'text-black/60 dark:text-white/60'}`}>Scanner QR</button>
-            <button type="button" onClick={() => setAttendanceMode('manual')} className={`rounded-lg px-3 py-2 text-xs font-bold ${attendanceMode === 'manual' ? 'bg-orange-500 text-black' : 'text-black/60 dark:text-white/60'}`}>Présence manuelle</button>
+          <div className="fs-mode-tabs">
+            <button type="button" onClick={() => setAttendanceMode('scan')} className={`fs-tab-btn ${attendanceMode === 'scan' ? 'active' : ''}`}>Scanner QR</button>
+            <button type="button" onClick={() => setAttendanceMode('manual')} className={`fs-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}>Présence manuelle</button>
           </div>
         )}
 
         {/* Zone Scanner ou liste manuelle */}
         {selectedSeance ? (
           attendanceMode === 'manual' ? (
-            <div className="space-y-3">
-              <div className="max-h-80 overflow-y-auto rounded-2xl border border-black/10 dark:border-white/10">
+            <div className="fs-manual-container">
+              <div className="fs-manual-scroll">
                 {manualLoading ? (
-                  <p className="p-5 text-center text-xs text-black/50 dark:text-white/50">Chargement de la liste...</p>
+                  <p className="fs-manual-loading">Chargement de la liste...</p>
                 ) : manualLearners.length === 0 ? (
-                  <p className="p-5 text-center text-xs text-black/50 dark:text-white/50">Aucun apprenant accepté pour cette séance.</p>
+                  <p className="fs-manual-loading">Aucun apprenant accepté pour cette séance.</p>
                 ) : manualLearners.map((learner) => (
-                  <label key={learner.id_apprenant} className="flex cursor-pointer items-center gap-3 border-b border-black/10 px-4 py-3 last:border-b-0 dark:border-white/10">
-                    <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => toggleManualLearner(learner.id_apprenant)} className="h-4 w-4 accent-orange-500" />
-                    <span className="min-w-0 flex-1 text-sm font-semibold">{learner.prenom} {learner.nom}</span>
-                    <span className="truncate text-[11px] text-black/40 dark:text-white/40">{learner.email}</span>
+                  <label key={learner.id_apprenant} className="fs-learner-row">
+                    <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => toggleManualLearner(learner.id_apprenant)} className="fs-checkbox" />
+                    <span className="fs-learner-name">{learner.prenom} {learner.nom}</span>
+                    <span className="fs-learner-mail">{learner.email}</span>
                   </label>
                 ))}
               </div>
-              <button type="button" onClick={saveManualAttendance} disabled={manualLoading || manualLearners.length === 0} className="w-full rounded-xl bg-orange-500 py-3 text-xs font-bold text-black disabled:opacity-50">Enregistrer les présences cochées</button>
+              <button type="button" onClick={saveManualAttendance} disabled={manualLoading || manualLearners.length === 0} className="fs-submit-btn">Enregistrer les présences cochées</button>
             </div>
           ) : (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-2xl border-2 border-dashed border-orange-500/40 bg-black/5 p-2 dark:bg-white/5">
-              <div id="reader" className="w-full overflow-hidden rounded-xl"></div>
+          <div className="fs-scanner-space">
+            <div className="fs-reader-box">
+              <div id="reader" className="w-full overflow-hidden"></div>
             </div>
 
             {/* Notification de Scan */}
             {scanMessage.text && (
               <div
-                className={`flex items-center justify-between rounded-xl border p-4 text-sm font-semibold transition-all ${
-                  scanMessage.type === 'success'
-                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                    : 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400'
-                }`}
+                className={`fs-scan-alert ${scanMessage.type === 'success' ? 'success' : 'error'}`}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="fs-alert-content">
                   {scanMessage.type === 'success' ? (
                     <CheckCircle2 size={20} className="shrink-0 text-emerald-500" />
                   ) : (
@@ -316,7 +314,7 @@ export default function Scan() {
                 </div>
                 <button
                   onClick={() => setScanMessage({ type: '', text: '' })}
-                  className="p-1 hover:opacity-75 transition"
+                  className="fs-alert-close"
                   title="Effacer le message"
                 >
                   <RefreshCw size={15} />
@@ -326,9 +324,9 @@ export default function Scan() {
           </div>
           )
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/15 bg-black/[0.02] py-12 text-center text-black/40 dark:border-white/15 dark:bg-white/[0.02] dark:text-white/40">
-            <QrCode size={40} className="mb-2 stroke-1 text-black/30 dark:text-white/30" />
-            <p className="text-sm font-medium">Sélectionnez une séance ci-dessus pour lancer la caméra</p>
+          <div className="fs-placeholder-state">
+            <QrCode size={40} className="mb-2 stroke-1 text-orange-500 opacity-60" />
+            <p className="fs-placeholder-text">Sélectionnez une séance ci-dessus pour lancer la caméra</p>
           </div>
         )}
       </div>

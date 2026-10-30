@@ -1,0 +1,480 @@
+/* ========================================================= */
+/* VARIABLES DE THÈMES (Blanc, Noir, Orange)                  */
+/* ========================================================= */
+.theme-light {
+  --student-bg: #f4f4f5;
+  --student-panel: #ffffff;
+  --student-text: #18181b;
+  --student-muted: #71717a;
+  --student-border: #e4e4e7;
+  --student-hover: #f9f9fb;
+  --student-card-bg: rgba(0, 0, 0, 0.02);
+  --orange-primary: #f97316;
+  --orange-bg-light: rgba(249, 115, 22, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark {
+  --student-bg: #09090b;
+  --student-panel: #121215;
+  --student-text: #f4f4f5;
+  --student-muted: #a1a1aa;
+  --student-border: #27272a;
+  --student-hover: #18181b;
+  --student-card-bg: rgba(255, 255, 255, 0.03);
+  --orange-primary: #f97316;
+  --orange-bg-light: rgba(249, 115, 22, 0.15);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Container principal responsive mobile */
+.student-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px 12px 48px 12px;
+  font-family: inherit;
+  color: var(--student-text);
+  background-color: var(--student-bg);
+  box-sizing: border-box;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .student-dashboard-container {
+    padding: 24px;
+    gap: 28px;
+  }
+}
+
+.student-loading {
+  padding: 48px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--student-muted);
+}
+
+/* Hero Banner */
+.student-hero-banner {
+  border-radius: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  background-color: var(--orange-bg-light);
+  padding: 20px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .student-hero-banner {
+    padding: 28px;
+    border-radius: 24px;
+  }
+}
+
+.student-hero-tag {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--orange-primary);
+}
+
+.student-hero-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--student-text);
+}
+
+@media (min-width: 640px) {
+  .student-hero-title {
+    font-size: 32px;
+  }
+}
+
+.student-hero-desc {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: var(--student-muted);
+  line-height: 1.4;
+}
+
+@media (min-width: 640px) {
+  .student-hero-desc {
+    font-size: 14px;
+  }
+}
+
+/* Grille KPI Mobile-First */
+.student-kpi-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .student-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .student-kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.student-kpi-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 20px;
+  border: 1px solid var(--student-border);
+  background-color: var(--student-panel);
+  padding: 18px;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+.student-kpi-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--student-muted);
+}
+
+.student-kpi-value {
+  margin: 6px 0 0 0;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--student-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.student-kpi-value.orange {
+  color: var(--orange-primary);
+}
+
+.student-kpi-value.subtitle {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange-primary);
+  background-color: var(--orange-bg-light);
+  padding: 10px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+/* Grille Principale (Formations + Prochaine Séance) */
+.student-main-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .student-main-grid {
+    grid-template-columns: 1.35fr 0.65fr;
+    gap: 24px;
+  }
+}
+
+.student-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--student-border);
+  background-color: var(--student-panel);
+  padding: 20px;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .student-panel {
+    padding: 24px;
+    border-radius: 24px;
+  }
+}
+
+.student-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--student-border);
+  padding-bottom: 12px;
+}
+
+.student-panel-tag {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--orange-primary);
+}
+
+.student-panel-title {
+  margin: 4px 0 0 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--student-text);
+}
+
+@media (min-width: 640px) {
+  .student-panel-title {
+    font-size: 20px;
+  }
+}
+
+.student-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange-primary);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.student-panel-link:hover {
+  opacity: 0.8;
+}
+
+.student-empty-text {
+  padding: 16px 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--student-muted);
+  margin: 0;
+}
+
+/* Liste des formations */
+.student-formations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-formation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--student-border);
+  background-color: var(--student-card-bg);
+  padding: 16px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.student-formation-item:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.student-formation-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-formation-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--student-text);
+}
+
+.student-formation-desc {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--student-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.student-formation-badge {
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  background-color: var(--orange-bg-light);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--orange-primary);
+}
+
+.student-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--student-muted);
+}
+
+.student-progress-track {
+  height: 8px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--student-border);
+}
+
+.student-progress-fill {
+  height: 100%;
+  background-color: var(--orange-primary);
+  transition: width 0.3s ease;
+}
+
+/* Prochaine Séance Card */
+.student-next-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  background-color: var(--orange-bg-light);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.student-session-badge {
+  align-self: flex-start;
+  border-radius: 8px;
+  background-color: var(--orange-primary);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.student-session-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--student-text);
+}
+
+.student-session-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--student-muted);
+}
+
+.student-session-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(249, 115, 22, 0.2);
+  padding-top: 12px;
+  font-size: 12px;
+  color: var(--student-text);
+}
+
+.student-session-meta p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-icon {
+  color: var(--orange-primary);
+  flex-shrink: 0;
+}
+
+/* Section Présence / Assiduité */
+.student-presence-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--student-border);
+  padding-bottom: 12px;
+}
+
+.student-presence-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange-primary);
+}
+
+.student-presence-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .student-presence-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.presence-box {
+  border-radius: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.presence-box.present {
+  background-color: var(--orange-bg-light);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.presence-box.late {
+  background-color: var(--student-card-bg);
+  border: 1px solid var(--student-border);
+}
+
+.presence-box.absent {
+  background-color: var(--student-text);
+  color: var(--student-bg);
+}
+
+.presence-box-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--student-muted);
+}
+
+.presence-box.absent .presence-box-label {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.presence-box-value {
+  margin: 6px 0 0 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.presence-box-value.orange {
+  color: var(--orange-primary);
+}

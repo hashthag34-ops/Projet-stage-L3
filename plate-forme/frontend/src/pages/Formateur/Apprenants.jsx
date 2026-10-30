@@ -1,5 +1,7 @@
+// frontend/src/pages/Formateur/Apprenants.jsx
 import { useEffect, useMemo, useState } from 'react';
 import API from '../../services/api';
+import '../css/Apprenants.css'; // Importation du CSS classique
 
 const formatRate = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`;
 const formatDate = (value) => value ? String(value).slice(0, 10).split('-').reverse().join('/') : '—';
@@ -16,25 +18,21 @@ const getAvatarSrc = (user) => {
 
 function UserAvatar({ user, size = "md" }) {
   const avatar = getAvatarSrc(user);
-  const sizeClasses = {
-    sm: 'h-8 w-8 text-xs',
-    md: 'h-11 w-11 text-sm',
-    lg: 'h-16 w-16 text-lg'
-  };
+  const sizeClass = `avatar-${size}`;
 
   if (avatar) {
     return (
       <img
         src={avatar}
         alt={`${user.prenom || ''} ${user.nom || ''}`}
-        className={`${sizeClasses[size]} rounded-full object-cover ring-2 ring-orange-500/20`}
+        className={`user-avatar object-cover ${sizeClass}`}
       />
     );
   }
 
   const initials = `${user?.prenom?.[0] || ''}${user?.nom?.[0] || ''}`.toUpperCase();
   return (
-    <div className={`flex items-center justify-center rounded-full bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200 ${sizeClasses[size]}`}>
+    <div className={`user-avatar-initials ${sizeClass}`}>
       {initials || 'U'}
     </div>
   );
@@ -135,76 +133,76 @@ export default function FormateurApprenants() {
   };
 
   return (
-    <div className="space-y-8 p-3 sm:p-6 text-slate-800 dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="apprenants-container">
       
       {/* En-tête style Datix */}
-      <div className="flex flex-col gap-4 bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+      <div className="apprenants-header-card">
+        <div className="apprenants-header-title-box">
+          <div className="apprenants-header-icon">
             <i className="bi bi-people text-lg"></i>
           </div>
           <div>
-            <h1 className="text-xl font-medium tracking-tight text-slate-900 dark:text-white">
+            <h1 className="apprenants-title">
               Users Management
             </h1>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">Consultez les apprenants et gérez les dossiers par formation.</p>
+            <p className="apprenants-subtitle">Consultez les apprenants et gérez les dossiers par formation.</p>
           </div>
         </div>
 
         {/* Recherche et Filtre */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-64">
-            <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <div className="apprenants-controls-box">
+          <div className="apprenants-search-wrapper">
+            <i className="bi bi-search search-icon"></i>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search Here..."
-              className="w-full rounded-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 py-2 pl-9 pr-4 text-xs text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500 transition"
+              className="apprenants-search-input"
             />
           </div>
 
-          <div className="relative">
+          <div className="apprenants-select-wrapper">
             <select
               value={formationFilter}
               onChange={(event) => setFormationFilter(event.target.value)}
-              className="appearance-none rounded-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 px-4 py-2 pr-8 text-xs text-slate-700 dark:text-zinc-300 outline-none focus:border-orange-500"
+              className="apprenants-select"
             >
               <option value="">Toutes les formations</option>
               {formations.map((formation) => (
                 <option key={formation.id} value={formation.id}>{formation.titre}</option>
               ))}
             </select>
-            <i className="bi bi-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+            <i className="bi bi-chevron-down select-chevron"></i>
           </div>
         </div>
       </div>
 
-      {/* LISTE DES APPRENANTS EN MODE CARTES (STYLE IMAGE) */}
-      <section className="space-y-6">
+      {/* LISTE DES APPRENANTS EN MODE CARTES */}
+      <section className="apprenants-section">
         {studentsError ? (
-          <p role="alert" className="rounded-2xl bg-orange-500/10 p-4 text-xs text-orange-600 dark:text-orange-400">{studentsError}</p>
+          <p role="alert" className="apprenants-error-alert">{studentsError}</p>
         ) : loading ? (
-          <p className="py-12 text-center text-xs text-slate-400">Chargement des apprenants...</p>
+          <p className="apprenants-loading-text">Chargement des apprenants...</p>
         ) : groups.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 p-12 text-center text-xs text-slate-400">
+          <div className="apprenants-empty-box">
             Aucun apprenant trouvé.
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="apprenants-groups-space">
             {groups.map((group) => (
-              <div key={group.id} className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2 dark:border-zinc-800">
-                  <div className="flex items-center gap-2">
+              <div key={group.id} className="apprenants-group-container">
+                <div className="apprenants-group-header">
+                  <div className="apprenants-group-title-row">
                     <i className="bi bi-book text-orange-500 text-sm"></i>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">{group.titre}</h3>
+                    <h3 className="apprenants-group-title">{group.titre}</h3>
                   </div>
-                  <span className="rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 text-[10px] text-slate-600 dark:text-zinc-400">
+                  <span className="apprenants-group-badge">
                     {group.students.length} membres
                   </span>
                 </div>
 
-                {/* GRILLE DE CARTES SEMBLABLE À L'IMAGE */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {/* GRILLE DE CARTES */}
+                <div className="apprenants-cards-grid">
                   {group.students.map((student) => {
                     const studentKey = `${student.id_apprenant}-${student.id_formation}`;
                     const isMenuOpen = activeMenu === studentKey;
@@ -212,33 +210,33 @@ export default function FormateurApprenants() {
                     return (
                       <div
                         key={studentKey}
-                        className="group relative flex flex-col justify-between rounded-3xl bg-white dark:bg-zinc-900 p-5 border border-slate-200/80 dark:border-zinc-800 shadow-sm hover:shadow-md transition"
+                        className="apprenant-card"
                       >
                         {/* Ligne du haut : Badge Actif et Menu Contextuel */}
-                        <div className="flex items-center justify-between">
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                        <div className="apprenant-card-top">
+                          <span className="apprenant-active-badge">
                             • Active
                           </span>
                           <div className="relative">
                             <button
                               onClick={() => setActiveMenu(isMenuOpen ? null : studentKey)}
-                              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                              className="apprenant-menu-btn"
                             >
                               <i className="bi bi-three-dots-vertical text-sm"></i>
                             </button>
 
-                            {/* Menu déroulant comme sur l'image */}
+                            {/* Menu déroulant */}
                             {isMenuOpen && (
-                              <div className="absolute right-0 top-8 z-20 w-36 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-1 shadow-lg">
+                              <div className="apprenant-dropdown-menu">
                                 <button
                                   onClick={() => openStudent(student)}
-                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition"
+                                  className="dropdown-item"
                                 >
                                   <i className="bi bi-eye text-xs"></i> View
                                 </button>
                                 <a
                                   href={`mailto:${student.email}`}
-                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900 transition"
+                                  className="dropdown-item"
                                 >
                                   <i className="bi bi-envelope text-xs"></i> Contact
                                 </a>
@@ -248,15 +246,15 @@ export default function FormateurApprenants() {
                         </div>
 
                         {/* Infos utilisateur */}
-                        <div className="my-4 flex items-center gap-3">
+                        <div className="apprenant-user-info">
                           <UserAvatar user={student} size="md" />
                           <div className="min-w-0 flex-1">
-                            <h4 className="truncate text-xs font-medium text-slate-900 dark:text-white">
+                            <h4 className="apprenant-name">
                               {student.prenom} {student.nom}
                             </h4>
                             <a
                               href={`mailto:${student.email}`}
-                              className="block truncate text-[11px] text-slate-400 hover:text-orange-500"
+                              className="apprenant-email"
                               title={student.email}
                             >
                               {student.email}
@@ -265,18 +263,16 @@ export default function FormateurApprenants() {
                         </div>
 
                         {/* Pied de carte */}
-                        <div className="border-t border-slate-100 dark:border-zinc-800 pt-3">
-                          <div className="flex items-center justify-between">
-                            <span className="truncate text-[10px] text-slate-400">
-                              {student.formation_titre}
-                            </span>
-                            <button
-                              onClick={() => openStudent(student)}
-                              className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
-                            >
-                              Details
-                            </button>
-                          </div>
+                        <div className="apprenant-card-footer">
+                          <span className="apprenant-formation-label">
+                            {student.formation_titre}
+                          </span>
+                          <button
+                            onClick={() => openStudent(student)}
+                            className="apprenant-details-link"
+                          >
+                            Details
+                          </button>
                         </div>
                       </div>
                     );
@@ -291,24 +287,24 @@ export default function FormateurApprenants() {
       {/* MODAL DE DÉTAILS DE L'APPRENANT ET SAISIE DE NOTE */}
       {selectedStudent && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm"
+          className="apprenants-modal-backdrop"
           onClick={() => setSelectedStudent(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-100"
+            className="apprenants-modal-card"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4">
-              <div className="flex items-center gap-3">
+            <div className="modal-header">
+              <div className="modal-user-title">
                 <UserAvatar user={selectedStudent} size="md" />
                 <div>
-                  <h3 className="text-sm font-medium text-slate-900 dark:text-white">
+                  <h3 className="modal-name">
                     {selectedStudent.prenom} {selectedStudent.nom}
                   </h3>
                   <a
                     href={`mailto:${selectedStudent.email}`}
-                    className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
+                    className="modal-mail"
                   >
                     {selectedStudent.email}
                   </a>
@@ -316,7 +312,7 @@ export default function FormateurApprenants() {
               </div>
               <button
                 onClick={() => setSelectedStudent(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                className="modal-close-btn"
               >
                 <i className="bi bi-x-lg text-sm"></i>
               </button>
@@ -324,22 +320,22 @@ export default function FormateurApprenants() {
 
             {/* Modal Body */}
             {detailsLoading ? (
-              <p className="py-10 text-center text-xs text-slate-400">Chargement du dossier...</p>
+              <p className="apprenants-loading-text">Chargement du dossier...</p>
             ) : detailsError ? (
-              <p className="my-4 rounded-xl bg-orange-500/10 p-3 text-xs text-orange-600">{detailsError}</p>
+              <p className="modal-error-alert">{detailsError}</p>
             ) : studentDetails && (
-              <div className="mt-4 space-y-5">
+              <div className="modal-body">
                 {/* Résumé Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-slate-50 dark:bg-zinc-950 p-3.5 border border-slate-200 dark:border-zinc-800">
-                    <span className="text-[10px] uppercase text-slate-400">Moyenne Générale</span>
-                    <p className="mt-1 text-base text-slate-900 dark:text-white">
+                <div className="modal-stats-grid">
+                  <div className="modal-stat-box">
+                    <span className="modal-stat-title">Moyenne Générale</span>
+                    <p className="modal-stat-value">
                       {studentDetails.average === null ? 'N/A' : `${Number(studentDetails.average).toFixed(2)} / 20`}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 dark:bg-zinc-950 p-3.5 border border-slate-200 dark:border-zinc-800">
-                    <span className="text-[10px] uppercase text-slate-400">Taux de Présence</span>
-                    <p className="mt-1 text-base text-orange-600 dark:text-orange-400">
+                  <div className="modal-stat-box">
+                    <span className="modal-stat-title">Taux de Présence</span>
+                    <p className="modal-stat-value orange">
                       {studentDetails.attendance.rate === null ? 'N/A' : formatRate(studentDetails.attendance.rate)}
                     </p>
                   </div>
@@ -347,20 +343,20 @@ export default function FormateurApprenants() {
 
                 {/* Liste des Notes */}
                 <div>
-                  <h4 className="mb-2 text-xs text-slate-900 dark:text-white">Historique des Évaluations</h4>
+                  <h4 className="modal-subtitle">Historique des Évaluations</h4>
                   {studentDetails.grades.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 p-4 text-center text-xs text-slate-400">
+                    <div className="modal-empty-grades">
                       Aucune note enregistrée pour le moment.
-                    </p>
+                    </div>
                   ) : (
-                    <div className="max-h-36 space-y-2 overflow-y-auto pr-1">
+                    <div className="modal-grades-scroll">
                       {studentDetails.grades.map((item) => (
-                        <div key={`${item.origine}-${item.id_note}`} className="flex items-center justify-between rounded-2xl bg-slate-50 dark:bg-zinc-950 p-3 border border-slate-200 dark:border-zinc-800">
+                        <div key={`${item.origine}-${item.id_note}`} className="modal-grade-item">
                           <div>
-                            <p className="text-xs text-slate-800 dark:text-zinc-200">{item.type_evaluation}</p>
-                            <p className="text-[10px] text-slate-400">{formatDate(item.date_evaluation)}</p>
+                            <p className="grade-type">{item.type_evaluation}</p>
+                            <p className="grade-date">{formatDate(item.date_evaluation)}</p>
                           </div>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                          <span className="grade-val">
                             {Number(item.note)} / 20
                           </span>
                         </div>
@@ -370,17 +366,17 @@ export default function FormateurApprenants() {
                 </div>
 
                 {/* Formulaire d'Ajout de Note */}
-                <form onSubmit={saveGrade} className="rounded-2xl bg-slate-50 dark:bg-zinc-950 p-4 border border-slate-200 dark:border-zinc-800">
-                  <h4 className="mb-3 flex items-center gap-1.5 text-xs text-slate-900 dark:text-white">
+                <form onSubmit={saveGrade} className="modal-form-box">
+                  <h4 className="modal-form-title">
                     <i className="bi bi-plus-circle text-orange-500"></i> Ajouter une Nouvelle Note
                   </h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="modal-form-grid">
                     <input
                       required
                       value={grade.type_evaluation}
                       onChange={(e) => setGrade({ ...grade, type_evaluation: e.target.value })}
                       placeholder="Type (ex: TP, Examen)"
-                      className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-xs text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500"
+                      className="apprenants-input"
                     />
                     <input
                       required
@@ -391,7 +387,7 @@ export default function FormateurApprenants() {
                       value={grade.note}
                       onChange={(e) => setGrade({ ...grade, note: e.target.value })}
                       placeholder="Note / 20"
-                      className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-xs text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500"
+                      className="apprenants-input"
                     />
                   </div>
                   <textarea
@@ -399,14 +395,14 @@ export default function FormateurApprenants() {
                     value={grade.commentaire}
                     onChange={(e) => setGrade({ ...grade, commentaire: e.target.value })}
                     placeholder="Commentaire facultatif..."
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-xs text-slate-800 dark:text-zinc-200 outline-none focus:border-orange-500 resize-none"
+                    className="apprenants-textarea mt-2"
                   />
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-[10px] text-emerald-600">{gradeMessage}</span>
+                  <div className="modal-form-footer">
+                    <span className="grade-success-msg">{gradeMessage}</span>
                     <button
                       disabled={savingGrade}
                       type="submit"
-                      className="rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-xs text-white shadow-sm transition disabled:opacity-50"
+                      className="apprenants-submit-btn"
                     >
                       {savingGrade ? 'Enregistrement...' : 'Enregistrer'}
                     </button>

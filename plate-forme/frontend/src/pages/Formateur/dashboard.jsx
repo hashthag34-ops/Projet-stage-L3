@@ -1,10 +1,9 @@
+// frontend/src/pages/Formateur/dashboard.jsx
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   AreaChart, 
   Area, 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   Tooltip, 
@@ -12,6 +11,7 @@ import {
   CartesianGrid 
 } from 'recharts';
 import API from '../../services/api';
+import '../css/FormateurDashboard.css'; // Importation du CSS classique
 
 export default function FormateurDashboard() {
   const [formations, setFormations] = useState([]);
@@ -76,24 +76,24 @@ export default function FormateurDashboard() {
   }, [apprenantStats]);
 
   return (
-    <div className="space-y-8 p-2 sm:p-4 text-slate-800 dark:text-zinc-100 transition-colors duration-300">
+    <div className="formateur-dashboard-container">
       
       {/* HEADER SECTION */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="formateur-header-box">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+          <div className="formateur-badge-overview">
             <i className="bi bi-stars"></i> Vue d'ensemble du formateur
           </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="formateur-title">
             Tableau de bord
           </h1>
         </div>
 
         {/* RACCOURCIS DE NAVIGATION DIRECTE */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="formateur-shortcuts-bar">
           <Link
             to="/Formateur/Apprenants"
-            className="flex items-center gap-2 rounded-2xl bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="shortcut-btn"
           >
             <i className="bi bi-people text-orange-500"></i>
             <span>Apprenants</span>
@@ -101,7 +101,7 @@ export default function FormateurDashboard() {
 
           <Link
             to="/Formateur/Planning"
-            className="flex items-center gap-2 rounded-2xl bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="shortcut-btn"
           >
             <i className="bi bi-calendar-event text-orange-500"></i>
             <span>Planning</span>
@@ -109,7 +109,7 @@ export default function FormateurDashboard() {
 
           <Link
             to="/Formateur/Forum"
-            className="flex items-center gap-2 rounded-2xl bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="shortcut-btn"
           >
             <i className="bi bi-chat-square-text text-orange-500"></i>
             <span>Forum</span>
@@ -117,7 +117,7 @@ export default function FormateurDashboard() {
 
           <Link
             to="/Formateur/Evaluations"
-            className="flex items-center gap-2 rounded-2xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-zinc-200"
+            className="shortcut-btn primary"
           >
             <i className="bi bi-clipboard-check text-orange-500"></i>
             <span>Évaluations</span>
@@ -126,95 +126,95 @@ export default function FormateurDashboard() {
       </div>
 
       {/* TOP METRICS CARDS */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="formateur-metrics-grid">
         
         {/* Card 1 : Taux de Réussite */}
-        <div className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Taux de Réussite</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+        <div className="formateur-metric-card">
+          <div className="metric-card-top">
+            <span className="metric-label">Taux de Réussite</span>
+            <div className="metric-icon-wrap">
               <i className="bi bi-award"></i>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{globalMetrics.avgReussite}%</span>
-            <span className="text-[11px] font-bold text-orange-500 flex items-center">
+          <div className="metric-value-row">
+            <span className="metric-value">{globalMetrics.avgReussite}%</span>
+            <span className="metric-trend">
               <i className="bi bi-trending-up me-0.5"></i> +2.4%
             </span>
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800">
-            <div className="h-full rounded-full bg-orange-500 transition-all duration-1000" style={{ width: `${Math.min(globalMetrics.avgReussite, 100)}%` }} />
+          <div className="metric-progress-track">
+            <div className="metric-progress-fill" style={{ width: `${Math.min(globalMetrics.avgReussite, 100)}%` }} />
           </div>
         </div>
 
         {/* Card 2 : Taux de Présence */}
-        <div className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Taux de Présence</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+        <div className="formateur-metric-card">
+          <div className="metric-card-top">
+            <span className="metric-label">Taux de Présence</span>
+            <div className="metric-icon-wrap">
               <i className="bi bi-check-circle"></i>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{globalMetrics.avgPresence}%</span>
-            <span className="text-[11px] font-bold text-orange-500 flex items-center">
+          <div className="metric-value-row">
+            <span className="metric-value">{globalMetrics.avgPresence}%</span>
+            <span className="metric-trend">
               <i className="bi bi-trending-up me-0.5"></i> +1.2%
             </span>
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800">
-            <div className="h-full rounded-full bg-orange-500 transition-all duration-1000" style={{ width: `${Math.min(globalMetrics.avgPresence, 100)}%` }} />
+          <div className="metric-progress-track">
+            <div className="metric-progress-fill" style={{ width: `${Math.min(globalMetrics.avgPresence, 100)}%` }} />
           </div>
         </div>
 
         {/* Card 3 : Évaluations Créées & Tentatives */}
-        <div className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Évaluations & Tests</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+        <div className="formateur-metric-card">
+          <div className="metric-card-top">
+            <span className="metric-label">Évaluations & Tests</span>
+            <div className="metric-icon-wrap">
               <i className="bi bi-clipboard-check"></i>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{globalMetrics.totalEvals}</span>
-            <span className="text-xs font-semibold text-slate-400">sujets ({globalMetrics.totalTentatives} tps)</span>
+          <div className="metric-value-row">
+            <span className="metric-value">{globalMetrics.totalEvals}</span>
+            <span className="metric-subtext">sujets ({globalMetrics.totalTentatives} tps)</span>
           </div>
-          <p className="mt-3 text-[10px] font-semibold text-orange-500">Suivi actif des compétences</p>
+          <p className="metric-footer-note">Suivi actif des compétences</p>
         </div>
 
         {/* Card 4 : Total Apprenants */}
-        <div className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition-all hover:shadow-md dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Apprenants Inscrits</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+        <div className="formateur-metric-card">
+          <div className="metric-card-top">
+            <span className="metric-label">Apprenants Inscrits</span>
+            <div className="metric-icon-wrap">
               <i className="bi bi-people"></i>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{globalMetrics.totalApprenants}</span>
-            <span className="text-xs font-semibold text-slate-400">élèves suivis</span>
+          <div className="metric-value-row">
+            <span className="metric-value">{globalMetrics.totalApprenants}</span>
+            <span className="metric-subtext">élèves suivis</span>
           </div>
-          <p className="mt-3 text-[10px] font-semibold text-orange-500">Répartis sur vos modules</p>
+          <p className="metric-footer-note">Répartis sur vos modules</p>
         </div>
 
       </div>
 
       {/* SECTION GRAPHIQUE + BANNÈRE */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="formateur-main-grid">
         
         {/* GRAPHIQUE */}
-        <div className="rounded-3xl bg-white p-6 shadow-sm dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80 lg:col-span-2">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="formateur-chart-panel">
+          <div className="chart-header-row">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Performances par Module</h2>
-              <p className="text-[11px] text-slate-400">Comparatif réussite et assiduité en temps réel</p>
+              <h2 className="chart-title">Performances par Module</h2>
+              <p className="chart-subtitle">Comparatif réussite et assiduité en temps réel</p>
             </div>
-            <div className="flex items-center gap-3 text-[11px] font-semibold">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-900 dark:bg-white"></span> Réussite</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-500"></span> Présence</span>
+            <div className="chart-legend-box">
+              <span className="legend-item"><span className="legend-dot success"></span> Réussite</span>
+              <span className="legend-item"><span className="legend-dot presence"></span> Présence</span>
             </div>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="chart-container-box">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -259,26 +259,26 @@ export default function FormateurDashboard() {
         </div>
 
         {/* BANNIÈRE LATÉRALE */}
-        <div className="relative flex flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 p-6 text-white shadow-lg border border-zinc-800">
+        <div className="formateur-banner-card">
           <div>
-            <div className="flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-orange-400">
+            <div className="banner-top-row">
+              <div className="banner-icon-wrap">
                 <i className="bi bi-stars"></i>
               </div>
-              <span className="rounded-full bg-orange-500/20 px-2.5 py-1 text-[10px] font-bold text-orange-300 backdrop-blur-md">
+              <span className="banner-badge">
                 Espace Formateur
               </span>
             </div>
-            <h3 className="mt-6 text-lg font-bold leading-tight">Module d'évaluation Pédagogique</h3>
-            <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
+            <h3 className="banner-heading">Module d'évaluation Pédagogique</h3>
+            <p className="banner-desc">
               Consultez les résultats de vos étudiants, attribuez des notes et publiez de nouvelles évaluations en toute simplicité.
             </p>
           </div>
 
-          <div className="mt-6 space-y-2">
+          <div className="banner-action-box">
             <Link
               to="/Formateur/Evaluations"
-              className="flex w-full items-center justify-center rounded-2xl bg-white/10 py-3 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/20"
+              className="banner-cta-btn"
             >
               Gérer les évaluations
             </Link>
@@ -288,46 +288,46 @@ export default function FormateurDashboard() {
       </div>
 
       {/* LISTE DES FORMATIONS ASSIGNÉES */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <section className="formateur-formations-section">
+        <div className="formations-section-header">
+          <div className="formations-title-row">
             <i className="bi bi-book text-orange-500"></i>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Formations qui vous sont assignées</h2>
+            <h2 className="formations-section-title">Formations qui vous sont assignées</h2>
           </div>
-          <span className="text-xs font-semibold text-slate-400">{formations.length} module(s)</span>
+          <span className="formations-count-badge">{formations.length} module(s)</span>
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-xs text-slate-400">Chargement des formations...</p>
+          <p className="formations-loading-text">Chargement des formations...</p>
         ) : formations.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-400 dark:border-zinc-800">
+          <div className="formations-empty-box">
             Aucune formation ne vous est assignée pour le moment.
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="formations-cards-grid">
             {formations.map((formation) => (
               <div 
                 key={formation.id_formation} 
-                className="flex flex-col justify-between rounded-3xl bg-white p-5 shadow-sm transition dark:bg-zinc-900/90 dark:border dark:border-zinc-800/80"
+                className="formation-card-item"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{formation.titre}</h3>
-                    <span className="rounded-full bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                  <div className="formation-card-top">
+                    <h3 className="formation-card-name">{formation.titre}</h3>
+                    <span className="formation-card-status">
                       {formation.statut || 'En cours'}
                     </span>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
+                  <p className="formation-card-desc">
                     {formation.description || 'Aucune description fournie.'}
                   </p>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs dark:border-zinc-800">
-                  <div className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300 font-semibold">
+                <div className="formation-card-footer">
+                  <div className="formation-learners-info">
                     <i className="bi bi-people text-orange-500"></i>
                     <span>{formation.apprenants_count || 0} apprenant(s)</span>
                   </div>
-                  <span className="text-[10px] font-medium text-slate-400">Lecture seule</span>
+                  <span className="formation-readonly-tag">Lecture seule</span>
                 </div>
               </div>
             ))}

@@ -49,16 +49,25 @@ exports.getPlanning = async (req, res) => {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     if (!formateurId) return res.status(403).json({ message: 'Profil formateur introuvable.' });
 
+    const { id_formation } = req.query;
+    if (id_formation && !await ensureAssignedFormation(formateurId, id_formation)) {
+      return res.status(403).json({ message: 'Formation non affectée à ce formateur.' });
+    }
+
     const { rows } = await db.query(
       `SELECT s.id_seance, s.id_formation, s.titre, s.description,
               s.date_seance, s.heure_debut, s.heure_fin, s.type_seance, s.salle,
-              f.titre AS formation_titre
+              f.titre AS formation_titre,
+              COUNT(p.id_presence)::INTEGER AS total_presences
        FROM seance s
        JOIN formation f ON f.id_formation = s.id_formation
        JOIN formation_formateur ff ON ff.id_formation = f.id_formation
+       LEFT JOIN presence p ON p.id_seance = s.id_seance
        WHERE ff.id_formateur = $1
+         AND ($2::INTEGER IS NULL OR s.id_formation = $2::INTEGER)
+       GROUP BY s.id_seance, f.id_formation, f.titre
        ORDER BY s.date_seance ASC, s.heure_debut ASC`,
-      [formateurId]
+      [formateurId, id_formation || null]
     );
     res.json(rows);
   } catch (error) {
@@ -178,12 +187,30 @@ exports.updateSeance = async (req, res) => {
 exports.deleteSeance = async (req, res) => {
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
-    const result = await db.query(
+    const ownedSeance = await db.query(
+      `SELECT s.id_seance, s.date_seance, COUNT(p.id_presence)::INTEGER AS total_presences
+       FROM seance s
+       JOIN formation_formateur ff ON ff.id_formation = s.id_formation
+       LEFT JOIN presence p ON p.id_seance = s.id_seance
+       WHERE s.id_seance = $1 AND ff.id_formateur = $2
+       GROUP BY s.id_seance, s.date_seance`,
+      [req.params.id_seance, formateurId]
+    );
+
+    if (!ownedSeance.rows.length) return res.status(404).json({ message: 'Séance introuvable.' });
+    const seance = ownedSeance.rows[0];
+    if (String(seance.date_seance).slice(0, 10) < new Date().toLocaleDateString('en-CA')) {
+      return res.status(409).json({ message: 'Une séance terminée ne peut pas être supprimée.' });
+    }
+    if (Number(seance.total_presences) > 0) {
+      return res.status(409).json({ message: 'Cette séance ne peut pas être supprimée car elle contient des données de présence.' });
+    }
+
+    await db.query(
       `DELETE FROM seance s USING formation_formateur ff
        WHERE s.id_seance = $1 AND ff.id_formation = s.id_formation AND ff.id_formateur = $2`,
       [req.params.id_seance, formateurId]
     );
-    if (!result.rowCount) return res.status(404).json({ message: 'Séance introuvable.' });
     res.json({ message: 'Séance supprimée avec succès.' });
   } catch (error) {
     console.error('Erreur suppression séance formateur :', error);

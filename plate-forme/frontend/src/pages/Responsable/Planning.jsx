@@ -165,7 +165,7 @@ export default function Planning() {
       setSelectedSeanceDetails(null);
       fetchSeances();
     } catch (err) {
-      alert("Erreur lors de la suppression.");
+      alert(err.response?.data?.message || "Erreur lors de la suppression.");
     }
   };
 
@@ -180,6 +180,9 @@ export default function Planning() {
   const selectedDateISO = formatDateLocal(currentDate);
 
   const currentDaySeances = seances.filter(s => s.date_seance && formatDateLocal(s.date_seance) === selectedDateISO);
+  const todayISO = formatDateLocal(new Date());
+  const canDeleteSeance = (seance) =>
+    formatDateLocal(seance.date_seance) >= todayISO && Number(seance.total_presences || 0) === 0;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 font-sans p-3 sm:p-6 transition-colors duration-300">
@@ -622,10 +625,12 @@ export default function Planning() {
 
             <button
               onClick={() => handleDelete(selectedSeanceDetails.id_seance)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition"
+              disabled={!canDeleteSeance(selectedSeanceDetails)}
+              title={!canDeleteSeance(selectedSeanceDetails) ? "Séance terminée ou contenant des présences" : "Supprimer cette séance"}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-rose-500/10"
             >
               <Trash2 size={15} />
-              Supprimer cette séance
+              {canDeleteSeance(selectedSeanceDetails) ? 'Supprimer cette séance' : 'Suppression non autorisée'}
             </button>
           </div>
         </div>

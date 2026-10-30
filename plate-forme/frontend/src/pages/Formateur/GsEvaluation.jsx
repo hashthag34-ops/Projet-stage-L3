@@ -1,11 +1,11 @@
+// frontend/src/pages/Formateur/GsEvaluation.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
 import API from '../../services/api';
-
-const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-transparent p-2.5 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-slate-800 dark:text-zinc-100';
+import '../css/FormateurEvaluations.css'; // Importation du CSS classique
 
 const toDateTimeLocal = (value) => {
   if (!value) return '';
@@ -172,45 +172,45 @@ export default function GsEvaluation() {
   }));
 
   return (
-    <div className="space-y-6 p-3 sm:p-6 text-slate-800 dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="fe-container">
       
       {/* En-tête */}
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-6 sm:flex-row sm:items-end">
+      <div className="fe-header">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Évaluations</p>
-          <h1 className="mt-2 text-2xl tracking-tight text-slate-900 dark:text-white">Gestion des évaluations</h1>
-          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">Créez les sujets, composez les questions et suivez les résultats par évaluation.</p>
+          <p className="fe-header-tag">Évaluations</p>
+          <h1 className="fe-header-title">Gestion des évaluations</h1>
+          <p className="fe-header-subtitle">Créez les sujets, composez les questions et suivez les résultats par évaluation.</p>
         </div>
         <button 
           onClick={() => setShowCreate(true)} 
-          className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-xs text-white transition shadow-sm"
+          className="fe-create-btn"
         >
           <i className="bi bi-plus-lg text-sm"></i> Nouvelle évaluation
         </button>
       </div>
 
       {message.text && (
-        <div className={`rounded-xl border p-3 text-xs ${message.type === 'error' ? 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300' : 'border-orange-500/30 bg-orange-500/10 text-orange-800 dark:text-orange-300'}`}>
+        <div className={`fe-alert-box ${message.type === 'error' ? 'error' : 'success'}`}>
           {message.text}
         </div>
       )}
 
       {/* PARTIE STATISTIQUE EN HAUT (AreaChart par Évaluation) */}
-      <section className="rounded-3xl bg-white dark:bg-zinc-900 p-5 border border-slate-200 dark:border-zinc-800 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+      <section className="fe-stats-card">
+        <div className="fe-stats-header">
+          <div className="fe-stats-title-row">
+            <div className="fe-stats-icon-wrap">
               <i className="bi bi-graph-up text-sm"></i>
             </div>
-            <h2 className="text-sm text-slate-900 dark:text-white">Taux de réussite par évaluation</h2>
+            <h2 className="fe-stats-title">Taux de réussite par évaluation</h2>
           </div>
-          <span className="text-[11px] text-slate-400">Moyenne globale des notes (%)</span>
+          <span className="fe-stats-subtitle">Moyenne globale des notes (%)</span>
         </div>
 
         {evaluationChartData.length === 0 ? (
-          <p className="py-8 text-center text-xs text-slate-400">Aucune donnée statistique disponible.</p>
+          <p className="fe-empty-stats">Aucune donnée statistique disponible.</p>
         ) : (
-          <div className="h-56 w-full">
+          <div className="fe-chart-box">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={evaluationChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -239,75 +239,75 @@ export default function GsEvaluation() {
         )}
       </section>
 
-      {/* LISTE DES ÉVALUATIONS EN BAS + SYSTÈME DÉROULANT (ACCORDÉON) POUR LES DÉTAILS */}
-      <section className="space-y-4">
-        <h2 className="text-sm text-slate-900 dark:text-white">Vos sujets d'évaluation</h2>
+      {/* LISTE DES ÉVALUATIONS + ACCORDÉON */}
+      <section className="fe-evaluations-section">
+        <h2 className="fe-section-heading">Vos sujets d'évaluation</h2>
         
         {evaluations.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 p-8 text-center text-xs text-slate-400">
+          <div className="fe-empty-evals">
             Aucune évaluation créée.
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="fe-evals-list">
             {evaluations.map((item) => {
               const isSelected = selectedId === item.id_evaluation_sujet;
 
               return (
                 <div 
                   key={item.id_evaluation_sujet} 
-                  className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden transition"
+                  className="fe-eval-card"
                 >
                   {/* En-tête de l'évaluation (Cliquable pour dérouler) */}
                   <button 
                     onClick={() => setSelectedId(isSelected ? null : item.id_evaluation_sujet)}
-                    className="w-full p-4 text-left flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition"
+                    className="fe-eval-accordion-btn"
                   >
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-900 dark:text-white">{item.titre}</span>
-                        <span className="rounded-full bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 text-[9px] uppercase text-slate-600 dark:text-zinc-300">
+                      <div className="fe-eval-title-row">
+                        <span className="fe-eval-name">{item.titre}</span>
+                        <span className="fe-eval-status-badge">
                           {item.statut}
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] text-slate-400">{item.formation_titre}</p>
+                      <p className="fe-eval-formation">{item.formation_titre}</p>
                       {item.statut === 'BROUILLON' && item.date_publication_utc && (
-                        <p className="mt-1 text-[10px] text-orange-600 dark:text-orange-400">
+                        <p className="fe-eval-pub-date">
                           Publication programmée : {new Date(item.date_publication_utc).toLocaleString()}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="hidden sm:flex gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
+                    <div className="fe-eval-right-info">
+                      <div className="fe-eval-meta-badges">
                         <span>{item.questions_count} question(s)</span>
                         <span>{item.total_points}/20 pts</span>
                         <span>{item.tentatives_count} tentative(s)</span>
                       </div>
-                      <i className={`bi bi-chevron-down text-xs transition-transform ${isSelected ? 'rotate-180 text-orange-500' : 'text-slate-400'}`}></i>
+                      <i className={`bi bi-chevron-down fe-chevron-icon ${isSelected ? 'rotated' : ''}`}></i>
                     </div>
                   </button>
 
-                  {/* CONTENU DÉROULANT (ACCORDÉON) DES DÉTAILS DE L'ÉVALUATION */}
+                  {/* CONTENU DÉROULANT DES DÉTAILS */}
                   {isSelected && detail && (
-                    <div className="border-t border-slate-100 dark:border-zinc-800 p-5 bg-slate-50/50 dark:bg-zinc-950/40 space-y-5 animate-fadeIn">
+                    <div className="fe-eval-details-box">
                       
-                      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                      <div className="fe-details-top-row">
                         <div>
-                          <p className="text-[11px] uppercase tracking-wider text-orange-600 dark:text-orange-400">{detail.formation_titre}</p>
-                          <h3 className="mt-1 text-lg text-slate-900 dark:text-white">{detail.titre}</h3>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{detail.description || 'Aucune description.'}</p>
+                          <p className="fe-details-tag">{detail.formation_titre}</p>
+                          <h3 className="fe-details-title">{detail.titre}</h3>
+                          <p className="fe-details-desc">{detail.description || 'Aucune description.'}</p>
                           {detail.statut === 'BROUILLON' && detail.date_publication_utc && (
-                            <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                            <p className="fe-eval-pub-date mt-2">
                               Publication programmée : {new Date(detail.date_publication_utc).toLocaleString()}
                             </p>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="fe-details-actions">
                           {detail.statut === 'BROUILLON' && (
                             <button
                               type="button"
                               onClick={openEdit}
-                              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                              className="fe-action-btn"
                             >
                               <i className="bi bi-pencil text-sm"></i> Modifier
                             </button>
@@ -315,7 +315,7 @@ export default function GsEvaluation() {
                           {detail.statut === 'BROUILLON' && (
                             <button 
                               onClick={publish} 
-                              className="flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3 py-2 text-xs text-white transition"
+                              className="fe-action-btn primary"
                             >
                               <i className="bi bi-check-circle text-sm"></i> Publier maintenant
                             </button>
@@ -323,7 +323,7 @@ export default function GsEvaluation() {
                           <button 
                             onClick={() => setShowQuestion(true)} 
                             disabled={detail.statut !== 'BROUILLON'} 
-                            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 py-2 text-xs disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                            className="fe-action-btn"
                           >
                             <i className="bi bi-plus-lg text-sm"></i> Question
                           </button>
@@ -331,43 +331,43 @@ export default function GsEvaluation() {
                       </div>
 
                       {detail.statut === 'BROUILLON' && (
-                        <form onSubmit={schedulePublication} className="flex flex-col gap-2 rounded-2xl bg-white dark:bg-zinc-900 p-4 border border-slate-200 dark:border-zinc-800 sm:flex-row sm:items-end">
-                          <label className="flex-1 text-xs text-slate-700 dark:text-zinc-300">
+                        <form onSubmit={schedulePublication} className="fe-schedule-form">
+                          <label className="fe-label-flex">
                             Date et heure de publication
-                            <input className={`${inputClass} mt-1`} type="datetime-local" value={publicationAt} onChange={(event) => setPublicationAt(event.target.value)} required />
+                            <input className="fe-input mt-1" type="datetime-local" value={publicationAt} onChange={(event) => setPublicationAt(event.target.value)} required />
                           </label>
-                          <button type="submit" className="rounded-xl border border-orange-500 px-4 py-2 text-xs text-orange-700 hover:bg-orange-500/10 dark:text-orange-300 transition">
+                          <button type="submit" className="fe-schedule-btn">
                             Programmer la publication
                           </button>
                         </form>
                       )}
 
                       {/* Liste des questions */}
-                      <div className="space-y-3">
-                        <h4 className="text-xs text-slate-900 dark:text-white">Questions composées</h4>
+                      <div className="fe-questions-section">
+                        <h4 className="fe-subheading">Questions composées</h4>
                         {detail.questions?.length === 0 ? (
-                          <p className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 p-5 text-center text-xs text-slate-400">
+                          <p className="fe-empty-questions">
                             Ajoutez des questions pour atteindre 20 points.
                           </p>
                         ) : (
                           detail.questions.map((item) => (
-                            <div key={item.id_question} className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-                              <div className="flex justify-between gap-3">
+                            <div key={item.id_question} className="fe-question-item">
+                              <div className="fe-question-header">
                                 <div>
-                                  <span className="text-[11px] text-orange-600 dark:text-orange-400">
+                                  <span className="fe-question-num">
                                     Question {item.numero_question} · {item.points} points
                                   </span>
-                                  <p className="mt-1 text-xs text-slate-800 dark:text-zinc-200">{item.enonce}</p>
+                                  <p className="fe-question-enonce">{item.enonce}</p>
                                 </div>
                                 {detail.statut === 'BROUILLON' && (
-                                  <button onClick={() => removeQuestion(item.id_question)} title="Supprimer" className="text-slate-400 hover:text-red-500 transition">
+                                  <button onClick={() => removeQuestion(item.id_question)} title="Supprimer" className="fe-delete-question-btn">
                                     <i className="bi bi-trash text-sm"></i>
                                   </button>
                                 )}
                               </div>
-                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              <div className="fe-choices-grid">
                                 {item.choix.map((choice) => (
-                                  <div key={choice.id_choix} className={`rounded-xl border px-3 py-2 text-xs ${choice.est_correct ? 'border-orange-500/50 bg-orange-500/10 text-orange-800 dark:text-orange-300' : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'}`}>
+                                  <div key={choice.id_choix} className={`fe-choice-pill ${choice.est_correct ? 'correct' : ''}`}>
                                     {choice.est_correct ? '✓ ' : ''}{choice.libelle}
                                   </div>
                                 ))}
@@ -378,26 +378,26 @@ export default function GsEvaluation() {
                       </div>
 
                       {/* Résultats associés */}
-                      <div className="border-t border-slate-200 dark:border-zinc-800 pt-4">
-                        <h4 className="mb-3 text-xs text-slate-900 dark:text-white">Résultats des apprenants</h4>
+                      <div className="fe-results-box">
+                        <h4 className="fe-subheading mb-3">Résultats des apprenants</h4>
                         {selectedResults.length === 0 ? (
-                          <p className="text-xs text-slate-400">Aucun résultat pour le moment.</p>
+                          <p className="fe-empty-results">Aucun résultat pour le moment.</p>
                         ) : (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
+                          <div className="fe-table-wrapper">
+                            <table className="fe-results-table">
                               <thead>
-                                <tr className="border-b border-slate-200 dark:border-zinc-800 text-slate-400">
-                                  <th className="p-2">Apprenant</th>
-                                  <th className="p-2">Note</th>
-                                  <th className="p-2">Statut</th>
+                                <tr>
+                                  <th>Apprenant</th>
+                                  <th>Note</th>
+                                  <th>Statut</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {selectedResults.map((result) => (
-                                  <tr key={result.id_tentative} className="border-b border-slate-100 dark:border-zinc-800/60">
-                                    <td className="p-2 text-slate-800 dark:text-zinc-200">{result.prenom} {result.nom}</td>
-                                    <td className="p-2 text-slate-900 dark:text-white">{result.note ?? '—'} / 20</td>
-                                    <td className="p-2 text-slate-500 dark:text-zinc-400">{result.statut}</td>
+                                  <tr key={result.id_tentative}>
+                                    <td>{result.prenom} {result.nom}</td>
+                                    <td>{result.note ?? '—'} / 20</td>
+                                    <td>{result.statut}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -416,51 +416,50 @@ export default function GsEvaluation() {
         )}
       </section>
 
-      {/* Modal Création de sujet avec Indicateur de Durée */}
+      {/* Modal Création de sujet */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <form onSubmit={createSubject} className="w-full max-w-lg space-y-4 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 shadow-2xl text-slate-800 dark:text-zinc-100">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg text-slate-900 dark:text-white">Nouvelle évaluation</h2>
-              <button type="button" onClick={() => setShowCreate(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <div className="fe-modal-backdrop" onClick={() => setShowCreate(false)}>
+          <form onSubmit={createSubject} onClick={(e) => e.stopPropagation()} className="fe-modal-card">
+            <div className="fe-modal-header">
+              <h2 className="fe-modal-title">Nouvelle évaluation</h2>
+              <button type="button" onClick={() => setShowCreate(false)} className="fe-modal-close">
                 <i className="bi bi-x-lg text-sm"></i>
               </button>
             </div>
 
-            <select className={inputClass} value={subject.id_formation} onChange={(event) => setSubject({ ...subject, id_formation: event.target.value })} required>
+            <select className="fe-input" value={subject.id_formation} onChange={(event) => setSubject({ ...subject, id_formation: event.target.value })} required>
               <option value="">Choisir une formation</option>
               {formations.map((formation) => (
                 <option key={formation.id_formation} value={formation.id_formation}>{formation.titre}</option>
               ))}
             </select>
 
-            <input className={inputClass} placeholder="Titre de l’évaluation" value={subject.titre} onChange={(event) => setSubject({ ...subject, titre: event.target.value })} required />
+            <input className="fe-input" placeholder="Titre de l’évaluation" value={subject.titre} onChange={(event) => setSubject({ ...subject, titre: event.target.value })} required />
             
-            <textarea className={`${inputClass} resize-none`} placeholder="Description" value={subject.description} onChange={(event) => setSubject({ ...subject, description: event.target.value })} rows="3" />
+            <textarea className="fe-input resize-none" placeholder="Description" value={subject.description} onChange={(event) => setSubject({ ...subject, description: event.target.value })} rows="3" />
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Indicateur de durée explicitement visible */}
+            <div className="fe-modal-grid-2">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Durée (Indicateur)</label>
+                <label className="fe-field-label">Durée (Indicateur)</label>
                 <div className="relative">
-                  <input className={inputClass} type="number" min="1" step="1" placeholder="Durée en minutes" value={subject.duree_minutes} onChange={(event) => setSubject({ ...subject, duree_minutes: event.target.value })} required />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">min</span>
+                  <input className="fe-input" type="number" min="1" step="1" placeholder="Durée en minutes" value={subject.duree_minutes} onChange={(event) => setSubject({ ...subject, duree_minutes: event.target.value })} required />
+                  <span className="fe-input-suffix">min</span>
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 text-xs self-end h-[42px]">
+              <label className="fe-checkbox-label">
                 <input type="checkbox" checked={subject.obligatoire} onChange={(event) => setSubject({ ...subject, obligatoire: event.target.checked })} /> Obligatoire
               </label>
             </div>
 
-            <label className="block text-xs text-slate-700 dark:text-zinc-300">
+            <label className="fe-field-label">
               Date et heure de fermeture
-              <input className={`${inputClass} mt-1`} type="datetime-local" value={subject.date_fermeture} onChange={(event) => setSubject({ ...subject, date_fermeture: event.target.value })} required />
+              <input className="fe-input mt-1" type="datetime-local" value={subject.date_fermeture} onChange={(event) => setSubject({ ...subject, date_fermeture: event.target.value })} required />
             </label>
 
-            <p className="text-[11px] text-slate-400">Après la création, ajoutez les questions puis publiez immédiatement ou programmez la date et l’heure.</p>
+            <p className="fe-modal-hint">Après la création, ajoutez les questions puis publiez immédiatement ou programmez la date et l’heure.</p>
 
-            <button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white transition shadow-sm">
+            <button className="fe-submit-btn">
               Créer le sujet
             </button>
           </form>
@@ -469,69 +468,69 @@ export default function GsEvaluation() {
 
       {/* Modal Modification du brouillon */}
       {editDraft && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <form onSubmit={updateSubject} className="w-full max-w-lg space-y-4 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg text-slate-900 dark:text-white">Modifier l’évaluation</h2>
-              <button type="button" onClick={() => setEditDraft(null)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <div className="fe-modal-backdrop" onClick={() => setEditDraft(null)}>
+          <form onSubmit={updateSubject} onClick={(e) => e.stopPropagation()} className="fe-modal-card">
+            <div className="fe-modal-header">
+              <h2 className="fe-modal-title">Modifier l’évaluation</h2>
+              <button type="button" onClick={() => setEditDraft(null)} className="fe-modal-close">
                 <i className="bi bi-x-lg text-sm"></i>
               </button>
             </div>
 
-            <input className={inputClass} placeholder="Titre de l’évaluation" value={editDraft.titre} onChange={(event) => setEditDraft({ ...editDraft, titre: event.target.value })} required />
-            <textarea className={`${inputClass} resize-none`} placeholder="Description" value={editDraft.description} onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })} rows="3" />
-            <div className="grid grid-cols-2 gap-3">
+            <input className="fe-input" placeholder="Titre de l’évaluation" value={editDraft.titre} onChange={(event) => setEditDraft({ ...editDraft, titre: event.target.value })} required />
+            <textarea className="fe-input resize-none" placeholder="Description" value={editDraft.description} onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })} rows="3" />
+            <div className="fe-modal-grid-2">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Durée</label>
-                <input className={inputClass} type="number" min="1" step="1" value={editDraft.duree_minutes} onChange={(event) => setEditDraft({ ...editDraft, duree_minutes: event.target.value })} required />
+                <label className="fe-field-label">Durée</label>
+                <input className="fe-input" type="number" min="1" step="1" value={editDraft.duree_minutes} onChange={(event) => setEditDraft({ ...editDraft, duree_minutes: event.target.value })} required />
               </div>
-              <label className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 text-xs self-end h-[42px]">
+              <label className="fe-checkbox-label">
                 <input type="checkbox" checked={editDraft.obligatoire} onChange={(event) => setEditDraft({ ...editDraft, obligatoire: event.target.checked })} /> Obligatoire
               </label>
             </div>
-            <label className="block text-xs text-slate-700 dark:text-zinc-300">
+            <label className="fe-field-label">
               Date et heure de fermeture
-              <input className={`${inputClass} mt-1`} type="datetime-local" value={editDraft.date_fermeture} onChange={(event) => setEditDraft({ ...editDraft, date_fermeture: event.target.value })} required />
+              <input className="fe-input mt-1" type="datetime-local" value={editDraft.date_fermeture} onChange={(event) => setEditDraft({ ...editDraft, date_fermeture: event.target.value })} required />
             </label>
-            <button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white transition">Enregistrer les modifications</button>
+            <button className="fe-submit-btn">Enregistrer les modifications</button>
           </form>
         </div>
       )}
 
       {/* Modal Ajout de Question */}
       {showQuestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <form onSubmit={addQuestion} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 shadow-2xl text-slate-800 dark:text-zinc-100">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg text-slate-900 dark:text-white">Ajouter une question</h2>
-              <button type="button" onClick={() => setShowQuestion(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <div className="fe-modal-backdrop" onClick={() => setShowQuestion(false)}>
+          <form onSubmit={addQuestion} onClick={(e) => e.stopPropagation()} className="fe-modal-card max-h-[90vh] overflow-y-auto">
+            <div className="fe-modal-header">
+              <h2 className="fe-modal-title">Ajouter une question</h2>
+              <button type="button" onClick={() => setShowQuestion(false)} className="fe-modal-close">
                 <i className="bi bi-x-lg text-sm"></i>
               </button>
             </div>
 
-            <textarea className={`${inputClass} resize-none`} placeholder="Énoncé de la question" value={question.enonce} onChange={(event) => setQuestion({ ...question, enonce: event.target.value })} rows="3" required />
+            <textarea className="fe-input resize-none" placeholder="Énoncé de la question" value={question.enonce} onChange={(event) => setQuestion({ ...question, enonce: event.target.value })} rows="3" required />
             
-            <input className={inputClass} type="number" min="0.01" max="20" step="0.01" placeholder="Points" value={question.points} onChange={(event) => setQuestion({ ...question, points: event.target.value })} required />
+            <input className="fe-input" type="number" min="0.01" max="20" step="0.01" placeholder="Points" value={question.points} onChange={(event) => setQuestion({ ...question, points: event.target.value })} required />
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs text-slate-900 dark:text-white">Choix de réponse</h3>
-                <button type="button" onClick={() => setQuestion({ ...question, choix: [...question.choix, { libelle: '', est_correct: false }] })} className="text-xs text-orange-600 dark:text-orange-400 hover:underline">
+                <h3 className="fe-subheading">Choix de réponse</h3>
+                <button type="button" onClick={() => setQuestion({ ...question, choix: [...question.choix, { libelle: '', est_correct: false }] })} className="fe-add-choice-link">
                   Ajouter un choix
                 </button>
               </div>
 
               {question.choix.map((choice, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input className={inputClass} placeholder={`Choix ${index + 1}`} value={choice.libelle} onChange={(event) => updateChoice(index, 'libelle', event.target.value)} required />
-                  <label className="flex shrink-0 items-center gap-1 text-xs text-slate-600 dark:text-zinc-300">
+                <div key={index} className="fe-choice-row">
+                  <input className="fe-input" placeholder={`Choix ${index + 1}`} value={choice.libelle} onChange={(event) => updateChoice(index, 'libelle', event.target.value)} required />
+                  <label className="fe-radio-label">
                     <input type="radio" name="correct-choice" checked={choice.est_correct} onChange={() => updateChoice(index, 'est_correct', true)} /> Correct
                   </label>
                 </div>
               ))}
             </div>
 
-            <button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-3 text-xs text-white transition shadow-sm">
+            <button className="fe-submit-btn">
               Ajouter la question
             </button>
           </form>

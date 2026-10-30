@@ -1,0 +1,306 @@
+/* ========================================================= */
+/* VARIABLES DE THÈMES (Blanc, Noir, Orange)                  */
+/* ========================================================= */
+.theme-light {
+  --hist-bg: #f4f4f5;
+  --hist-panel: #ffffff;
+  --hist-subbox: #f9f9fb;
+  --hist-text: #18181b;
+  --hist-muted: #71717a;
+  --hist-border: #e4e4e7;
+  --orange-primary: #f97316;
+  --orange-bg-light: rgba(249, 115, 22, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark {
+  --hist-bg: #09090b;
+  --hist-panel: #121215;
+  --hist-subbox: #18181b;
+  --hist-text: #f4f4f5;
+  --hist-muted: #a1a1aa;
+  --hist-border: #27272a;
+  --orange-primary: #f97316;
+  --orange-bg-light: rgba(249, 115, 22, 0.15);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Container principal responsive mobile */
+.history-container {
+  margin: 0 auto;
+  max-width: 960px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 12px 48px 12px;
+  font-family: inherit;
+  color: var(--hist-text);
+  background-color: var(--hist-bg);
+  box-sizing: border-box;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .history-container {
+    padding: 32px 24px;
+  }
+}
+
+/* En-tête */
+.history-header {
+  border-bottom: 1px solid var(--hist-border);
+  padding-bottom: 16px;
+}
+
+.history-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 640px) {
+  .history-title {
+    font-size: 28px;
+  }
+}
+
+.history-desc {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--hist-muted);
+}
+
+/* États de chargement et d'erreur */
+.history-state-box {
+  border-radius: 20px;
+  border: 1px solid var(--hist-border);
+  background-color: var(--hist-panel);
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--hist-muted);
+}
+
+.history-error-alert {
+  border-radius: 20px;
+  border: 1px solid rgba(225, 29, 72, 0.3);
+  background-color: rgba(225, 29, 72, 0.1);
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e11d48;
+}
+
+.history-empty-box {
+  border-radius: 24px;
+  border: 2px dashed var(--hist-border);
+  background-color: var(--hist-panel);
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon-svg {
+  margin: 0 auto 12px auto;
+  color: var(--orange-primary);
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.empty-subtitle {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--hist-muted);
+}
+
+/* Liste et Cartes de Formation */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-card {
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--hist-border);
+  background-color: var(--hist-panel);
+  box-shadow: 0 1px 3px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+.history-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--hist-border);
+  padding: 20px;
+}
+
+@media (min-width: 640px) {
+  .history-card-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.history-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-card-icon {
+  color: var(--orange-primary);
+  flex-shrink: 0;
+}
+
+.history-card-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--hist-text);
+}
+
+.history-card-dates {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--hist-muted);
+}
+
+.history-status-badge {
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  background-color: var(--orange-bg-light);
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange-primary);
+  align-self: flex-start;
+}
+
+.history-card-desc {
+  margin: 0;
+  padding: 16px 20px 0 20px;
+  font-size: 13px;
+  color: var(--hist-muted);
+  line-height: 1.4;
+}
+
+/* Grille interne à la carte */
+.history-grid {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .history-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.history-subbox {
+  border-radius: 16px;
+  background-color: var(--hist-subbox);
+  padding: 16px;
+  border: 1px solid var(--hist-border);
+  box-sizing: border-box;
+}
+
+.history-subbox.full-width {
+  grid-column: 1 / -1;
+}
+
+.history-subbox-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--hist-text);
+}
+
+.subbox-icon {
+  color: var(--orange-primary);
+  flex-shrink: 0;
+}
+
+.history-subbox-text {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: var(--hist-text);
+  line-height: 1.4;
+}
+
+.history-subbox-subtext {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: var(--hist-muted);
+}
+
+/* Liste des notes */
+.history-notes-list {
+  margin: 12px 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-note-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--hist-border);
+  padding-top: 12px;
+}
+
+.history-note-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (min-width: 640px) {
+  .history-note-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.note-type {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.note-origin {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: var(--hist-muted);
+}
+
+.note-comment {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--hist-muted);
+}
+
+.note-score {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--orange-primary);
+}

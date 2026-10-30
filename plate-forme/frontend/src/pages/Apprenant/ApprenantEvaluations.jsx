@@ -1,7 +1,9 @@
+// frontend/src/pages/Apprenant/ApprenantEvaluations.jsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, Play, RotateCcw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import API from '../../services/api';
 import { getRealtimeSocket } from '../../services/realtime';
+import '../css/ApprenantEvaluations.css'; // Importation du CSS classique
 
 const formatDuration = (minutes) => {
   if (!minutes) return 'Sans limite de durée';
@@ -215,62 +217,62 @@ export default function ApprenantEvaluations() {
     setError('');
   };
 
-  if (loading) return <p className="p-6 text-xs text-zinc-500 dark:text-zinc-400 font-sans">Chargement des évaluations...</p>;
+  if (loading) return <p className="eval-loading">Chargement des évaluations...</p>;
 
   const totalQuestions = detail?.questions?.length || 0;
   const currentQuestion = detail?.questions?.[currentQuestionIndex];
   const progressPercent = totalQuestions > 0 ? Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100) : 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 font-sans text-zinc-900 dark:text-zinc-100">
-      <header className="flex flex-col justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5 sm:flex-row sm:items-end">
+    <div className="eval-container">
+      <header className="eval-header">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500 dark:text-orange-400">Espace apprenant</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Mes évaluations</h1>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Passez les évaluations publiées pour vos formations.</p>
+          <p className="eval-header-tag">Espace apprenant</p>
+          <h1 className="eval-header-title">Mes évaluations</h1>
+          <p className="eval-header-desc">Passez les évaluations publiées pour vos formations.</p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
-          <ClipboardCheck size={16} className="text-orange-500" />
+        <div className="eval-badge-counter">
+          <ClipboardCheck size={16} className="counter-icon" />
           {evaluations.length} évaluation{evaluations.length === 1 ? '' : 's'} disponible{evaluations.length === 1 ? '' : 's'}
         </div>
       </header>
 
-      {error && <p role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs font-medium text-rose-700 dark:text-rose-300">{error}</p>}
+      {error && <p role="alert" className="eval-error-alert">{error}</p>}
 
       {detail ? (
-        <section className="mx-auto max-w-2xl">
-          <button type="button" onClick={leaveEvaluation} className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition">
+        <section className="eval-quiz-section">
+          <button type="button" onClick={leaveEvaluation} className="eval-back-btn">
             <ArrowLeft size={15} /> Retour aux évaluations
           </button>
           
           {result ? (
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <CheckCircle2 size={38} className="mx-auto text-orange-500" />
-              <p className="mt-3 text-[11px] font-bold uppercase tracking-widest text-zinc-400">Évaluation terminée</p>
-              <h2 className="mt-2 text-xl font-black">{detail.titre}</h2>
-              <p className="mt-3 text-3xl font-black">{result.note} <span className="text-sm font-normal text-zinc-400">/ 20</span></p>
-              {terminationReason === 'onglet' && <p role="alert" className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">La tentative a été terminée automatiquement car l’onglet a été quitté.</p>}
-              {terminationReason === 'temps' && <p className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
-              <button type="button" onClick={leaveEvaluation} className="mt-6 rounded-2xl bg-zinc-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900">Retour à la liste</button>
+            <div className="eval-result-card">
+              <CheckCircle2 size={38} className="result-check-icon" />
+              <p className="result-tag">Évaluation terminée</p>
+              <h2 className="result-title">{detail.titre}</h2>
+              <p className="result-score">{result.note} <span className="score-denominator">/ 20</span></p>
+              {terminationReason === 'onglet' && <p role="alert" className="result-warning">La tentative a été terminée automatiquement car l’onglet a été quitté.</p>}
+              {terminationReason === 'temps' && <p className="result-warning">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
+              <button type="button" onClick={leaveEvaluation} className="eval-btn-primary">Retour à la liste</button>
             </div>
           ) : (
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-6">
+            <div className="eval-quiz-card">
               
               {/* En-tête : Titre, Progression & Minuterie */}
-              <div className="flex flex-col gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="quiz-topbar">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500">{detail.formation_titre}</p>
-                  <h2 className="mt-1 text-lg font-black">{detail.titre}</h2>
-                  <p className="mt-1 text-[11px] font-semibold text-zinc-400">Total test: {progressPercent}% complété</p>
+                  <p className="quiz-formation-tag">{detail.formation_titre}</p>
+                  <h2 className="quiz-title">{detail.titre}</h2>
+                  <p className="quiz-progress-text">Total test: {progressPercent}% complété</p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="quiz-timer-wrapper">
                   {detail.duree_minutes && (
-                    <div className="flex items-center gap-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 px-3.5 py-2">
-                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-orange-500 text-orange-500">
-                        <span className="text-[10px] font-black">{timeLeft !== null ? formatSeconds(timeLeft) : formatDuration(detail.duree_minutes)}</span>
+                    <div className="timer-badge">
+                      <div className="timer-circle">
+                        <span className="timer-text">{timeLeft !== null ? formatSeconds(timeLeft) : formatDuration(detail.duree_minutes)}</span>
                       </div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                      <div className="timer-label">
                         Temps restant
                       </div>
                     </div>
@@ -279,32 +281,28 @@ export default function ApprenantEvaluations() {
               </div>
 
               {/* Avertissement anti-triche */}
-              <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+              <p className="quiz-anticheat-banner">
                 ⚠️ Quitter cet onglet terminera immédiatement l’évaluation.
               </p>
 
               {/* Question active */}
               {currentQuestion && (
-                <fieldset className="space-y-4">
-                  <legend className="w-full pb-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                <fieldset className="quiz-fieldset">
+                  <legend className="quiz-legend">
+                    <div className="quiz-meta-row">
                       <span>Question {currentQuestion.numero_question} sur {totalQuestions}</span>
-                      <span className="text-orange-500">{currentQuestion.points} point{currentQuestion.points > 1 ? 's' : ''}</span>
+                      <span className="quiz-points">{currentQuestion.points} point{currentQuestion.points > 1 ? 's' : ''}</span>
                     </div>
-                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 block">{currentQuestion.enonce}</span>
+                    <span className="quiz-question-text">{currentQuestion.enonce}</span>
                   </legend>
 
-                  <div className="space-y-2.5 pt-2">
+                  <div className="quiz-choices-list">
                     {currentQuestion.choix.map((choice) => {
                       const isSelected = Number(answers[currentQuestion.id_question]) === choice.id_choix;
                       return (
                         <label 
                           key={choice.id_choix} 
-                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3.5 text-xs font-medium transition ${
-                            isSelected 
-                              ? 'border-orange-500 bg-orange-500/10 text-zinc-900 dark:text-white font-bold' 
-                              : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300'
-                          }`}
+                          className={`quiz-choice-label ${isSelected ? 'selected' : ''}`}
                         >
                           <input
                             type="radio"
@@ -312,7 +310,7 @@ export default function ApprenantEvaluations() {
                             value={choice.id_choix}
                             checked={isSelected}
                             onChange={() => saveAnswer(currentQuestion.id_question, choice.id_choix)}
-                            className="accent-orange-500"
+                            className="quiz-radio"
                           />
                           <span>{choice.libelle}</span>
                         </label>
@@ -322,13 +320,13 @@ export default function ApprenantEvaluations() {
                 </fieldset>
               )}
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-5">
+              {/* Navigation mobile-friendly */}
+              <div className="quiz-navigation-footer">
                 <button
                   type="button"
                   disabled={currentQuestionIndex === 0}
                   onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition"
+                  className="eval-nav-btn secondary"
                 >
                   <ChevronLeft size={15} /> Précédent
                 </button>
@@ -337,7 +335,7 @@ export default function ApprenantEvaluations() {
                   <button
                     type="button"
                     onClick={() => setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
-                    className="inline-flex items-center gap-1.5 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-zinc-950 hover:bg-orange-400 transition shadow-xs"
+                    className="eval-nav-btn primary"
                   >
                     Suivant <ChevronRight size={15} />
                   </button>
@@ -346,7 +344,7 @@ export default function ApprenantEvaluations() {
                     type="button"
                     disabled={submitting}
                     onClick={() => submitAttempt(false)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-zinc-950 hover:bg-orange-400 disabled:opacity-50 transition shadow-xs"
+                    className="eval-nav-btn primary"
                   >
                     <Send size={14} /> {submitting ? 'Envoi...' : 'Terminer l’évaluation'}
                   </button>
@@ -357,44 +355,44 @@ export default function ApprenantEvaluations() {
           )}
         </section>
       ) : evaluations.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
-          <ClipboardCheck size={32} className="mx-auto text-orange-500" />
-          <h2 className="mt-3 text-sm font-bold">Aucune évaluation disponible</h2>
-          <p className="mt-1 text-xs text-zinc-400">Les évaluations publiées par vos formateurs apparaîtront ici.</p>
+        <div className="eval-empty-card">
+          <ClipboardCheck size={32} className="empty-icon" />
+          <h2 className="empty-title">Aucune évaluation disponible</h2>
+          <p className="empty-desc">Les évaluations publiées par vos formateurs apparaîtront ici.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="eval-grid">
           {evaluations.map((evaluation) => {
             const completed = evaluation.tentative_statut === 'TERMINEE';
             const inProgress = evaluation.tentative_statut === 'EN_COURS';
             return (
-              <article key={evaluation.id_evaluation_sujet} className="flex flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+              <article key={evaluation.id_evaluation_sujet} className="eval-card">
                 <div>
-                  <p className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400"><BookOpen size={13} className="text-orange-500" /> {evaluation.formation_titre}</p>
-                  <h2 className="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{evaluation.titre}</h2>
-                  {evaluation.description && <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">{evaluation.description}</p>}
-                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-400">
+                  <p className="eval-card-formation"><BookOpen size={13} className="formation-icon" /> {evaluation.formation_titre}</p>
+                  <h2 className="eval-card-title">{evaluation.titre}</h2>
+                  {evaluation.description && <p className="eval-card-desc">{evaluation.description}</p>}
+                  <div className="eval-card-meta">
                     <span>{evaluation.questions_count} questions</span>
                     <span>{evaluation.total_points}/20 pts</span>
                     <span>{formatDuration(evaluation.duree_minutes)}</span>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                <div className="eval-card-footer">
                   {completed ? (
                     <>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="status-badge-done">
                         <CheckCircle2 size={13} /> Terminé
                       </span>
-                      <span className="text-xs font-bold">Note : {evaluation.note}/20</span>
+                      <span className="eval-note-text">Note : {evaluation.note}/20</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-xs font-medium text-zinc-400">{evaluation.obligatoire ? 'Obligatoire' : 'Optionnel'}</span>
+                      <span className="eval-type-label">{evaluation.obligatoire ? 'Obligatoire' : 'Optionnel'}</span>
                       <button 
                         type="button" 
                         onClick={() => openEvaluation(evaluation)} 
                         disabled={openingId === evaluation.id_evaluation_sujet} 
-                        className="inline-flex items-center gap-1.5 rounded-2xl bg-orange-500 px-4 py-2 text-xs font-bold text-zinc-950 hover:bg-orange-400 disabled:opacity-50 transition shadow-xs"
+                        className="eval-start-btn"
                       >
                         {inProgress ? <RotateCcw size={14} /> : <Play size={14} />}
                         {openingId === evaluation.id_evaluation_sujet ? 'Ouverture...' : inProgress ? 'Reprendre' : 'Commencer'}

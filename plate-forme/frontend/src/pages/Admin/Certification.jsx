@@ -1,3 +1,4 @@
+// frontend/src/pages/Certification.jsx
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -19,6 +20,7 @@ import {
   YAxis
 } from 'recharts';
 import API from '../../services/api';
+import '../css/Certification.css'; // Importation du CSS classique
 
 const statusLabels = {
   CERTIFIE: 'Certifié',
@@ -45,15 +47,15 @@ const csvCell = (value) => {
   return `"${safeText.replace(/"/g, '""')}"`;
 };
 
-function SummaryCard({ label, value, icon: Icon, color }) {
+function SummaryCard({ label, value, icon: Icon, colorClass }) {
   return (
-    <article className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between gap-3">
+    <article className="cert-summary-card">
+      <div className="cert-card-content">
         <div>
-          <p className="text-sm font-semibold text-zinc-500">{label}</p>
-          <p className="mt-2 text-3xl font-black text-zinc-900 dark:text-white">{value}</p>
+          <p className="cert-card-label">{label}</p>
+          <p className="cert-card-value">{value}</p>
         </div>
-        <div className={`rounded-2xl p-3 ${color}`}><Icon size={22} /></div>
+        <div className={`cert-card-icon-wrapper ${colorClass}`}><Icon size={22} /></div>
       </div>
     </article>
   );
@@ -185,14 +187,14 @@ export default function AdminCertification() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-3xl bg-gradient-to-br from-orange-600 to-amber-500 p-6 text-white shadow-lg shadow-orange-900/10 sm:p-8">
-        <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-white/15 p-3"><Award size={28} /></div>
+    <main className="cert-container">
+      <header className="cert-hero-banner">
+        <div className="cert-hero-content">
+          <div className="cert-hero-icon"><Award size={28} /></div>
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-100">Espace administrateur</p>
-            <h1 className="mt-1 text-3xl font-black sm:text-4xl">Suivi des certifications</h1>
-            <p className="mt-2 max-w-2xl text-sm text-orange-50 sm:text-base">
+            <p className="cert-hero-tag">Espace administrateur</p>
+            <h1 className="cert-hero-title">Suivi des certifications</h1>
+            <p className="cert-hero-desc">
               Consultez les statistiques de certification et les listes par formation. Cette page est en lecture seule.
             </p>
           </div>
@@ -200,7 +202,7 @@ export default function AdminCertification() {
       </header>
 
       {error && (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+        <div role="alert" className="cert-error-banner">
           {error}
         </div>
       )}
@@ -209,70 +211,88 @@ export default function AdminCertification() {
         <section>
           <button
             onClick={() => { setSelectedFormation(null); setLearners([]); setError(''); }}
-            className="mb-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="cert-back-btn"
           >
             <ArrowLeft size={17} /> Retour aux statistiques
           </button>
-          <div className="mb-5 flex flex-col justify-between gap-4 rounded-3xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:p-6">
+          <div className="cert-detail-header-card">
             <div>
-              <p className="text-sm font-semibold text-orange-700 dark:text-orange-300">Clôturée le {formatDate(selectedFormation.date_fin)}</p>
-              <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">{selectedFormation.titre}</h2>
-              <p className="mt-2 text-sm text-zinc-500">{filteredLearners.length} apprenant{filteredLearners.length > 1 ? 's' : ''} affiché{filteredLearners.length > 1 ? 's' : ''}</p>
+              <p className="cert-detail-date">Clôturée le {formatDate(selectedFormation.date_fin)}</p>
+              <h2 className="cert-detail-title">{selectedFormation.titre}</h2>
+              <p className="cert-detail-count">{filteredLearners.length} apprenant{filteredLearners.length > 1 ? 's' : ''} affiché{filteredLearners.length > 1 ? 's' : ''}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={exportCsv} disabled={learnersLoading} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+            <div className="cert-action-buttons">
+              <button onClick={exportCsv} disabled={learnersLoading} className="cert-action-btn">
                 <FileSpreadsheet size={17} /> Exporter Excel
               </button>
-              <button onClick={printList} disabled={learnersLoading} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+              <button onClick={printList} disabled={learnersLoading} className="cert-action-btn">
                 <FileText size={17} /> Imprimer / PDF
               </button>
             </div>
           </div>
 
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-2">
+          <div className="cert-filters-bar">
+            <div className="cert-filter-pills">
               {[
                 ['TOUS', 'Tous'],
                 ['CERTIFIE', 'Certifiés'],
                 ['NON_CERTIFIE', 'Non certifiés'],
                 ['EN_ATTENTE', 'En attente']
               ].map(([value, label]) => (
-                <button key={value} onClick={() => setFilter(value)} className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${filter === value ? 'bg-orange-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'}`}>
+                <button
+                  key={value}
+                  onClick={() => setFilter(value)}
+                  className={`cert-pill ${filter === value ? 'active' : ''}`}
+                >
                   {label}
                 </button>
               ))}
             </div>
-            <label className="relative block w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={17} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher un apprenant" className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-orange-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <label className="cert-search-wrapper">
+              <Search className="cert-search-icon" size={17} />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Rechercher un apprenant"
+                className="cert-search-input"
+              />
             </label>
           </div>
 
           {learnersLoading ? (
-            <div className="rounded-3xl border border-zinc-200 bg-white p-10 text-center text-sm font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">Chargement des apprenants…</div>
+            <div className="cert-state-box">Chargement des apprenants…</div>
           ) : filteredLearners.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-10 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">Aucun apprenant ne correspond à ce filtre.</div>
+            <div className="cert-state-box dashed">Aucun apprenant ne correspond à ce filtre.</div>
           ) : (
-            <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-800">
-                    <tr><th className="px-5 py-4">Apprenant</th><th className="px-5 py-4">E-mail</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4">Date de certification</th></tr>
+            <div className="cert-table-card">
+              <div className="table-responsive">
+                <table className="cert-table">
+                  <thead>
+                    <tr>
+                      <th>Apprenant</th>
+                      <th>E-mail</th>
+                      <th>Statut</th>
+                      <th>Date de certification</th>
+                    </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  <tbody>
                     {filteredLearners.map((learner) => {
                       const status = learner.certification_statut;
-                      const statusStyle = status === 'CERTIFIE'
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                      const statusClass = status === 'CERTIFIE'
+                        ? 'status-certifie'
                         : status === 'NON_CERTIFIE'
-                          ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300';
+                          ? 'status-non-certifie'
+                          : 'status-en-attente';
                       return (
-                        <tr key={learner.id_apprenant} className="text-zinc-700 dark:text-zinc-200">
-                          <td className="px-5 py-4 font-bold">{learner.prenom} {learner.nom}</td>
-                          <td className="px-5 py-4 text-zinc-500">{learner.email}</td>
-                          <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold ${statusStyle}`}>{statusLabels[status] || status}</span></td>
-                          <td className="px-5 py-4 text-zinc-500">{formatDate(learner.date_certification)}</td>
+                        <tr key={learner.id_apprenant} className="cert-tr">
+                          <td className="cert-td font-bold">{learner.prenom} {learner.nom}</td>
+                          <td className="cert-td text-muted">{learner.email}</td>
+                          <td className="cert-td">
+                            <span className={`cert-status-badge ${statusClass}`}>
+                              {statusLabels[status] || status}
+                            </span>
+                          </td>
+                          <td className="cert-td text-muted">{formatDate(learner.date_certification)}</td>
                         </tr>
                       );
                     })}
@@ -284,22 +304,32 @@ export default function AdminCertification() {
         </section>
       ) : (
         <>
-          <section className="grid gap-4 sm:grid-cols-2">
-            <SummaryCard label="Apprenants des formations clôturées" value={totalLearners} icon={Users} color="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300" />
-            <SummaryCard label="Certifications accordées" value={totalCertified} icon={CheckCircle2} color="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300" />
+          <section className="cert-summary-grid">
+            <SummaryCard
+              label="Apprenants des formations clôturées"
+              value={totalLearners}
+              icon={Users}
+              colorClass="icon-blue"
+            />
+            <SummaryCard
+              label="Certifications accordées"
+              value={totalCertified}
+              icon={CheckCircle2}
+              colorClass="icon-emerald"
+            />
           </section>
 
-          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-            <div className="mb-5">
-              <h2 className="text-lg font-black text-zinc-900 dark:text-white">Certifications par formation</h2>
-              <p className="mt-1 text-sm text-zinc-500">Nombre d’apprenants inscrits comparé au nombre de certifiés.</p>
+          <section className="cert-chart-card">
+            <div className="cert-chart-header">
+              <h2 className="cert-section-title">Certifications par formation</h2>
+              <p className="cert-section-desc">Nombre d’apprenants inscrits comparé au nombre de certifiés.</p>
             </div>
             {loading ? (
-              <div className="flex h-72 items-center justify-center text-sm font-semibold text-zinc-500">Chargement des statistiques…</div>
+              <div className="cert-chart-state">Chargement des statistiques…</div>
             ) : chartData.length === 0 ? (
-              <div className="flex h-72 items-center justify-center text-sm text-zinc-500">Aucune formation terminée à afficher.</div>
+              <div className="cert-chart-state">Aucune formation terminée à afficher.</div>
             ) : (
-              <div className="h-80 w-full">
+              <div className="cert-chart-container">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 12, right: 16, left: -16, bottom: 8 }}>
                     <defs>
@@ -312,7 +342,7 @@ export default function AdminCertification() {
                         <stop offset="95%" stopColor="#64748b" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" opacity={0.4} />
                     <XAxis dataKey="titre_court" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={56} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                     <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.titre || ''} />
@@ -325,25 +355,38 @@ export default function AdminCertification() {
           </section>
 
           <section>
-            <div className="mb-4 flex items-center gap-2">
-              <h2 className="text-xl font-black text-zinc-900 dark:text-white">Détail par formation</h2>
-              <Download size={18} className="text-orange-600" />
+            <div className="cert-grid-title-wrapper">
+              <h2 className="cert-section-title large">Détail par formation</h2>
+              <Download size={18} className="text-orange" />
             </div>
             {loading ? null : formations.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">Aucune formation clôturée.</div>
+              <div className="cert-state-box dashed">Aucune formation clôturée.</div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="cert-formations-grid">
                 {formations.map((item) => (
-                  <button key={item.id_formation} onClick={() => openFormation(item)} className="rounded-3xl border border-zinc-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-orange-700">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300"><Award size={22} /></div>
-                      <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">Clôturée le {formatDate(item.date_fin)}</span>
+                  <button
+                    key={item.id_formation}
+                    onClick={() => openFormation(item)}
+                    className="cert-formation-card"
+                  >
+                    <div className="cert-formation-top">
+                      <div className="cert-formation-icon"><Award size={22} /></div>
+                      <span className="cert-formation-date-badge">Clôturée le {formatDate(item.date_fin)}</span>
                     </div>
-                    <h3 className="mt-4 text-lg font-black text-zinc-900 dark:text-white">{item.titre}</h3>
-                    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                      <div><p className="text-xs text-zinc-500">Apprenants</p><p className="mt-1 font-black text-zinc-900 dark:text-white">{item.apprenants_count}</p></div>
-                      <div><p className="text-xs text-zinc-500">Certifiés</p><p className="mt-1 font-black text-emerald-700 dark:text-emerald-300">{item.certifies_count}</p></div>
-                      <div><p className="text-xs text-zinc-500">Non certifiés</p><p className="mt-1 font-black text-zinc-700 dark:text-zinc-200">{item.non_certifies_count}</p></div>
+                    <h3 className="cert-formation-name">{item.titre}</h3>
+                    <div className="cert-formation-metrics">
+                      <div>
+                        <p className="metric-label">Apprenants</p>
+                        <p className="metric-val">{item.apprenants_count}</p>
+                      </div>
+                      <div>
+                        <p className="metric-label">Certifiés</p>
+                        <p className="metric-val emerald">{item.certifies_count}</p>
+                      </div>
+                      <div>
+                        <p className="metric-label">Non certifiés</p>
+                        <p className="metric-val">{item.non_certifies_count}</p>
+                      </div>
                     </div>
                   </button>
                 ))}

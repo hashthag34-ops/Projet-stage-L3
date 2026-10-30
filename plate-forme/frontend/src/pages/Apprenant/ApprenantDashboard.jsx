@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, CalendarDays, Clock3, MapPin, Star, Target, TrendingUp } from 'lucide-react';
 import API from '../../services/api';
+import '../css/ApprenantDashboard.css'; // Importation du CSS classique
 
 export default function ApprenantDashboard() {
   const [formations, setFormations] = useState([]);
+  const [seances, setSeances] = useState([]); // Ajouté pour éviter l'erreur de référence sur 'seances'
   const [nextSeance, setNextSeance] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,9 +20,11 @@ export default function ApprenantDashboard() {
         ]);
 
         setFormations(resFormations.data || []);
+        const fetchedSeances = resSeances.data || [];
+        setSeances(fetchedSeances);
         
         // Les séances sont triées par l'API, mais on vérifie la date pour ignorer l'historique.
-        const upcoming = (resSeances.data || []).find((seance) => {
+        const upcoming = fetchedSeances.find((seance) => {
           const sessionDate = new Date(`${seance.date_seance}T${seance.heure_fin || '23:59'}`);
           return sessionDate >= new Date();
         });
@@ -44,76 +48,92 @@ export default function ApprenantDashboard() {
   const attendanceRate = attendance.length ? Math.round(((presentCount + lateCount) / attendance.length) * 100) : 0;
   const completedSessions = seances.filter((seance) => seance.statut_presence).length;
 
-  if (loading) return <div className="p-6 text-black/50 dark:text-white/50">Chargement de ton espace...</div>;
+  if (loading) return <div className="student-loading">Chargement de ton espace...</div>;
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-6 shadow-sm dark:bg-orange-500/15">
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-400">Tableau de bord</p>
-        <h1 className="text-3xl font-black tracking-tight">Ravi de te revoir</h1>
-        <p className="mt-2 text-sm text-black/60 dark:text-white/60">Suis ton parcours, tes présences et tes prochaines échéances depuis un seul espace.</p>
-      </div>
+    <div className="student-dashboard-container">
+      
+      {/* En-tête de bienvenue */}
+      <header className="student-hero-banner">
+        <p className="student-hero-tag">Tableau de bord</p>
+        <h1 className="student-hero-title">Ravi de te revoir</h1>
+        <p className="student-hero-desc">Suis ton parcours, tes présences et tes prochaines échéances depuis un seul espace.</p>
+      </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+      {/* Cartes KPI Principales */}
+      <section className="student-kpi-grid">
+        <div className="student-kpi-card">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Formations suivies</p>
-            <p className="mt-1 text-3xl font-black">{formations.length}</p>
+            <p className="student-kpi-label">Formations suivies</p>
+            <p className="student-kpi-value">{formations.length}</p>
           </div>
-          <BookOpen className="text-orange-500" size={27} />
+          <div className="student-kpi-icon"><BookOpen size={24} /></div>
         </div>
-        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Séances réalisées</p>
-            <p className="mt-1 text-3xl font-black">{completedSessions}</p>
-          </div>
-          <CalendarDays className="text-orange-500" size={27} />
-        </div>
-        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Assiduité</p>
-            <p className="mt-1 text-3xl font-black text-orange-600 dark:text-orange-400">{attendanceRate} %</p>
-          </div>
-          <Target className="text-orange-500" size={27} />
-        </div>
-        <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-black/45 dark:text-white/45">Évaluations</p>
-            <p className="mt-1 text-sm font-bold">Aucune note</p>
-          </div>
-          <Star className="text-orange-500" size={27} />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <section className="space-y-5 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div className="flex items-center justify-between border-b border-black/10 pb-4 dark:border-white/10">
-            <div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Historique</p><h2 className="mt-1 text-xl font-black">Mes formations</h2></div>
-            <Link to="/apprenant/catalogue" className="flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-500 dark:text-orange-400">Catalogue <ArrowRight size={14} />
+        <div className="student-kpi-card">
+          <div>
+            <p className="student-kpi-label">Séances réalisées</p>
+            <p className="student-kpi-value">{completedSessions}</p>
+          </div>
+          <div className="student-kpi-icon"><CalendarDays size={24} /></div>
+        </div>
+
+        <div className="student-kpi-card">
+          <div>
+            <p className="student-kpi-label">Assiduité</p>
+            <p className="student-kpi-value orange">{attendanceRate} %</p>
+          </div>
+          <div className="student-kpi-icon"><Target size={24} /></div>
+        </div>
+
+        <div className="student-kpi-card">
+          <div>
+            <p className="student-kpi-label">Évaluations</p>
+            <p className="student-kpi-value subtitle">Aucune note</p>
+          </div>
+          <div className="student-kpi-icon"><Star size={24} /></div>
+        </div>
+      </section>
+
+      {/* Grille principale : Formations et Prochaine séance */}
+      <div className="student-main-grid">
+        
+        {/* Mes Formations */}
+        <section className="student-panel">
+          <div className="student-panel-header">
+            <div>
+              <p className="student-panel-tag">Historique</p>
+              <h2 className="student-panel-title">Mes formations</h2>
+            </div>
+            <Link to="/apprenant/catalogue" className="student-panel-link">
+              Catalogue <ArrowRight size={14} />
             </Link>
           </div>
 
           {formations.length === 0 ? (
-            <p className="py-4 text-sm italic text-black/50 dark:text-white/50">Tu n'es inscrit à aucune formation pour le moment.</p>
+            <p className="student-empty-text">Tu n'es inscrit à aucune formation pour le moment.</p>
           ) : (
-            <div className="space-y-4">
+            <div className="student-formations-list">
               {formations.map((f) => (
-                <div key={f.id_formation} className="space-y-3 rounded-xl border border-black/10 bg-black/[0.03] p-4 transition hover:border-orange-500/40 dark:border-white/10 dark:bg-white/[0.04]">
-                  <div className="flex items-start justify-between gap-3">
+                <div key={f.id_formation} className="student-formation-item">
+                  <div className="student-formation-top">
                     <div>
-                      <h3 className="font-bold">{f.titre}</h3>
-                      <p className="line-clamp-1 text-xs text-black/50 dark:text-white/50">{f.description}</p>
+                      <h3 className="student-formation-name">{f.titre}</h3>
+                      <p className="student-formation-desc">{f.description}</p>
                     </div>
-                    <span className="whitespace-nowrap rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">
+                    <span className="student-formation-badge">
                       {f.statut || 'EN_COURS'}
                     </span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-semibold text-black/50 dark:text-white/50"><span>Progression</span><span>{f.progression || 0}%</span></div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                  <div className="student-progress-wrapper">
+                    <div className="student-progress-labels">
+                      <span>Progression</span>
+                      <span>{f.progression || 0}%</span>
+                    </div>
+                    <div className="student-progress-track">
                       <div 
-                        className="h-full bg-orange-500 transition-all duration-300"
+                        className="student-progress-fill"
                         style={{ width: `${f.progression || 0}%` }}
                       ></div>
                     </div>
@@ -124,32 +144,65 @@ export default function ApprenantDashboard() {
           )}
         </section>
 
-        <section className="space-y-5 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div className="flex items-center justify-between border-b border-black/10 pb-4 dark:border-white/10"><div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">À venir</p><h2 className="mt-1 text-xl font-black">Prochaine séance</h2></div><Link to="/apprenant/planning" className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400">Tout voir <ArrowRight size={14} />
+        {/* Prochaine séance */}
+        <section className="student-panel">
+          <div className="student-panel-header">
+            <div>
+              <p className="student-panel-tag">À venir</p>
+              <h2 className="student-panel-title">Prochaine séance</h2>
+            </div>
+            <Link to="/apprenant/planning" className="student-panel-link">
+              Tout voir <ArrowRight size={14} />
             </Link>
           </div>
 
           {nextSeance ? (
-            <div className="space-y-4 rounded-xl border border-orange-500/25 bg-orange-500/[0.06] p-4 dark:bg-orange-500/10">
-              <span className="inline-block rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-black">
+            <div className="student-next-session-card">
+              <span className="student-session-badge">
                 {nextSeance.type_seance || 'Cours Pratique'}
               </span>
-              <h3 className="text-base font-black">{nextSeance.titre}</h3>
-              <p className="text-xs leading-5 text-black/60 dark:text-white/60">{nextSeance.description}</p>
+              <h3 className="student-session-title">{nextSeance.titre}</h3>
+              <p className="student-session-desc">{nextSeance.description}</p>
               
-              <div className="space-y-2 border-t border-orange-500/20 pt-3 text-xs text-black/70 dark:text-white/70">
-                <p className="flex items-center gap-2"><CalendarDays size={15} className="text-orange-500" /><strong>Date :</strong> {new Date(nextSeance.date_seance).toLocaleDateString('fr-FR')}</p>
-                <p className="flex items-center gap-2"><Clock3 size={15} className="text-orange-500" /><strong>Horaire :</strong> {nextSeance.heure_debut} - {nextSeance.heure_fin}</p>
-                <p className="flex items-center gap-2"><MapPin size={15} className="text-orange-500" /><strong>Lieu :</strong> {nextSeance.salle || 'En ligne'}</p>
+              <div className="student-session-meta">
+                <p><CalendarDays size={15} className="meta-icon" /><strong>Date :</strong> {new Date(nextSeance.date_seance).toLocaleDateString('fr-FR')}</p>
+                <p><Clock3 size={15} className="meta-icon" /><strong>Horaire :</strong> {nextSeance.heure_debut} - {nextSeance.heure_fin}</p>
+                <p><MapPin size={15} className="meta-icon" /><strong>Lieu :</strong> {nextSeance.salle || 'En ligne'}</p>
               </div>
             </div>
           ) : (
-            <p className="py-4 text-sm italic text-black/50 dark:text-white/50">Aucun cours prévu prochainement.</p>
+            <p className="student-empty-text">Aucun cours prévu prochainement.</p>
           )}
         </section>
 
       </div>
-      <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950"><div className="mb-5 flex items-center gap-2"><TrendingUp size={19} className="text-orange-500" /><div><p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Suivi présence</p><h2 className="mt-1 text-xl font-black">Ton assiduité</h2></div></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><div className="rounded-xl bg-orange-500/10 p-4"><p className="text-xs font-semibold text-black/50 dark:text-white/50">Présences</p><p className="mt-1 text-2xl font-black text-orange-600 dark:text-orange-400">{presentCount}</p></div><div className="rounded-xl bg-black/5 p-4 dark:bg-white/10"><p className="text-xs font-semibold text-black/50 dark:text-white/50">Retards</p><p className="mt-1 text-2xl font-black">{lateCount}</p></div><div className="rounded-xl bg-black p-4 text-white dark:bg-white dark:text-black"><p className="text-xs font-semibold opacity-60">Absences</p><p className="mt-1 text-2xl font-black">{absentCount}</p></div></div></section>
+
+      {/* Suivi présence */}
+      <section className="student-panel">
+        <div className="student-presence-header">
+          <div className="student-presence-icon"><TrendingUp size={19} /></div>
+          <div>
+            <p className="student-panel-tag">Suivi présence</p>
+            <h2 className="student-panel-title">Ton assiduité</h2>
+          </div>
+        </div>
+
+        <div className="student-presence-grid">
+          <div className="presence-box present">
+            <p className="presence-box-label">Présences</p>
+            <p className="presence-box-value orange">{presentCount}</p>
+          </div>
+          <div className="presence-box late">
+            <p className="presence-box-label">Retards</p>
+            <p className="presence-box-value">{lateCount}</p>
+          </div>
+          <div className="presence-box absent">
+            <p className="presence-box-label">Absences</p>
+            <p className="presence-box-value">{absentCount}</p>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
