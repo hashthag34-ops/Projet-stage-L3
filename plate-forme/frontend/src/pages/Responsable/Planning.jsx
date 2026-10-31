@@ -20,6 +20,7 @@ export default function Planning() {
   const [selectedSeanceDetails, setSelectedSeanceDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [editingSeanceId, setEditingSeanceId] = useState(null);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('Week');
@@ -148,9 +149,14 @@ export default function Planning() {
     };
 
     try {
-      await API.post('/responsable/seances', payload);
+      if (editingSeanceId) {
+        await API.patch(`/responsable/seances/${editingSeanceId}`, payload);
+      } else {
+        await API.post('/responsable/seances', payload);
+      }
       setShowModal(false);
       setFormData(initialFormState);
+      setEditingSeanceId(null);
       fetchSeances();
     } catch (err) {
       const msg = err.response?.data?.message || "Erreur lors de la création de la séance.";
@@ -172,7 +178,25 @@ export default function Planning() {
   const closeModal = () => {
     setShowModal(false);
     setErrorMsg('');
+    setEditingSeanceId(null);
     setFormData(initialFormState);
+  };
+
+  const handleEdit = (seance) => {
+    setEditingSeanceId(seance.id_seance);
+    setFormData({
+      id_formation: String(seance.id_formation),
+      titre: seance.titre || '',
+      description: seance.description || '',
+      date_seance: formatDateLocal(seance.date_seance),
+      heure_debut: seance.heure_debut?.substring(0, 5) || '08:00',
+      heure_fin: seance.heure_fin?.substring(0, 5) || '10:00',
+      type_seance: seance.type_seance || 'Cours Magistral',
+      salle: seance.salle || ''
+    });
+    setSelectedSeanceDetails(null);
+    setErrorMsg('');
+    setShowModal(true);
   };
 
   const hoursList = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
@@ -471,7 +495,7 @@ export default function Planning() {
             </button>
 
             <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3 text-base font-bold text-slate-900 dark:text-white">
-              Programmer une Séance
+              {editingSeanceId ? 'Modifier la séance' : 'Programmer une Séance'}
             </h2>
 
             {errorMsg && (
@@ -574,10 +598,16 @@ export default function Planning() {
               </div>
 
               <button
+                onClick={() => handleEdit(selectedSeanceDetails)}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-500/30 bg-orange-500/10 py-2.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition"
+              >
+                Modifier cette séance
+              </button>
+              <button
                 type="submit"
                 className="w-full bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold py-3 rounded-2xl shadow-xs transition mt-2 text-xs"
               >
-                Valider la Séance
+                {editingSeanceId ? 'Enregistrer les modifications' : 'Valider la Séance'}
               </button>
             </form>
           </div>

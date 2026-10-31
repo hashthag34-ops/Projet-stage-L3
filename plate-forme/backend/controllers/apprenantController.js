@@ -173,6 +173,23 @@ exports.getMesForums = async (req, res) => {
 
 exports.getMesEvaluations = async (req, res) => {
   try {
+    await db.query(
+      `INSERT INTO evaluation_tentative
+       (id_evaluation_sujet, id_apprenant, date_debut, date_fin, note, statut)
+       SELECT es.id_evaluation_sujet, a.id_apprenant, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'TERMINEE'
+       FROM evaluation_sujet es
+       JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
+       JOIN apprenant a ON a.id_candidat = i.id_candidat
+       WHERE a.id_utilisateur = $1
+         AND es.statut = 'PUBLIEE'
+         AND es.date_fermeture <= CURRENT_TIMESTAMP
+         AND NOT EXISTS (
+           SELECT 1 FROM evaluation_tentative et
+           WHERE et.id_evaluation_sujet = es.id_evaluation_sujet
+             AND et.id_apprenant = a.id_apprenant
+         )`,
+      [req.user.id_utilisateur]
+    );
     const { rows } = await db.query(
       `SELECT es.id_evaluation_sujet, es.id_formation, es.titre, es.description,
               es.duree_minutes, es.obligatoire, es.total_points, es.date_publication,
@@ -184,7 +201,6 @@ exports.getMesEvaluations = async (req, res) => {
        FROM apprenant a
        JOIN inscription i ON i.id_candidat = a.id_candidat AND i.statut = 'ACCEPTEE'
        JOIN evaluation_sujet es ON es.id_formation = i.id_formation AND es.statut = 'PUBLIEE'
-         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
        JOIN formation f ON f.id_formation = es.id_formation
        LEFT JOIN LATERAL (
          SELECT et.id_tentative, et.statut, et.note, et.date_debut, et.date_fin

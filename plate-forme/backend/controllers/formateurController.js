@@ -683,6 +683,24 @@ exports.deleteQuestion = async (req, res) => {
 exports.getResults = async (req, res) => {
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
+    await db.query(
+      `INSERT INTO evaluation_tentative
+       (id_evaluation_sujet, id_apprenant, date_debut, date_fin, note, statut)
+       SELECT es.id_evaluation_sujet, a.id_apprenant, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'TERMINEE'
+       FROM evaluation_sujet es
+       JOIN formation f ON f.id_formation = es.id_formation
+       JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
+       JOIN apprenant a ON a.id_candidat = i.id_candidat
+       WHERE es.id_formateur = $1
+         AND es.statut = 'PUBLIEE'
+         AND es.date_fermeture <= CURRENT_TIMESTAMP
+         AND NOT EXISTS (
+           SELECT 1 FROM evaluation_tentative et
+           WHERE et.id_evaluation_sujet = es.id_evaluation_sujet
+             AND et.id_apprenant = a.id_apprenant
+         )`,
+      [formateurId]
+    );
     const { rows } = await db.query(
       `SELECT et.id_tentative, et.id_evaluation_sujet, et.id_apprenant,
               et.note, et.statut, et.date_debut, et.date_fin,
@@ -702,6 +720,39 @@ exports.getResults = async (req, res) => {
   } catch (error) {
     console.error('Erreur résultats évaluations :', error);
     res.status(500).json({ message: 'Erreur lors du chargement des résultats.' });
+  }
+};
+
+exports.deleteEvaluation = async (req, res) => {
+  try {
+    const formateurId = await getFormateurId(req.user.id_utilisateur);
+    const owned = await db.query(
+      `SELECT id_evaluation_sujet FROM evaluation_sujet
+       WHERE id_evaluation_sujet = $1 AND id_formateur = $2`,
+      [req.params.id, formateurId]
+    );
+    if (!owned.rows[0]) return res.status(404).json({ message: 'Évaluation introuvable.' });
+    await db.query('BEGIN');
+    await db.query(
+      `DELETE FROM evaluation WHERE id_evaluation_sujet = $1`,
+      [req.params.id]
+    );
+    const result = await db.query(
+      `DELETE FROM evaluation_sujet
+       WHERE id_evaluation_sujet = $1 AND id_formateur = $2
+       RETURNING id_evaluation_sujet`,
+      [req.params.id, formateurId]
+    );
+    if (!result.rows[0]) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ message: 'Évaluation introuvable.' });
+    }
+    await db.query('COMMIT');
+    res.json({ message: 'Évaluation et ses données supprimées avec succès.' });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Erreur suppression évaluation :', error);
+    res.status(500).json({ message: 'Impossible de supprimer cette évaluation.' });
   }
 };
 

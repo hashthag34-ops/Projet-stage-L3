@@ -63,8 +63,9 @@ exports.createSeance = async (req, res) => {
     const { date_debut, date_fin } = formationRes.rows[0];
     const dateSeanceObj = new Date(date_seance);
 
-    if ( new Date(date_debut) <= dateSeanceObj || dateSeanceObj <= new Date(date_fin)) {
-    } else {
+    const dateLocaleSeance = new Date(`${date_seance}T00:00:00`);
+    if (dateLocaleSeance < new Date(`${String(date_debut).slice(0, 10)}T00:00:00`)
+      || dateLocaleSeance > new Date(`${String(date_fin).slice(0, 10)}T23:59:59.999`)) {
       return res.status(400).json({
         message: `La date doit être comprise entre le ${new Date(date_debut).toLocaleDateString('fr-FR')} et le ${new Date(date_fin).toLocaleDateString('fr-FR')}.`
       });
@@ -103,6 +104,69 @@ exports.createSeance = async (req, res) => {
   } catch (error) {
     console.error("Erreur création séance :", error);
     res.status(500).json({ message: "Erreur serveur lors de la création." });
+  }
+};
+
+exports.updateSeance = async (req, res) => {
+  const { id_seance } = req.params;
+  const { id_formation, titre, description, date_seance, heure_debut, heure_fin, type_seance, salle } = req.body;
+
+  if (!date_seance || !heure_debut || !heure_fin || heure_debut >= heure_fin) {
+    return res.status(400).json({ message: "La date et des horaires validés sont obligatoires." });
+  }
+
+  try {
+    const seanceResult = await db.query(
+      `SELECT id_seance, id_formation FROM seance WHERE id_seance = $1`,
+      [id_seance]
+    );
+    if (!seanceResult.rows[0]) {
+      return res.status(404).json({ message: "Séance introuvable." });
+    }
+
+    const targetFormationId = id_formation || seanceResult.rows[0].id_formation;
+    const formationResult = await db.query(
+      `SELECT date_debut, date_fin FROM formation WHERE id_formation = $1`,
+      [targetFormationId]
+    );
+    if (!formationResult.rows[0]) return res.status(404).json({ message: "Formation introuvable." });
+
+    const formation = formationResult.rows[0];
+    const dateLocaleSeance = new Date(`${date_seance}T00:00:00`);
+    const dateDebut = new Date(`${String(formation.date_debut).slice(0, 10)}T00:00:00`);
+    const dateFin = new Date(`${String(formation.date_fin).slice(0, 10)}T23:59:59.999`);
+    if (dateLocaleSeance < dateDebut || dateLocaleSeance > dateFin) {
+      return res.status(400).json({
+        message: `La date doit être comprise entre le ${dateDebut.toLocaleDateString('fr-FR')} et le ${dateFin.toLocaleDateString('fr-FR')}.`
+      });
+    }
+
+    if (salle?.trim()) {
+      const overlap = await db.query(
+        `SELECT id_seance FROM seance
+         WHERE id_seance <> $1 AND date_seance = $2
+           AND LOWER(salle) = LOWER($3)
+           AND heure_debut < $4 AND heure_fin > $5`,
+        [id_seance, date_seance, salle.trim(), heure_fin, heure_debut]
+      );
+      if (overlap.rows[0]) {
+        return res.status(409).json({ message: `La salle "${salle}" est déjà occupée sur ce créneau.` });
+      }
+    }
+
+    const result = await db.query(
+      `UPDATE seance
+       SET id_formation = $1, titre = $2, description = $3, date_seance = $4,
+           heure_debut = $5, heure_fin = $6, type_seance = $7, salle = $8
+       WHERE id_seance = $9
+       RETURNING *`,
+      [targetFormationId, titre, description || null, date_seance, heure_debut, heure_fin,
+       type_seance || 'Cours Magistral', salle?.trim() || null, id_seance]
+    );
+    res.json({ message: "Séance modifiée avec succès !", seance: result.rows[0] });
+  } catch (error) {
+    console.error("Erreur modification séance responsable :", error);
+    res.status(500).json({ message: "Erreur serveur lors de la modification de la séance." });
   }
 };
 

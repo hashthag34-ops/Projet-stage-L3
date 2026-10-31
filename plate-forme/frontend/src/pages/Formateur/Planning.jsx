@@ -11,6 +11,7 @@ export default function FormateurPlanning() {
   const [selectedSeanceDetails, setSelectedSeanceDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [editingSeanceId, setEditingSeanceId] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   
   // Vue Semaine/Mois sur Desktop
@@ -139,9 +140,14 @@ export default function FormateurPlanning() {
     };
 
     try {
-      await API.post('/formateur/planning', payload);
+      if (editingSeanceId) {
+        await API.patch(`/formateur/planning/${editingSeanceId}`, payload);
+      } else {
+        await API.post('/formateur/planning', payload);
+      }
       setShowModal(false);
       setFormData(initialFormState);
+      setEditingSeanceId(null);
       fetchSeances();
     } catch (err) {
       const msg = err.response?.data?.message || "Erreur lors de la création de la séance.";
@@ -163,7 +169,25 @@ export default function FormateurPlanning() {
   const closeModal = () => {
     setShowModal(false);
     setErrorMsg('');
+    setEditingSeanceId(null);
     setFormData(initialFormState);
+  };
+
+  const handleEdit = (seance) => {
+    setEditingSeanceId(seance.id_seance);
+    setFormData({
+      id_formation: String(seance.id_formation),
+      titre: seance.titre || '',
+      description: seance.description || '',
+      date_seance: formatDateLocal(seance.date_seance),
+      heure_debut: seance.heure_debut?.substring(0, 5) || '08:00',
+      heure_fin: seance.heure_fin?.substring(0, 5) || '10:00',
+      type_seance: seance.type_seance || 'Cours Magistral',
+      salle: seance.salle || ''
+    });
+    setSelectedSeanceDetails(null);
+    setErrorMsg('');
+    setShowModal(true);
   };
 
   const hoursList = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
@@ -449,7 +473,7 @@ export default function FormateurPlanning() {
             </button>
 
             <h2 className="fp-modal-heading">
-              Programmer une Séance
+              {editingSeanceId ? 'Modifier la séance' : 'Programmer une Séance'}
             </h2>
 
             {errorMsg && (
@@ -552,10 +576,16 @@ export default function FormateurPlanning() {
               </div>
 
               <button
+                onClick={() => handleEdit(selectedSeanceDetails)}
+                className="fp-edit-btn"
+              >
+                Modifier cette séance
+              </button>
+              <button
                 type="submit"
                 className="fp-submit-btn"
               >
-                Valider la Séance
+                {editingSeanceId ? 'Enregistrer les modifications' : 'Valider la Séance'}
               </button>
             </form>
           </div>

@@ -118,7 +118,6 @@ exports.requestForgotPasswordCode = async (req, res) => {
       `SELECT id_utilisateur, email
        FROM utilisateur
        WHERE LOWER(email) = LOWER($1)
-         AND mot_de_passe IS NOT NULL
          AND statut_compte = 'ACTIF'
          AND COALESCE(email_verifie, TRUE) = TRUE`,
       [email]

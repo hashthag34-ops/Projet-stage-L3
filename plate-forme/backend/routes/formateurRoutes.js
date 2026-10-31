@@ -28,6 +28,7 @@ router.get('/evaluations/:id', formateurController.getEvaluation);
 router.post('/evaluations/:id/questions', formateurController.addQuestion);
 router.patch('/evaluations/:id/statut', formateurController.updateEvaluationStatus);
 router.patch('/evaluations/:id', formateurController.updateEvaluation);
+router.delete('/evaluations/:id', formateurController.deleteEvaluation);
 router.delete('/evaluations/:id/questions/:questionId', formateurController.deleteQuestion);
 
 module.exports = router;

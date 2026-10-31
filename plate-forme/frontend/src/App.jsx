@@ -8,7 +8,6 @@ import MainLayout from './components/MainLayout';
 // Pages Visiteurs / Commun
 import Catalogue from './pages/Catalogue';
 import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
 import Profil from './pages/Profil';
 import Postuler from './pages/Postuler';
 import SetupAccount from './pages/SetupAccount';
@@ -49,7 +48,7 @@ export default function App() {
           <Route path="/" element={<Catalogue />} />
           <Route path="/catalogue" element={<Catalogue />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+          <Route path="/mot-de-passe-oublie" element={<Navigate to="/login?mode=forgot" replace />} />
           <Route path="/postuler/:id_formation" element={<Postuler />} />
           <Route path="/setup-account" element={<SetupAccount />} />
           <Route path="/profil" element={<Profil />} />

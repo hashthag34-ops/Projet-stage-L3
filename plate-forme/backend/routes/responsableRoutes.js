@@ -17,6 +17,7 @@ router.get('/formations', formationController.getAllFormations);
 // --- SÉANCES / PLANNING ---
 router.get('/seances', seanceController.getSeances);
 router.post('/seances', seanceController.createSeance);
+router.patch('/seances/:id_seance', seanceController.updateSeance);
 router.delete('/seances/:id_seance', seanceController.deleteSeance);
 
 

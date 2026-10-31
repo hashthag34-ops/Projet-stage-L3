@@ -45,6 +45,7 @@ const sendAcceptanceEmail = async (candidate, frontendBaseUrl) => {
           </a>
         </p>
         <p style="font-size: 12px; color: #666;">Ce lien est personnel, valable pendant 24 heures et ne pourra être utilisé qu’une seule fois.</p>
+        <p style="font-size: 12px; color: #666;">Si le lien expire, vous pourrez toujours terminer la configuration dans l’onglet « Mot de passe oublié » en saisissant votre adresse e-mail.</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
         <h3>Votre Badge d'accès :</h3>
         <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>
@@ -73,6 +74,7 @@ const sendAcceptanceEmail = async (candidate, frontendBaseUrl) => {
             Configurer mon compte
           </a>
         </p>
+        <p style="font-size: 12px; color: #666;">Ce lien est valable pendant 24 heures. S’il expire, finalisez votre configuration depuis l’onglet « Mot de passe oublié » avec votre adresse e-mail.</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
         <h3>Votre Badge d'accès :</h3>
         <p>Voici votre QR Code personnel à conserver. Il sera scanné pour valider votre présence en cours.</p>

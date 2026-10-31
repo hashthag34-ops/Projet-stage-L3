@@ -155,6 +155,19 @@ export default function GsEvaluation() {
     }
   };
 
+  const deleteEvaluation = async () => {
+    if (!window.confirm('Supprimer définitivement cette évaluation et toutes ses tentatives, réponses et notes ?')) return;
+    try {
+      await API.delete(`/formateur/evaluations/${selectedId}`);
+      setSelectedId(null);
+      setDetail(null);
+      await load();
+      setMessage({ type: 'success', text: 'Évaluation et données associées supprimées.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Suppression impossible.' });
+    }
+  };
+
   const removeQuestion = async (questionId) => { 
     try { 
       await API.delete(`/formateur/evaluations/${selectedId}/questions/${questionId}`); 
@@ -312,6 +325,13 @@ export default function GsEvaluation() {
                               <i className="bi bi-pencil text-sm"></i> Modifier
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={deleteEvaluation}
+                            className="fe-action-btn"
+                          >
+                            <i className="bi bi-trash text-sm"></i> Supprimer
+                          </button>
                           {detail.statut === 'BROUILLON' && (
                             <button 
                               onClick={publish} 

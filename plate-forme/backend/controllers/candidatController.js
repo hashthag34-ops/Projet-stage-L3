@@ -121,6 +121,11 @@ exports.postuler = async (req, res) => {
     }
 
     // 3. Créer l'inscription
+    const historyRes = await db.query(
+      'SELECT EXISTS (SELECT 1 FROM inscription WHERE id_candidat = $1) AS deja_suivi',
+      [id_candidat]
+    );
+    const hasAlreadyFollowedFormation = historyRes.rows[0]?.deja_suivi === true;
     const newInscription = await db.query(
       `INSERT INTO inscription (
         id_candidat, id_formation, motivation, objectif, projet_apres_formation, 
@@ -128,7 +133,7 @@ exports.postuler = async (req, res) => {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         id_candidat, id_formation, motivation, objectif, projet_apres_formation, 
-        source_information, a_deja_suivi_formation || false, formation_precedente, retour_suggestion, conditions_acceptees
+        source_information, a_deja_suivi_formation || hasAlreadyFollowedFormation, formation_precedente, retour_suggestion, conditions_acceptees
       ]
     );
 

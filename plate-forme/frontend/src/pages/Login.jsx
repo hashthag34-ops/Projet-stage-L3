@@ -1,7 +1,8 @@
 // frontend/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import API from '../services/api';
+import ForgotPassword from './ForgotPassword';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('mode') === 'forgot' ? 'forgot' : 'login';
   const resetMessage = location.state?.passwordResetMessage;
 
   useEffect(() => {
@@ -65,22 +68,28 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Onglets (Sign In / Mot de passe oublié) */}
+        {/* Onglets (Connexion / Mot de passe oublié) */}
         <div className="flex bg-slate-100 dark:bg-zinc-950 p-1 rounded-2xl mb-6 border border-slate-200/50 dark:border-zinc-800">
           <button 
             type="button" 
-            className="flex-1 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-zinc-900 rounded-xl shadow-sm transition"
-          >
-            Se connecter
-          </button>
-          <Link 
-            to="/mot-de-passe-oublie" 
-            className="flex-1 py-2 text-xs text-center text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 transition"
-          >
-            Mot de passe oublié
-          </Link>
+          onClick={() => navigate('/login', { replace: true })}
+          className={`flex-1 py-2 text-xs rounded-xl transition ${activeTab === 'login' ? 'text-slate-900 dark:text-white bg-white dark:bg-zinc-900 shadow-sm' : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+        >
+          Se connecter
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/login?mode=forgot', { replace: true })}
+          className={`flex-1 py-2 text-xs rounded-xl transition ${activeTab === 'forgot' ? 'text-slate-900 dark:text-white bg-white dark:bg-zinc-900 shadow-sm' : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+        >
+          Mot de passe oublié
+        </button>
         </div>
 
+        {activeTab === 'forgot' ? (
+        <ForgotPassword embedded />
+        ) : (
+        <>
         {resetMessage && (
           <div role="status" className="mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400">
             {resetMessage}
@@ -164,6 +173,8 @@ export default function Login() {
             )}
           </button>
         </form>
+          </>
+        )}
 
         {/* Lien vers le catalogue en bas du bouton */}
         <div className="mt-6 text-center text-xs text-slate-400 dark:text-zinc-500">

@@ -102,7 +102,7 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: "Veuillez vérifier votre adresse e-mail en configurant votre compte depuis le lien reçu." });
     }
     if (!user.mot_de_passe) {
-      return res.status(403).json({ message: "Votre compte n’est pas encore configuré. Finalisez sa configuration depuis le lien reçu par e-mail." });
+      return res.status(403).json({ message: "Votre compte n’est pas encore configuré. Utilisez l’onglet « Mot de passe oublié » pour terminer sa configuration." });
     }
 
     // Vérifier le statut du compte
