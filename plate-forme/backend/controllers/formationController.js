@@ -70,7 +70,7 @@ exports.getCatalogue = async (req, res) => {
 
       LEFT JOIN inscription i ON f.id_formation = i.id_formation
 
-      WHERE f.statut NOT IN ('BROUILLON', 'ARCHIVEE')
+      WHERE f.statut <> 'BROUILLON'
 
       GROUP BY 
         f.id_formation, 
@@ -105,7 +105,7 @@ exports.getFormationAvis = async (req, res) => {
        JOIN apprenant a ON a.id_apprenant = fa.id_apprenant
        JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
        JOIN formation f ON f.id_formation = fa.id_formation
-       WHERE fa.id_formation = $1 AND f.statut = 'TERMINEE'
+       WHERE fa.id_formation = $1 AND f.statut IN ('TERMINEE', 'ARCHIVEE')
        ORDER BY fa.date_creation DESC`,
       [req.params.id]
     );
@@ -113,6 +113,31 @@ exports.getFormationAvis = async (req, res) => {
   } catch (error) {
     console.error('Erreur chargement avis formation :', error);
     res.status(500).json({ message: 'Impossible de charger les avis.' });
+  }
+};
+
+exports.getAvisEnAttente = async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT DISTINCT f.id_formation, f.titre, f.description, f.statut
+       FROM formation f
+       JOIN inscription i ON i.id_formation = f.id_formation AND i.statut = 'ACCEPTEE'
+       JOIN apprenant a ON a.id_candidat = i.id_candidat
+       WHERE a.id_utilisateur = $1
+         AND f.statut IN ('TERMINEE', 'ARCHIVEE')
+         AND NOT EXISTS (
+           SELECT 1
+           FROM formation_avis fa
+           WHERE fa.id_formation = f.id_formation
+             AND fa.id_apprenant = a.id_apprenant
+         )
+       ORDER BY f.titre`,
+      [req.user.id_utilisateur]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur chargement des avis en attente :', error);
+    return res.status(500).json({ message: 'Impossible de charger les formations à noter.' });
   }
 };
 
@@ -130,7 +155,7 @@ exports.createFormationAvis = async (req, res) => {
        FROM formation f
        JOIN inscription i ON i.id_formation = f.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       WHERE f.id_formation = $1 AND a.id_utilisateur = $2 AND f.statut = 'TERMINEE'
+       WHERE f.id_formation = $1 AND a.id_utilisateur = $2 AND f.statut IN ('TERMINEE', 'ARCHIVEE')
        RETURNING id_avis, id_formation, note, commentaire, date_creation`,
       [req.params.id, req.user.id_utilisateur, note, commentaire]
     );
@@ -240,53 +265,120 @@ exports.createFormation = async (req, res) => {
 // 5. Mettre à jour une formation (Responsable)
 exports.updateFormation = async (req, res) => {
   const { id } = req.params;
-  const { 
-    titre, 
-    description, 
-    image_url, 
-    date_debut, 
-    date_fin, 
-    date_limite_inscription, 
-    capacite_max, 
-    statut 
-  } = req.body;
+  const { confirm_delete_sessions = false } = req.body;
+  const client = await db.connect();
+  const dateOnly = (value) => value ? String(value).slice(0, 10) : null;
 
   try {
-    const query = `
-      UPDATE formation 
-      SET 
-        titre = $1, 
-        description = $2, 
-        image_url = $3, 
-        date_debut = $4, 
-        date_fin = $5, 
-        date_limite_inscription = $6, 
-        capacite_max = $7, 
-        statut = $8
-      WHERE id_formation = $9
-      RETURNING *;
-    `;
-    const values = [
-      titre, 
-      description, 
-      image_url, 
-      date_debut, 
-      date_fin, 
-      date_limite_inscription, 
-      capacite_max, 
-      statut, 
-      id
-    ];
-
-    const { rows } = await db.query(query, values);
-    if (rows.length === 0) {
+    await client.query('BEGIN');
+    const currentResult = await client.query('SELECT * FROM formation WHERE id_formation = $1 FOR UPDATE', [id]);
+    if (!currentResult.rows[0]) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: "Formation non trouvée" });
     }
+    const current = currentResult.rows[0];
+    const status = current.statut;
+    if (status === 'ARCHIVEE') {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ message: "Une formation archivée ne peut plus être modifiée." });
+    }
+
+    const next = {
+      titre: req.body.titre ?? current.titre,
+      description: req.body.description ?? current.description,
+      image_url: req.body.image_url ?? current.image_url,
+      date_debut: dateOnly(req.body.date_debut ?? current.date_debut),
+      date_fin: dateOnly(req.body.date_fin ?? current.date_fin),
+      date_limite_inscription: dateOnly(req.body.date_limite_inscription ?? current.date_limite_inscription),
+      capacite_max: req.body.capacite_max === undefined ? current.capacite_max : Number(req.body.capacite_max),
+      statut: req.body.statut ?? current.statut,
+    };
+
+    let forbiddenFields = [];
+    if (status === 'EN_COURS') {
+      forbiddenFields = ['date_debut', 'date_limite_inscription', 'capacite_max', 'statut'];
+    } else if (status === 'TERMINEE') {
+      forbiddenFields = ['date_debut', 'date_fin', 'date_limite_inscription', 'capacite_max', 'statut'];
+    } else if (!['BROUILLON', 'OUVERTE'].includes(status)) {
+      forbiddenFields = ['date_debut', 'date_fin', 'date_limite_inscription', 'capacite_max', 'statut'];
+    }
+    const changedForbiddenField = forbiddenFields.find((field) => {
+      if (req.body[field] === undefined) return false;
+      return String(req.body[field]).slice(0, 10) !== String(field === 'capacite_max' ? current[field] : current[field] ?? '').slice(0, 10);
+    });
+    if (changedForbiddenField) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ message: "Certains champs ne peuvent pas être modifiés avec le statut actuel de la formation." });
+    }
+
+    if (!next.titre?.trim()) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Le titre de la formation est obligatoire." });
+    }
+    if (!next.date_debut || !next.date_fin || next.date_fin < next.date_debut) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "La date de fin doit être postérieure ou égale à la date de début." });
+    }
+    if (!next.date_limite_inscription || next.date_limite_inscription > next.date_debut) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "La limite des candidatures doit précéder ou égaler la date de début." });
+    }
+    if (!Number.isInteger(next.capacite_max) || next.capacite_max < 1) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "La capacité maximale doit être un nombre entier supérieur à zéro." });
+    }
+    if (['BROUILLON', 'OUVERTE'].includes(status)
+      && !['BROUILLON', 'OUVERTE', 'EN_COURS', 'TERMINEE', 'FERMEE', 'ARCHIVEE'].includes(next.statut)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Statut de formation invalide." });
+    }
+
+    if (status !== 'TERMINEE') {
+      const incompatibleSessions = await client.query(
+        `SELECT id_seance, titre, date_seance FROM seance
+         WHERE id_formation = $1 AND (date_seance::date < $2::date OR date_seance::date > $3::date)
+         ORDER BY date_seance`,
+        [id, next.date_debut, next.date_fin]
+      );
+      if (incompatibleSessions.rows.length && !confirm_delete_sessions) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          code: 'SESSIONS_OUT_OF_RANGE',
+          message: `${incompatibleSessions.rows.length} séance(s) seraient hors de la nouvelle période.`,
+          incompatible_sessions: incompatibleSessions.rows,
+        });
+      }
+      if (incompatibleSessions.rows.length && confirm_delete_sessions) {
+        await client.query(
+          `DELETE FROM seance WHERE id_formation = $1
+           AND (date_seance::date < $2::date OR date_seance::date > $3::date)`,
+          [id, next.date_debut, next.date_fin]
+        );
+      }
+    }
+
+    const { rows } = await client.query(
+      `UPDATE formation SET titre = $1, description = $2, image_url = $3,
+        date_debut = $4, date_fin = $5, date_limite_inscription = $6,
+        capacite_max = $7, statut = $8, date_modification = CURRENT_TIMESTAMP
+       WHERE id_formation = $9 RETURNING *`,
+      [next.titre.trim(), next.description, next.image_url || null, next.date_debut, next.date_fin,
+       next.date_limite_inscription, next.capacite_max, next.statut, id]
+    );
+    await client.query(
+      `UPDATE forum SET nom = 'Forum ' || $1, description = 'Espace de discussion pour la formation ' || $1 || '.'
+       WHERE id_formation = $2`,
+      [next.titre.trim(), id]
+    );
+    await client.query('COMMIT');
     emitRealtimeEvent('formations:changed', {});
     res.status(200).json({ message: "Formation mise à jour !", formation: rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error("Erreur updateFormation :", error);
     res.status(500).json({ message: "Erreur lors de la mise à jour" });
+  } finally {
+    client.release();
   }
 };
 

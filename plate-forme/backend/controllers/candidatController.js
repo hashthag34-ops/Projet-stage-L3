@@ -87,32 +87,36 @@ exports.postuler = async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Créer ou récupérer le candidat et actualiser ses informations personnelles
-    let candidatRes = await db.query('SELECT id_candidat FROM candidat WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
-    let id_candidat;
-
-    if (candidatRes.rows.length > 0) {
-      id_candidat = candidatRes.rows[0].id_candidat;
-      await db.query(
-        `UPDATE candidat SET nom = $1, prenom = $2, age = $3, genre = $4, telephone = $5,
-         niveau_etude = $6, situation_professionnelle = $7, etablissement = $8, filiere = $9
-         WHERE id_candidat = $10`,
-        [nom, prenom, age || null, genre || null, telephone || null, niveau_etude || null,
-          situation_professionnelle || null, etablissement || null, filiere || null, id_candidat]
+    // Chaque candidature possède son propre dossier candidat, même avec un email déjà utilisé.
+    let ownerUserId = req.user?.id_utilisateur || req.user?.id || null;
+    if (ownerUserId) {
+      const ownerRes = await db.query(
+        'SELECT id_utilisateur FROM utilisateur WHERE id_utilisateur = $1 AND LOWER(email) = LOWER($2)',
+        [ownerUserId, normalizedEmail]
       );
-    } else {
-      const newCandidat = await db.query(
-        `INSERT INTO candidat (email, nom, prenom, age, genre, telephone, niveau_etude, situation_professionnelle, etablissement, filiere)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_candidat`,
-        [normalizedEmail, nom, prenom, age || null, genre || null, telephone || null, niveau_etude || null, situation_professionnelle || null, etablissement || null, filiere || null]
-      );
-      id_candidat = newCandidat.rows[0].id_candidat;
+      if (ownerRes.rows.length === 0) ownerUserId = null;
     }
+
+    const newCandidat = await db.query(
+      `INSERT INTO candidat (
+         id_utilisateur, email, nom, prenom, age, genre, telephone,
+         niveau_etude, situation_professionnelle, etablissement, filiere
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id_candidat`,
+      [ownerUserId, normalizedEmail, nom, prenom, age || null, genre || null, telephone || null,
+        niveau_etude || null, situation_professionnelle || null, etablissement || null, filiere || null]
+    );
+    const id_candidat = newCandidat.rows[0].id_candidat;
 
     // 2. Vérifier si une inscription existe déjà pour cette formation
     const checkInscription = await db.query(
-      'SELECT id_inscription FROM inscription WHERE id_candidat = $1 AND id_formation = $2',
-      [id_candidat, id_formation]
+      `SELECT i.id_inscription
+       FROM inscription i
+       JOIN candidat c ON c.id_candidat = i.id_candidat
+       WHERE i.id_formation = $1 AND LOWER(c.email) = LOWER($2)
+       LIMIT 1`,
+      [id_formation, normalizedEmail]
     );
 
     if (checkInscription.rows.length > 0) {
@@ -170,7 +174,9 @@ exports.getCandidateByEmail = async (req, res) => {
     const result = await db.query(
       `SELECT nom, prenom, age, genre, telephone, niveau_etude,
               situation_professionnelle, etablissement, filiere
-       FROM candidat WHERE LOWER(email) = LOWER($1)`,
+       FROM candidat WHERE LOWER(email) = LOWER($1)
+       ORDER BY date_creation DESC
+       LIMIT 1`,
       [email]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'Aucun profil existant.' });

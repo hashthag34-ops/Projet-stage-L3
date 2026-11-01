@@ -130,12 +130,44 @@ exports.validerCandidature = async (req, res) => {
     }
 
     const cand = resInscription.rows[0];
+    const capacityRes = await client.query(
+      `SELECT capacite_max, COUNT(*) FILTER (WHERE i.statut = 'ACCEPTEE')::INTEGER AS acceptes
+       FROM formation f
+       LEFT JOIN inscription i ON i.id_formation = f.id_formation
+       WHERE f.id_formation = (
+         SELECT id_formation FROM inscription WHERE id_inscription = $1
+       )
+       GROUP BY f.id_formation, f.capacite_max`,
+      [id_inscription]
+    );
+    const capacity = capacityRes.rows[0]?.capacite_max;
+    const accepted = capacityRes.rows[0]?.acceptes || 0;
+    if (capacity != null && accepted >= Number(capacity)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'La capacité maximale de cette formation est déjà atteinte.' });
+    }
 
     // 2. Mettre à jour le statut de l'inscription
     await client.query(
       `UPDATE inscription 
        SET statut = 'ACCEPTEE', date_decision = CURRENT_TIMESTAMP 
        WHERE id_inscription = $1`,
+      [id_inscription]
+    );
+
+    await client.query(
+      `UPDATE inscription pending
+       SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
+       FROM formation f
+       WHERE f.id_formation = pending.id_formation
+         AND pending.id_formation = (SELECT id_formation FROM inscription WHERE id_inscription = $1)
+         AND pending.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
+         AND f.capacite_max IS NOT NULL
+         AND (
+           SELECT COUNT(*) FROM inscription occupied
+           WHERE occupied.id_formation = f.id_formation
+             AND occupied.statut = 'ACCEPTEE'
+         ) >= f.capacite_max`,
       [id_inscription]
     );
 
@@ -416,6 +448,22 @@ exports.validerPromotion = async (req, res) => {
         needsSetup = true;
       }
 
+      await client.query(
+        `UPDATE inscription i
+         SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
+         FROM formation f
+         WHERE f.id_formation = i.id_formation
+           AND i.id_formation = $1
+           AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
+           AND f.capacite_max IS NOT NULL
+           AND (
+             SELECT COUNT(*) FROM inscription occupied
+             WHERE occupied.id_formation = f.id_formation
+               AND occupied.statut = 'ACCEPTEE'
+           ) >= f.capacite_max`,
+        [id_formation]
+      );
+
       if (needsSetup) {
         setupToken = crypto.randomBytes(32).toString('hex');
         const setupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
@@ -512,20 +560,72 @@ exports.togglePreselection = async (req, res) => {
     return res.status(400).json({ message: "Statut de candidature invalide." });
   }
 
+  let client;
+  let transactionStarted = false;
   try {
-    const result = await db.query(
-      `UPDATE inscription SET statut = $1 WHERE id_inscription = $2`,
+    client = await db.connect();
+    await client.query('BEGIN');
+    transactionStarted = true;
+
+    const candidature = await client.query(
+      `SELECT i.id_formation, f.capacite_max, i.statut AS statut_actuel
+       FROM inscription i
+       JOIN formation f ON f.id_formation = i.id_formation
+       WHERE i.id_inscription = $1
+       FOR UPDATE`,
+      [id_inscription]
+    );
+    if (candidature.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: "Candidature introuvable." });
+    }
+    const { id_formation, capacite_max, statut_actuel } = candidature.rows[0];
+
+    if (statut === 'PRESELECTIONNEE') {
+      const occupied = await client.query(
+        `SELECT COUNT(*)::INTEGER AS total
+         FROM inscription
+         WHERE id_formation = $1
+           AND statut IN ('ACCEPTEE', 'PRESELECTIONNEE')`,
+        [id_formation]
+      );
+      if (capacite_max != null && occupied.rows[0].total >= Number(capacite_max)
+        && statut_actuel !== 'PRESELECTIONNEE') {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          message: 'La capacité maximale est atteinte avec les candidatures acceptées et préselectionnées.',
+        });
+      }
+    }
+
+    await client.query(
+      `UPDATE inscription SET statut = $1, date_decision = CASE WHEN $1 = 'REFUSEE' THEN CURRENT_TIMESTAMP ELSE date_decision END
+       WHERE id_inscription = $2`,
       [statut, id_inscription]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Candidature introuvable." });
-    }
+    await client.query(
+      `UPDATE inscription i
+       SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
+       WHERE i.id_formation = $1
+         AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
+         AND (
+           SELECT COUNT(*) FROM inscription occupied
+           WHERE occupied.id_formation = i.id_formation
+             AND occupied.statut = 'ACCEPTEE'
+         ) >= $2`,
+      [id_formation, capacite_max]
+    );
 
+    await client.query('COMMIT');
+    transactionStarted = false;
     emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
     res.json({ message: "Statut de pré-sélection mis à jour." });
   } catch (err) {
+    if (transactionStarted) await client.query('ROLLBACK');
     console.error("Erreur lors du changement de statut de la candidature :", err);
     res.status(500).json({ message: "Erreur lors du changement de statut." });
+  } finally {
+    client?.release();
   }
 };

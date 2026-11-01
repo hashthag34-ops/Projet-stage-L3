@@ -379,6 +379,36 @@
   line-height: 1.4;
 }
 
+.eval-correction {
+  width: min(680px, 100%);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eval-correction-question {
+  border-left: 4px solid var(--eval-danger, #dc2626);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff7f7;
+}
+
+.eval-correction-question.is-correct {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.eval-correction-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eval-correction-question p {
+  margin: 7px 0 0;
+}
+
 @media (min-width: 640px) {
   .quiz-question-text {
     font-size: 15px;

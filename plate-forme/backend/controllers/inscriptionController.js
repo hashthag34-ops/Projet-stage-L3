@@ -46,24 +46,37 @@ exports.traiterCandidature = async (req, res) => {
       const candRes = await db.query('SELECT * FROM candidat WHERE id_candidat = $1', [inscription.id_candidat]);
       const candidat = candRes.rows[0];
 
-      // Vérifier si l'apprenant existe déjà
-      const checkApprenant = await db.query('SELECT * FROM apprenant WHERE id_candidat = $1', [candidat.id_candidat]);
-      
-      if (checkApprenant.rows.length === 0) {
+      let userRes = await db.query(
+        'SELECT id_utilisateur FROM utilisateur WHERE LOWER(email) = LOWER($1)',
+        [candidat.email]
+      );
+
+      let id_utilisateur;
+      if (userRes.rows.length > 0) {
+        id_utilisateur = userRes.rows[0].id_utilisateur;
+      } else {
         // Créer utilisateur avec mot de passe par défaut : "123456"
         const hashedPassword = await bcrypt.hash('123456', 10);
         
-        const userRes = await db.query(
+        const createdUser = await db.query(
           `INSERT INTO utilisateur (email, nom, prenom, mot_de_passe, telephone, age)
            VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
            RETURNING id_utilisateur`,
           [candidat.email, candidat.nom, candidat.prenom, hashedPassword, candidat.telephone, candidat.age]
         );
+        id_utilisateur = createdUser.rows[0].id_utilisateur;
+      }
 
-        const id_utilisateur = userRes.rows[0].id_utilisateur;
+      await db.query(
+        'UPDATE candidat SET id_utilisateur = $1 WHERE id_candidat = $2',
+        [id_utilisateur, candidat.id_candidat]
+      );
 
-        // Insérer dans apprenant
+      const learner = await db.query(
+        'SELECT id_apprenant FROM apprenant WHERE id_utilisateur = $1',
+        [id_utilisateur]
+      );
+      if (learner.rows.length === 0) {
         await db.query(
           'INSERT INTO apprenant (id_utilisateur, id_candidat) VALUES ($1, $2)',
           [id_utilisateur, candidat.id_candidat]

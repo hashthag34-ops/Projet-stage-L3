@@ -98,6 +98,22 @@ const runExpiryTasks = async () => {
        AND et.date_debut + es.duree_minutes * INTERVAL '1 minute' <= LOCALTIMESTAMP`
   );
 
+  await db.query(
+    `INSERT INTO evaluation_tentative
+     (id_evaluation_sujet, id_apprenant, date_debut, date_fin, note, statut)
+     SELECT es.id_evaluation_sujet, a.id_apprenant,
+            LOCALTIMESTAMP, LOCALTIMESTAMP, 0, 'TERMINEE'
+     FROM evaluation_sujet es
+     JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
+     JOIN apprenant a ON a.id_candidat = i.id_candidat
+     WHERE es.statut = 'FERMEE'
+       AND NOT EXISTS (
+         SELECT 1 FROM evaluation_tentative et
+         WHERE et.id_evaluation_sujet = es.id_evaluation_sujet
+           AND et.id_apprenant = a.id_apprenant
+       )`
+  );
+
   console.log(
     `Vérification des échéances terminée : ${startedFormationResult.rowCount} formation(s) démarrée(s), ` +
     `${formationResult.rowCount} formation(s) terminée(s), ` +

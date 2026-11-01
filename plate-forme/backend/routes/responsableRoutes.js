@@ -7,6 +7,8 @@ const seanceController = require('../controllers/seanceController');
 const formationController = require('../controllers/formationController');
 const certificationController = require('../controllers/certificationController');
 const db = require('../config/db');
+const forumController = require('../controllers/forumController');
+const forumUpload = require('../middleware/forumUpload');
 
 // --- CANDIDATURES ---
 router.get('/candidatures', candidatureController.getCandidatures);
@@ -30,6 +32,13 @@ const verifyResponsable = (req, res, next) => {
   }
   next();
 };
+
+router.get('/forums', verifyResponsable, forumController.getAllForums);
+router.get('/forums/:id_forum/messages', verifyResponsable, forumController.getMessagesByForum);
+router.post('/forums/:id_forum/messages', verifyResponsable, forumUpload.single('fichier'), forumController.createMessage);
+router.patch('/forums/:id_forum/messages/:id_message', verifyResponsable, forumController.updateMessage);
+router.delete('/forums/:id_forum/messages/:id_message', verifyResponsable, forumController.deleteMessage);
+router.get('/forums/:id_forum/messages/:id_message/download', verifyResponsable, forumController.downloadMessageFile);
 
 router.get('/certifications/formations', verifyResponsable, certificationController.getClosedFormations);
 router.get('/certifications/formations/:id_formation/apprenants', verifyResponsable, certificationController.getFormationLearners);

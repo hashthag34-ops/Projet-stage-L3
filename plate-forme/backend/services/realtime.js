@@ -19,7 +19,11 @@ const emitRoomEvent = (room, event, payload) => {
 };
 
 const disconnectUser = (userId) => {
-  if (io) io.in(`user:${userId}`).disconnectSockets(true);
+  if (!io) return;
+  io.to(`user:${userId}`).emit('account:disabled', {
+    message: 'Votre compte a été désactivé ou suspendu. Vous avez été déconnecté.'
+  });
+  io.in(`user:${userId}`).disconnectSockets(true);
 };
 
 const canJoinForum = async (user, forumId) => {

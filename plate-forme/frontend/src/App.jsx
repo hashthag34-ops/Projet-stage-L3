@@ -30,6 +30,7 @@ import ResponsableFormations from './pages/Responsable/ResponsableFormations';
 import Planning from './pages/Responsable/Planning';
 import Scan from './pages/Responsable/Scan';
 import Certification from './pages/Responsable/Certification';
+import ResponsableForum from './pages/Responsable/Forum';
 
 // Formateur
 import FormateurDashboard from './pages/Formateur/dashboard';
@@ -81,6 +82,7 @@ export default function App() {
             <Route path="Profil" element={<Profil />} />
             <Route path="Scan" element={<Scan />} />
             <Route path="Certification" element={<Certification />} />
+            <Route path="Forum" element={<ResponsableForum />} />
             <Route path="Catalogue" element={<Catalogue />} />
           </Route>
 

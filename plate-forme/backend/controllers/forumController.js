@@ -43,7 +43,7 @@ const canAccessForum = async (req, forumId) => {
        JOIN formation f ON f.id_formation = fo.id_formation
        WHERE fo.id_forum = $1
          AND a.id_utilisateur = $2
-         AND f.date_fin >= CURRENT_DATE`,
+      `,
       [forumId, userId]
     );
     return result.rowCount > 0;
@@ -61,6 +61,59 @@ const canAccessForum = async (req, forumId) => {
     return result.rowCount > 0;
   }
 
+  if (req.baseUrl.endsWith('/responsable') && req.user.role === 'RESPONSABLE') {
+    const result = await db.query('SELECT 1 FROM forum WHERE id_forum = $1', [forumId]);
+    return result.rowCount > 0;
+  }
+
+  return false;
+};
+
+exports.getAllForums = async (req, res) => {
+  if (req.user.role !== 'RESPONSABLE') {
+    return res.status(403).json({ message: 'Accès réservé au responsable.' });
+  }
+  try {
+    const { rows } = await db.query(
+      `SELECT fo.id_forum, fo.nom, fo.description, f.id_formation, f.titre AS formation_titre,
+              f.statut AS formation_statut
+       FROM forum fo
+       JOIN formation f ON f.id_formation = fo.id_formation
+       ORDER BY f.titre, fo.nom`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Erreur forums responsable :', error);
+    res.status(500).json({ message: 'Impossible de charger les forums.' });
+  }
+};
+
+const canSendToForum = async (forumId) => {
+  const result = await db.query(
+    `SELECT 1
+     FROM forum fo
+     JOIN formation f ON f.id_formation = fo.id_formation
+     WHERE fo.id_forum = $1
+       AND f.statut NOT IN ('TERMINEE', 'ARCHIVEE')`,
+    [forumId]
+  );
+  return result.rowCount > 0;
+};
+
+const canModerateForum = async (req, forumId) => {
+  if (req.user.role === 'RESPONSABLE' && req.baseUrl.endsWith('/responsable')) return true;
+
+  if (req.user.role === 'FORMATEUR' && req.baseUrl.endsWith('/formateur')) {
+    const result = await db.query(
+      `SELECT 1
+       FROM forum fo
+       JOIN formation_formateur ff ON ff.id_formation = fo.id_formation
+       JOIN formateur f ON f.id_formateur = ff.id_formateur
+       WHERE fo.id_forum = $1 AND f.id_utilisateur = $2`,
+      [forumId, req.user.id_utilisateur]
+    );
+    return result.rowCount > 0;
+  }
   return false;
 };
 
@@ -104,6 +157,10 @@ exports.createMessage = async (req, res) => {
       removeUploadedFile(req.file);
       return res.status(403).json({ message: 'Vous n’avez pas accès à ce forum.' });
     }
+    if (!(await canSendToForum(id_forum))) {
+      removeUploadedFile(req.file);
+      return res.status(403).json({ message: 'L’envoi de messages est fermé pour cette formation.' });
+    }
     const query = `
       INSERT INTO message (id_forum, id_utilisateur, contenu)
       VALUES ($1, $2, $3)
@@ -137,6 +194,76 @@ exports.createMessage = async (req, res) => {
     removeUploadedFile(req.file);
     console.error(err);
     res.status(500).json({ message: "Erreur lors de l'envoi du message" });
+  }
+};
+
+exports.updateMessage = async (req, res) => {
+  const { id_forum, id_message } = req.params;
+  const contenu = (req.body.contenu || '').trim();
+
+  if (!contenu) return res.status(400).json({ message: 'Le message ne peut pas être vide.' });
+
+  try {
+    const messageResult = await db.query(
+      `SELECT contenu, id_utilisateur FROM message WHERE id_message = $1 AND id_forum = $2`,
+      [id_message, id_forum]
+    );
+    const message = messageResult.rows[0];
+    if (!message) return res.status(404).json({ message: 'Message introuvable.' });
+
+    const ownsMessage = Number(message.id_utilisateur) === Number(req.user.id_utilisateur);
+    if (!ownsMessage) {
+      return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages.' });
+    }
+
+    let storedContent = contenu;
+    if (message.contenu.startsWith(attachmentPrefix)) {
+      const attachment = decodeMessageContent(message.contenu);
+      storedContent = attachmentPrefix + JSON.stringify({
+        ...attachment,
+        contenu
+      });
+    }
+
+    await db.query(
+      'UPDATE message SET contenu = $1 WHERE id_message = $2 AND id_forum = $3',
+      [storedContent, id_message, id_forum]
+    );
+    emitRoomEvent(`forum:${id_forum}`, 'forum:message', { id_forum: Number(id_forum) });
+    res.json({ id_message: Number(id_message), contenu });
+  } catch (error) {
+    console.error('Erreur modification message forum :', error);
+    res.status(500).json({ message: 'Impossible de modifier ce message.' });
+  }
+};
+
+exports.deleteMessage = async (req, res) => {
+  const { id_forum, id_message } = req.params;
+
+  try {
+    const messageResult = await db.query(
+      `SELECT contenu, id_utilisateur FROM message WHERE id_message = $1 AND id_forum = $2`,
+      [id_message, id_forum]
+    );
+    const message = messageResult.rows[0];
+    if (!message) return res.status(404).json({ message: 'Message introuvable.' });
+
+    const ownsMessage = Number(message.id_utilisateur) === Number(req.user.id_utilisateur);
+    const isModerator = await canModerateForum(req, id_forum);
+    if (!ownsMessage && !isModerator) {
+      return res.status(403).json({ message: 'Vous ne pouvez pas supprimer ce message.' });
+    }
+
+    const attachment = decodeMessageContent(message.contenu);
+    if (attachment.chemin_fichier) {
+      await fs.promises.unlink(path.join(uploadDirectory, path.basename(attachment.chemin_fichier))).catch(() => {});
+    }
+    await db.query('DELETE FROM message WHERE id_message = $1 AND id_forum = $2', [id_message, id_forum]);
+    emitRoomEvent(`forum:${id_forum}`, 'forum:message', { id_forum: Number(id_forum) });
+    res.json({ message: 'Message supprimé.' });
+  } catch (error) {
+    console.error('Erreur suppression message forum :', error);
+    res.status(500).json({ message: 'Impossible de supprimer ce message.' });
   }
 };
 

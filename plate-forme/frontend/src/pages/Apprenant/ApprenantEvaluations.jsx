@@ -253,6 +253,24 @@ export default function ApprenantEvaluations() {
               <p className="result-score">{result.note} <span className="score-denominator">/ 20</span></p>
               {terminationReason === 'onglet' && <p role="alert" className="result-warning">La tentative a été terminée automatiquement car l’onglet a été quitté.</p>}
               {terminationReason === 'temps' && <p className="result-warning">Le temps est écoulé. Seules les réponses sauvegardées avant la fin ont été prises en compte.</p>}
+              {!!result.correction?.length && (
+                <div className="eval-correction">
+                  <h3>Correction détaillée</h3>
+                  {result.correction.map((question) => (
+                    <div key={question.id_question} className={`eval-correction-question ${question.correcte ? 'is-correct' : 'is-incorrect'}`}>
+                      <div className="eval-correction-header">
+                        <strong>Question {question.numero_question}</strong>
+                        <span>{question.points_obtenus}/{question.points} pt</span>
+                      </div>
+                      <p>{question.enonce}</p>
+                      <p><b>Votre réponse :</b> {question.reponse_choisie_libelle || 'Aucune réponse'}</p>
+                      {!question.correcte && (
+                        <p><b>Bonne réponse :</b> {question.reponse_correcte_libelle}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <button type="button" onClick={leaveEvaluation} className="eval-btn-primary">Retour à la liste</button>
             </div>
           ) : (

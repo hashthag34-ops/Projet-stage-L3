@@ -34,6 +34,8 @@ export default function ApprenantForum() {
   const [downloading, setDownloading] = useState(null);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -165,6 +167,29 @@ export default function ApprenantForum() {
       setError(requestError.response?.data?.message || 'Impossible de télécharger ce fichier.');
     } finally {
       setDownloading(null);
+    }
+  };
+
+  const saveMessage = async (messageId) => {
+    if (!editingContent.trim()) return;
+    try {
+      await API.patch(`/apprenant/forums/${selectedForum.id_forum}/messages/${messageId}`, { contenu: editingContent.trim() });
+      const response = await API.get(`/apprenant/forums/${selectedForum.id_forum}/messages`);
+      setMessages(Array.isArray(response.data) ? response.data : []);
+      setEditingId(null);
+      setEditingContent('');
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Impossible de modifier le message.');
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    if (!window.confirm('Supprimer définitivement ce message ?')) return;
+    try {
+      await API.delete(`/apprenant/forums/${selectedForum.id_forum}/messages/${messageId}`);
+      setMessages((current) => current.filter((message) => message.id_message !== messageId));
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Impossible de supprimer le message.');
     }
   };
 
@@ -315,7 +340,23 @@ export default function ApprenantForum() {
                             <time className="message-time">{formatMessageDate(message.created_at)}</time>
                           </div>
                           <div className={`message-bubble ${isMe ? 'is-me' : ''}`}>
-                            {message.contenu && <p className="message-text">{message.contenu}</p>}
+                            {editingId === message.id_message ? (
+                              <div>
+                                <textarea value={editingContent} onChange={(event) => setEditingContent(event.target.value)} />
+                                <button type="button" onClick={() => saveMessage(message.id_message)}>Enregistrer</button>
+                                <button type="button" onClick={() => { setEditingId(null); setEditingContent(''); }}>Annuler</button>
+                              </div>
+                            ) : (
+                              <>
+                                {message.contenu && <p className="message-text">{message.contenu}</p>}
+                                {isMe && (
+                                  <div>
+                                    <button type="button" onClick={() => { setEditingId(message.id_message); setEditingContent(message.contenu || ''); }}>Modifier</button>
+                                    <button type="button" onClick={() => deleteMessage(message.id_message)}>Supprimer</button>
+                                  </div>
+                                )}
+                              </>
+                            )}
                             {message.chemin_fichier && (
                               <div className={`message-file-card ${isMe ? 'is-me' : ''}`}>
                                 <div className="file-info-col">
@@ -358,12 +399,12 @@ export default function ApprenantForum() {
                         event.currentTarget.form?.requestSubmit();
                       }
                     }}
-                    disabled={sending || messagesLoading}
+                    disabled={sending || messagesLoading || ['TERMINEE', 'ARCHIVEE'].includes(selectedForum.formation_statut)}
                     className="chat-textarea"
                   />
                   <button
                     type="submit"
-                    disabled={sending || messagesLoading || !newMessage.trim()}
+                    disabled={sending || messagesLoading || ['TERMINEE', 'ARCHIVEE'].includes(selectedForum.formation_statut) || !newMessage.trim()}
                     className="chat-send-btn"
                     title="Envoyer le message"
                   >

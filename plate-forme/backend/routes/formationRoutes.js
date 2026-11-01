@@ -19,6 +19,7 @@ router.post('/upload', (req, res, next) => {
 }, formationController.uploadFormationImage);
 router.get('/publiques', formationController.getFormationsPubliques);
 router.get('/catalogue', authOptional.authOptional, formationController.getCatalogue);
+router.get('/avis-en-attente', verifyToken, formationController.getAvisEnAttente);
 router.get('/:id/avis', formationController.getFormationAvis);
 router.post('/:id/avis', verifyToken, formationController.createFormationAvis);
 

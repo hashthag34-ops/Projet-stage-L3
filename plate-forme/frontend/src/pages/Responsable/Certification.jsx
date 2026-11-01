@@ -163,6 +163,7 @@ export default function Certification() {
   const certifiedCount = selectedLearnerIds.length;
 
   const toggleLearner = (learnerId) => {
+    if (isSaved) return;
     setSelectedLearnerIds((current) => current.includes(learnerId)
       ? current.filter((id) => id !== learnerId)
       : [...current, learnerId]);
@@ -180,12 +181,15 @@ export default function Certification() {
         certifiedLearnerIds: selectedLearnerIds
       });
       setIsSaved(true);
-      setNotice('La liste des apprenants certifiés a bien été enregistrée.');
+      setNotice('La liste des apprenants certifiés a été figée et la formation a été archivée.');
       setFormations((current) => current.map((item) => (
         item.id_formation === formation.id_formation
           ? { ...item, is_saved: true, decisions_count: learners.length, certifies_count: selectedLearnerIds.length }
           : item
       )));
+      setFormation(null);
+      setLearners([]);
+      setFormations((current) => current.filter((item) => item.id_formation !== formation.id_formation));
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Impossible d’enregistrer la sélection.');
     } finally {
@@ -368,10 +372,10 @@ export default function Certification() {
               )}
               <button
                 onClick={saveSelection}
-                disabled={saving || detailLoading || learners.length === 0}
+                disabled={saving || detailLoading || learners.length === 0 || (isSaved && formation.statut === 'ARCHIVEE')}
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Check size={17} /> {saving ? 'Enregistrement…' : isSaved ? 'Enregistrer les modifications' : 'Valider la liste'}
+                <Check size={17} /> {saving ? 'Archivage…' : isSaved ? 'Figer et archiver la formation' : 'Figer la liste et archiver'}
               </button>
             </div>
           </div>
@@ -434,7 +438,8 @@ export default function Certification() {
                       <button
                         onClick={() => toggleLearner(learner.id_apprenant)}
                         aria-pressed={selected}
-                        className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition ${selected ? 'border border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-900 dark:text-orange-300 dark:hover:bg-orange-950/40' : 'bg-orange-600 text-white hover:bg-orange-700'}`}
+                        disabled={isSaved}
+                        className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'border border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-900 dark:text-orange-300 dark:hover:bg-orange-950/40' : 'bg-orange-600 text-white hover:bg-orange-700'}`}
                       >
                         {selected ? 'Retirer' : 'Certifier'}
                       </button>

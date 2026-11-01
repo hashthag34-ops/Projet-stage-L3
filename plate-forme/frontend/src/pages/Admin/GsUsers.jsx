@@ -126,6 +126,8 @@ export default function GsUsers() {
     nom: '',
     prenom: '',
     email: '',
+    telephone: '',
+    mot_de_passe: '',
     role: 'FORMATEUR',
   });
 
@@ -257,11 +259,18 @@ export default function GsUsers() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { nom, prenom, email, role } = formData;
-      const response = await API.post('/admin/users', { nom, prenom, email, role });
+      const { nom, prenom, email, telephone, mot_de_passe, role } = formData;
+      const response = await API.post('/admin/users', {
+        nom,
+        prenom,
+        email,
+        telephone,
+        mot_de_passe,
+        role,
+      });
       alert(response.data.message);
       setShowCreate(false);
-      setFormData({ nom: '', prenom: '', email: '', role: 'FORMATEUR' });
+      setFormData({ nom: '', prenom: '', email: '', telephone: '', mot_de_passe: '', role: 'FORMATEUR' });
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur lors de la création du compte');
@@ -269,6 +278,11 @@ export default function GsUsers() {
   };
 
   const handleStatusChange = async (id, statut_compte) => {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (Number(id) === Number(currentUser.id_utilisateur)) {
+      alert('Vous ne pouvez pas modifier le statut de votre propre compte.');
+      return;
+    }
     try {
       await API.patch(`/admin/users/${id}/status`, { statut_compte });
       if (selectedUser && selectedUser.id_utilisateur === id) {
@@ -282,6 +296,11 @@ export default function GsUsers() {
 
   const handleDeleteUser = async () => {
     if (!selectedUser || isDeletingUser) return;
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (Number(selectedUser.id_utilisateur) === Number(currentUser.id_utilisateur)) {
+      alert('Vous ne pouvez pas supprimer votre propre compte.');
+      return;
+    }
     const userName = `${selectedUser.prenom || ''} ${selectedUser.nom || ''}`.trim();
     if (!window.confirm(`Voulez-vous vraiment supprimer le compte de ${userName} ? Cette action est irréversible.`)) {
       return;
@@ -741,8 +760,23 @@ export default function GsUsers() {
 
               {selectedUser.role === 'APPRENANT' && (
                 <div className="info-card">
-                  <p className="info-card-label">Formation attribuée</p>
-                  <p className="info-card-value">{selectedUser.formation_titre || 'Aucune formation'}</p>
+                  <p className="info-card-label">Candidatures</p>
+                  {Array.isArray(selectedUser.candidatures) && selectedUser.candidatures.length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {selectedUser.candidatures.map((candidature) => (
+                        <div key={candidature.id_inscription} className="rounded-lg border border-slate-200 px-3 py-2 dark:border-zinc-700">
+                          <p className="info-card-value">{candidature.formation_titre || 'Formation inconnue'}</p>
+                          <p className="info-card-subtext">
+                            {candidature.statut || 'Sans statut'}{candidature.date_inscription
+                              ? ` - ${new Date(candidature.date_inscription).toLocaleDateString('fr-FR')}`
+                              : ''}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="info-card-value">Aucune candidature</p>
+                  )}
                 </div>
               )}
             </div>
@@ -802,6 +836,20 @@ export default function GsUsers() {
               </div>
 
               <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className="gs-input" />
+              <input name="telephone" placeholder="Téléphone" value={formData.telephone ?? ''} onChange={handleChange} className="gs-input" />
+
+              {formData.role === 'ADMINISTRATEUR' && (
+                <input
+                  type="password"
+                  name="mot_de_passe"
+                  placeholder="Mot de passe (8 caractères minimum)"
+                  minLength={8}
+                  required
+                  value={formData.mot_de_passe ?? ''}
+                  onChange={handleChange}
+                  className="gs-input"
+                />
+              )}
 
               <select name="role" value={formData.role ?? 'FORMATEUR'} onChange={handleChange} className="gs-input">
                 <option value="FORMATEUR">Formateur</option>
@@ -809,14 +857,16 @@ export default function GsUsers() {
                 <option value="ADMINISTRATEUR">Administrateur</option>
               </select>
               <p className="modal-hint">
-                Un lien sécurisé sera envoyé à cette adresse pour vérifier l’e-mail et configurer le compte.
+                {formData.role === 'ADMINISTRATEUR'
+                  ? 'Le compte administrateur est configuré immédiatement, sans e-mail.'
+                  : 'Un lien sécurisé sera envoyé à cette adresse pour configurer le compte.'}
               </p>
 
               <button
                 type="submit"
                 className="gs-btn-dark-full"
               >
-                Créer et envoyer l’invitation
+                {formData.role === 'ADMINISTRATEUR' ? 'Créer l’administrateur' : 'Créer et envoyer l’invitation'}
               </button>
             </form>
           </div>

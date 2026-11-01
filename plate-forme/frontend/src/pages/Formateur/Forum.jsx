@@ -10,7 +10,7 @@ const formatFileSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 };
 
-export default function FormateurForum() {
+export default function FormateurForum({ responsable = false }) {
   const [forums, setForums] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -21,11 +21,15 @@ export default function FormateurForum() {
   const [sending, setSending] = useState(false);
   const [downloading, setDownloading] = useState(null);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
   
   const messagesEndRef = useRef(null);
 
+  const rolePath = responsable ? '/responsable' : '/formateur';
   useEffect(() => {
-    API.get('/formateur/forums')
+    API.get(rolePath + '/forums')
       .then((response) => {
         const availableForums = Array.isArray(response.data) ? response.data : [];
         setForums(availableForums);
@@ -33,12 +37,13 @@ export default function FormateurForum() {
       })
       .catch((err) => setError(err.response?.data?.message || 'Impossible de charger les forums.'))
       .finally(() => setLoading(false));
-  }, []);
+    API.get('/me').then((response) => setCurrentUser(response.data)).catch(() => {});
+  }, [rolePath]);
 
   useEffect(() => {
     const socket = getRealtimeSocket();
     const refreshForums = () => {
-      API.get('/formateur/forums')
+      API.get(rolePath + '/forums')
         .then((response) => {
           const availableForums = Array.isArray(response.data) ? response.data : [];
           setForums(availableForums);
@@ -54,7 +59,7 @@ export default function FormateurForum() {
     };
     socket.on('formations:changed', refreshForums);
     return () => socket.off('formations:changed', refreshForums);
-  }, []);
+  }, [rolePath]);
 
   useEffect(() => {
     if (!selected) {
@@ -66,13 +71,13 @@ export default function FormateurForum() {
     setMessagesLoading(true);
     setError('');
     const unsubscribe = subscribeToForum(selected.id_forum, () => {
-      API.get(`/formateur/forums/${selected.id_forum}/messages`)
+      API.get(`${rolePath}/forums/${selected.id_forum}/messages`)
         .then((response) => setMessages(Array.isArray(response.data) ? response.data : []))
         .catch((requestError) => {
           setError(requestError.response?.data?.message || 'Impossible de charger les messages.');
         });
     });
-    API.get(`/formateur/forums/${selected.id_forum}/messages`)
+    API.get(`${rolePath}/forums/${selected.id_forum}/messages`)
       .then((response) => {
         if (active) setMessages(Array.isArray(response.data) ? response.data : []);
       })
@@ -87,7 +92,7 @@ export default function FormateurForum() {
       active = false;
       unsubscribe();
     };
-  }, [selected]);
+  }, [selected, rolePath]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,8 +109,8 @@ export default function FormateurForum() {
     setSending(true);
     setError('');
     try {
-      await API.post(`/formateur/forums/${selected.id_forum}/messages`, payload);
-      const response = await API.get(`/formateur/forums/${selected.id_forum}/messages`);
+      await API.post(`${rolePath}/forums/${selected.id_forum}/messages`, payload);
+      const response = await API.get(`${rolePath}/forums/${selected.id_forum}/messages`);
       setMessages(Array.isArray(response.data) ? response.data : []);
       setContent('');
       setFile(null);
@@ -121,7 +126,7 @@ export default function FormateurForum() {
     setError('');
     try {
       const response = await API.get(
-        `/formateur/forums/${selected.id_forum}/messages/${message.id_message}/download`,
+        `${rolePath}/forums/${selected.id_forum}/messages/${message.id_message}/download`,
         { responseType: 'blob' }
       );
       const url = URL.createObjectURL(response.data);
@@ -136,6 +141,29 @@ export default function FormateurForum() {
       setError('Impossible de télécharger ce fichier.');
     } finally {
       setDownloading(null);
+    }
+  };
+
+  const saveMessage = async (messageId) => {
+    if (!editingContent.trim()) return;
+    try {
+      await API.patch(`${rolePath}/forums/${selected.id_forum}/messages/${messageId}`, { contenu: editingContent.trim() });
+      const response = await API.get(`${rolePath}/forums/${selected.id_forum}/messages`);
+      setMessages(Array.isArray(response.data) ? response.data : []);
+      setEditingId(null);
+      setEditingContent('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Impossible de modifier le message.');
+    }
+  };
+
+  const removeMessage = async (messageId) => {
+    if (!window.confirm('Supprimer définitivement ce message ?')) return;
+    try {
+      await API.delete(`${rolePath}/forums/${selected.id_forum}/messages/${messageId}`);
+      setMessages((current) => current.filter((message) => message.id_message !== messageId));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Impossible de supprimer le message.');
     }
   };
 
@@ -215,7 +243,25 @@ export default function FormateurForum() {
                         <p className="ff-message-author">
                           {message.prenom} {message.nom_expediteur} · {new Date(message.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                         </p>
-                        {message.contenu && <p className="ff-message-text">{message.contenu}</p>}
+                        {editingId === message.id_message ? (
+                          <div>
+                            <input value={editingContent} onChange={(event) => setEditingContent(event.target.value)} />
+                            <button type="button" onClick={() => saveMessage(message.id_message)}>Enregistrer</button>
+                            <button type="button" onClick={() => { setEditingId(null); setEditingContent(''); }}>Annuler</button>
+                          </div>
+                        ) : (
+                          <>
+                            {message.contenu && <p className="ff-message-text">{message.contenu}</p>}
+                            {(Number(message.id_utilisateur) === Number(currentUser?.id_utilisateur) || !responsable || responsable) && (
+                              <div>
+                                {Number(message.id_utilisateur) === Number(currentUser?.id_utilisateur) && (
+                                  <button type="button" onClick={() => { setEditingId(message.id_message); setEditingContent(message.contenu || ''); }}>Modifier</button>
+                                )}
+                                <button type="button" onClick={() => removeMessage(message.id_message)}>Supprimer</button>
+                              </div>
+                            )}
+                          </>
+                        )}
                         
                         {message.chemin_fichier && (
                           <div className="ff-file-box">
@@ -268,12 +314,12 @@ export default function FormateurForum() {
                     placeholder="Écrire un message..."
                     value={content}
                     onChange={(event) => setContent(event.target.value)}
-                    disabled={!selected || sending}
+                    disabled={!selected || sending || ['TERMINEE', 'ARCHIVEE'].includes(selected?.formation_statut)}
                   />
 
                   <button
                     type="submit"
-                    disabled={sending || !selected || (!content.trim() && !file)}
+                    disabled={sending || !selected || ['TERMINEE', 'ARCHIVEE'].includes(selected?.formation_statut) || (!content.trim() && !file)}
                     className="ff-send-btn"
                   >
                     <i className="bi bi-send text-xs"></i> 

@@ -1,335 +1,213 @@
-// frontend/src/pages/Responsable/Scan.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { QrCode, Calendar, Clock, MapPin, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, QrCode, RefreshCw, XCircle } from 'lucide-react';
 import API from '../../services/api';
-import '../css/ResponsableScan.css'; // Importation du CSS classique
+import '../css/ResponsableScan.css';
+
+const toLocalDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
 export default function Scan() {
   const [seances, setSeances] = useState([]);
-  const [todaysSeances, setTodaysSeances] = useState([]);
-  const [selectedSeance, setSelectedSeance] = useState('');
-  const [showAllSeances, setShowAllSeances] = useState(false);
-  const [scanMessage, setScanMessage] = useState({ type: '', text: '' });
-  const [loading, setLoading] = useState(true);
+  const [selectedSeance, setSelectedSeance] = useState(null);
   const [attendanceMode, setAttendanceMode] = useState('scan');
-  const [manualLearners, setManualLearners] = useState([]);
+  const [learners, setLearners] = useState([]);
   const [manualSelected, setManualSelected] = useState([]);
-  const [manualLoading, setManualLoading] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [scanMessage, setScanMessage] = useState({ type: '', text: '' });
+  const processingRef = useRef(false);
+  const today = toLocalDate(new Date());
 
-  // Ref pour bloquer les scans en boucle rapide (anti-rebond)
-  const isProcessingRef = useRef(false);
-
-  // Helper pour formater la date au format YYYY-MM-DD en local
-  const formatDateLocal = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const todayISO = formatDateLocal(new Date());
-
-  // Charger les séances et filtrer celles du jour
-  useEffect(() => {
-    const fetchSeances = async () => {
-      setLoading(true);
-      try {
-        const res = await API.get('/responsable/seances');
-        const data = Array.isArray(res.data) ? res.data : [];
-        setSeances(data);
-
-        // Filtrer les séances prévues aujourd'hui
-        const duJour = data.filter(s => s.date_seance && formatDateLocal(s.date_seance) === todayISO);
-        setTodaysSeances(duJour);
-
-        // Si des séances existent aujourd'hui, en sélectionner une par défaut
-        if (duJour.length > 0) {
-          setSelectedSeance(String(duJour[0].id_seance));
-        } else if (data.length > 0) {
-          setShowAllSeances(true);
-        }
-      } catch (err) {
-        console.error("Erreur chargement séances :", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSeances();
-  }, [todayISO]);
-
-  // Initialisation et gestion du scanner HTML5
-  useEffect(() => {
-    if (!selectedSeance) return;
-
-    const scanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: { width: 240, height: 240 },
-      facingMode: "environment" // Force la caméra arrière
-    }, false);
-
-    const onScanSuccess = async (decodedText) => {
-      if (isProcessingRef.current) return;
-      isProcessingRef.current = true;
-
-      try {
-        const res = await API.post('/presences/scan', {
-          id_seance: parseInt(selectedSeance, 10),
-          qr_data: decodedText
-        });
-
-        setScanMessage({
-          type: 'success',
-          text: res.data.message || 'Présence enregistrée avec succès !'
-        });
-      } catch (err) {
-        setScanMessage({
-          type: 'error',
-          text: err.response?.data?.error || 'Erreur lors de la validation du QR code.'
-        });
-      } finally {
-        // Pause de 2.5 secondes avant de réautoriser un autre scan
-        setTimeout(() => {
-          isProcessingRef.current = false;
-        }, 2500);
-      }
-    };
-
-    scanner.render(onScanSuccess, () => {
-      // Ignorer les erreurs de balayage continu
-    });
-
-    return () => {
-      scanner.clear().catch(error => console.error("Erreur arrêt scanner :", error));
-    };
-  }, [selectedSeance]);
-
-  useEffect(() => {
-    if (!selectedSeance) {
-      setManualLearners([]);
-      setManualSelected([]);
-      return;
-    }
-    const fetchLearners = async () => {
-      setManualLoading(true);
-      try {
-        const res = await API.get(`/presences/seances/${selectedSeance}/apprenants`);
-        const learners = Array.isArray(res.data) ? res.data : [];
-        setManualLearners(learners);
-        setManualSelected(learners.filter((learner) => learner.statut_presence === 'PRESENT').map((learner) => learner.id_apprenant));
-      } catch (err) {
-        setScanMessage({ type: 'error', text: err.response?.data?.error || 'Impossible de charger la liste des apprenants.' });
-      } finally {
-        setManualLoading(false);
-      }
-    };
-    fetchLearners();
-  }, [selectedSeance]);
-
-  const toggleManualLearner = (idApprenant) => {
-    setManualSelected((current) => current.includes(idApprenant)
-      ? current.filter((id) => id !== idApprenant)
-      : [...current, idApprenant]);
-  };
-
-  const saveManualAttendance = async () => {
+  const loadSeances = async () => {
+    setLoading(true);
     try {
-      const res = await API.post('/presences/manuel', {
-        id_seance: Number(selectedSeance),
-        id_apprenants: manualSelected
+      const response = await API.get('/responsable/seances');
+      const ordered = [...(Array.isArray(response.data) ? response.data : [])].sort((a, b) => {
+        if (toLocalDate(a.date_seance) === today && toLocalDate(b.date_seance) !== today) return -1;
+        if (toLocalDate(a.date_seance) !== today && toLocalDate(b.date_seance) === today) return 1;
+        return String(b.date_seance).localeCompare(String(a.date_seance)) || String(a.heure_debut).localeCompare(String(b.heure_debut));
       });
-      setScanMessage({ type: 'success', text: res.data.message });
-    } catch (err) {
-      setScanMessage({ type: 'error', text: err.response?.data?.error || 'Impossible d’enregistrer les présences.' });
+      setSeances(ordered);
+    } catch (error) {
+      setScanMessage({ type: 'error', text: error.response?.data?.message || 'Impossible de charger les séances.' });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const activeSeanceDetails = seances.find(s => String(s.id_seance) === String(selectedSeance));
-  const displayList = showAllSeances ? seances : todaysSeances;
+  useEffect(() => { loadSeances(); }, []);
+
+  const loadAttendance = async (idSeance) => {
+    setAttendanceLoading(true);
+    try {
+      const response = await API.get(`/presences/seances/${idSeance}/apprenants`);
+      const data = response.data && Array.isArray(response.data.apprenants) ? response.data : { closed: false, apprenants: response.data };
+      const allLearners = Array.isArray(data.apprenants) ? data.apprenants : [];
+      setLearners(allLearners);
+      setClosed(Boolean(data.closed));
+      setManualSelected([]);
+    } catch (error) {
+      setScanMessage({ type: 'error', text: error.response?.data?.error || 'Impossible de charger les présences.' });
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  const openSeance = async (seance) => {
+    setSelectedSeance(seance);
+    setAttendanceMode('scan');
+    setScanMessage({ type: '', text: '' });
+    await loadAttendance(seance.id_seance);
+  };
+
+  useEffect(() => {
+    if (!selectedSeance || closed || attendanceMode !== 'scan') return undefined;
+    const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 240, height: 240 }, facingMode: 'environment' }, false);
+    scanner.render(async (decodedText) => {
+      if (processingRef.current) return;
+      processingRef.current = true;
+      try {
+        const response = await API.post('/presences/scan', { id_seance: selectedSeance.id_seance, qr_data: decodedText });
+        setScanMessage({ type: 'success', text: response.data.message });
+        await loadAttendance(selectedSeance.id_seance);
+      } catch (error) {
+        setScanMessage({ type: 'error', text: error.response?.data?.error || 'QR Code invalide.' });
+      } finally {
+        setTimeout(() => { processingRef.current = false; }, 1800);
+      }
+    }, () => {});
+    return () => { scanner.clear().catch(() => {}); };
+  }, [selectedSeance, closed, attendanceMode]);
+
+  const saveManual = async () => {
+    try {
+      await API.post('/presences/manuel', { id_seance: selectedSeance.id_seance, id_apprenants: manualSelected });
+      setScanMessage({ type: 'success', text: 'Présences manuelles enregistrées.' });
+      await loadAttendance(selectedSeance.id_seance);
+    } catch (error) {
+      setScanMessage({ type: 'error', text: error.response?.data?.error || 'Impossible d’enregistrer les présences.' });
+    }
+  };
+
+  const closeAttendance = async () => {
+    if (!window.confirm('Terminer le pointage ? Tous les apprenants restants seront marqués absents.')) return;
+    setClosing(true);
+    try {
+      await API.post(`/presences/seances/${selectedSeance.id_seance}/cloturer`);
+      setClosed(true);
+      setScanMessage({ type: 'success', text: 'Pointage clôturé avec succès.' });
+      await loadAttendance(selectedSeance.id_seance);
+    } catch (error) {
+      setScanMessage({ type: 'error', text: error.response?.data?.error || 'Impossible de clôturer le pointage.' });
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const updateClosedStatus = async (idApprenant, statut) => {
+    try {
+      await API.patch(`/presences/seances/${selectedSeance.id_seance}/apprenants/${idApprenant}`, { statut });
+      setLearners((current) => current.map((learner) => learner.id_apprenant === idApprenant ? { ...learner, statut_presence: statut } : learner));
+    } catch (error) {
+      setScanMessage({ type: 'error', text: error.response?.data?.error || 'Impossible de modifier la présence.' });
+    }
+  };
+
+  const formatDate = (value) => new Date(value).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+  const pendingLearners = learners.filter((learner) => !['PRESENT', 'ABSENT'].includes(learner.statut_presence));
 
   return (
     <div className="fs-container">
-      
-      {/* Styles d'injection pour le scanner Html5Qrcode natif */}
-      <style>{`
-        #reader button {
-          background-color: #f97316 !important;
-          color: #18181b !important;
-          font-weight: 800 !important;
-          border: none !important;
-          border-radius: 12px !important;
-          padding: 8px 16px !important;
-          margin-top: 8px !important;
-          cursor: pointer !important;
-        }
-        #reader img[alt="Info icon"] { display: none !important; }
-        #reader__scan_region { background: transparent !important; }
-      `}</style>
-
-      {/* En-tête */}
+      <style>{`#reader button { background:#f97316!important;color:#18181b!important;border:0!important;border-radius:12px!important;padding:8px 16px!important } #reader img[alt="Info icon"]{display:none!important}`}</style>
       <div className="fs-header-card">
-        <div className="fs-header-icon-wrap">
-          <QrCode size={26} />
-        </div>
-        <div>
-          <h1 className="fs-title">Émargement par QR Code</h1>
-          <p className="fs-subtitle">Scannez le badge étudiant pour valider la présence</p>
-        </div>
+        <div className="fs-header-icon-wrap"><QrCode size={26} /></div>
+        <div><h1 className="fs-title">Gestion des présences</h1><p className="fs-subtitle">Sélectionnez une séance pour effectuer ou consulter l’émargement</p></div>
       </div>
 
-      <div className="fs-main-panel">
-        
-        {/* Sélecteur de Séance */}
-        <div className="fs-select-group">
-          <div className="fs-select-header">
-            <label className="fs-label flex items-center gap-1.5">
-              <Calendar size={14} className="text-orange-500" />
-              Séance rattachée
-            </label>
-            {todaysSeances.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowAllSeances(!showAllSeances)}
-                className="fs-filter-toggle"
-              >
-                {showAllSeances ? "Filtrer sur aujourd'hui" : "Voir toutes les séances"}
-              </button>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="fs-loading-box">
-              Chargement des séances...
-            </div>
-          ) : (
-            <select
-              value={selectedSeance}
-              onChange={(e) => {
-                setSelectedSeance(e.target.value);
-                setScanMessage({ type: '', text: '' });
-              }}
-              className="fs-select"
-            >
-              <option value="">-- Sélectionner une séance --</option>
-              {displayList.map((s) => {
-                const dateFormatted = new Date(s.date_seance).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-                return (
-                  <option key={s.id_seance} value={s.id_seance}>
-                    {s.titre || `${s.type_seance || 'Séance'} #${s.id_seance}`} ({dateFormatted} • {s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)})
-                  </option>
-                );
-              })}
-            </select>
-          )}
-
-          {/* Indication si aucune séance le jour même */}
-          {!loading && todaysSeances.length === 0 && !showAllSeances && (
-            <div className="fs-warning-banner">
-              <AlertCircle size={15} className="shrink-0" />
-              <span>Aucune séance n'est programmée pour aujourd'hui.</span>
-              <button
-                onClick={() => setShowAllSeances(true)}
-                className="fs-warning-action"
-              >
-                Afficher tout
-              </button>
+      {!selectedSeance ? (
+        <div className="fs-main-panel">
+          <div className="fs-select-header"><label className="fs-label"><Calendar size={14} /> Toutes les séances</label></div>
+          {loading ? <div className="fs-loading-box">Chargement des séances...</div> : (
+            <div className="fs-seance-list">
+              {seances.map((seance) => (
+                <button key={seance.id_seance} type="button" className="fs-seance-card" onClick={() => openSeance(seance)}>
+                  <span className="fs-seance-main">
+                    <strong>{seance.titre || `Séance #${seance.id_seance}`}</strong>
+                    <small>{seance.formation_titre}</small>
+                  </span>
+                  <span className="fs-seance-meta">
+                    {toLocalDate(seance.date_seance) === today && <span className="fs-today-badge">Aujourd’hui</span>}
+                    <span>{formatDate(seance.date_seance)}</span>
+                    <span><Clock size={13} /> {seance.heure_debut?.slice(0, 5)} - {seance.heure_fin?.slice(0, 5)}</span>
+                  </span>
+                  <span className="fs-seance-arrow">›</span>
+                </button>
+              ))}
+              {!seances.length && <p className="fs-manual-loading">Aucune séance programmée.</p>}
             </div>
           )}
         </div>
-
-        {/* Détails de la séance sélectionnée */}
-        {activeSeanceDetails && (
+      ) : (
+        <div className="fs-main-panel">
+          <button type="button" className="fs-filter-toggle" onClick={() => setSelectedSeance(null)}>← Retour aux séances</button>
           <div className="fs-details-banner">
-            <div className="fs-details-left">
-              <span className="fs-details-badge">
-                {activeSeanceDetails.type_seance || 'Séance'}
-              </span>
-              <span className="fs-details-name" title={activeSeanceDetails.formation_titre || activeSeanceDetails.titre}>
-                {activeSeanceDetails.formation_titre || activeSeanceDetails.titre}
-              </span>
-            </div>
-            <div className="fs-details-right">
-              <div className="fs-details-meta">
-                <Clock size={13} className="text-orange-500" />
-                <span>{activeSeanceDetails.heure_debut?.substring(0, 5)} - {activeSeanceDetails.heure_fin?.substring(0, 5)}</span>
-              </div>
-              {activeSeanceDetails.salle && (
-                <div className="fs-details-meta">
-                  <MapPin size={13} className="text-orange-500" />
-                  <span>{activeSeanceDetails.salle}</span>
-                </div>
-              )}
-            </div>
+            <div><span className="fs-details-badge">{selectedSeance.type_seance || 'Séance'}</span><strong>{selectedSeance.titre || selectedSeance.formation_titre}</strong></div>
+            <div className="fs-details-right"><span><Calendar size={13} /> {formatDate(selectedSeance.date_seance)}</span><span><Clock size={13} /> {selectedSeance.heure_debut?.slice(0, 5)} - {selectedSeance.heure_fin?.slice(0, 5)}</span>{selectedSeance.salle && <span><MapPin size={13} /> {selectedSeance.salle}</span>}</div>
           </div>
-        )}
 
-        {/* Mode d'émargement */}
-        {selectedSeance && (
-          <div className="fs-mode-tabs">
-            <button type="button" onClick={() => setAttendanceMode('scan')} className={`fs-tab-btn ${attendanceMode === 'scan' ? 'active' : ''}`}>Scanner QR</button>
-            <button type="button" onClick={() => setAttendanceMode('manual')} className={`fs-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}>Présence manuelle</button>
-          </div>
-        )}
-
-        {/* Zone Scanner ou liste manuelle */}
-        {selectedSeance ? (
-          attendanceMode === 'manual' ? (
+          {closed ? (
             <div className="fs-manual-container">
+              <h2 className="fs-label">Présences clôturées</h2>
               <div className="fs-manual-scroll">
-                {manualLoading ? (
-                  <p className="fs-manual-loading">Chargement de la liste...</p>
-                ) : manualLearners.length === 0 ? (
-                  <p className="fs-manual-loading">Aucun apprenant accepté pour cette séance.</p>
-                ) : manualLearners.map((learner) => (
-                  <label key={learner.id_apprenant} className="fs-learner-row">
-                    <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => toggleManualLearner(learner.id_apprenant)} className="fs-checkbox" />
+                {learners.map((learner) => (
+                  <div key={learner.id_apprenant} className="fs-learner-row fs-closed-row">
                     <span className="fs-learner-name">{learner.prenom} {learner.nom}</span>
-                    <span className="fs-learner-mail">{learner.email}</span>
-                  </label>
+                    <select value={learner.statut_presence || 'ABSENT'} onChange={(event) => updateClosedStatus(learner.id_apprenant, event.target.value)}>
+                      <option value="PRESENT">Présent</option>
+                      <option value="ABSENT">Absent</option>
+                    </select>
+                  </div>
                 ))}
               </div>
-              <button type="button" onClick={saveManualAttendance} disabled={manualLoading || manualLearners.length === 0} className="fs-submit-btn">Enregistrer les présences cochées</button>
             </div>
           ) : (
-          <div className="fs-scanner-space">
-            <div className="fs-reader-box">
-              <div id="reader" className="w-full overflow-hidden"></div>
-            </div>
-
-            {/* Notification de Scan */}
-            {scanMessage.text && (
-              <div
-                className={`fs-scan-alert ${scanMessage.type === 'success' ? 'success' : 'error'}`}
-              >
-                <div className="fs-alert-content">
-                  {scanMessage.type === 'success' ? (
-                    <CheckCircle2 size={20} className="shrink-0 text-emerald-500" />
-                  ) : (
-                    <XCircle size={20} className="shrink-0 text-rose-500" />
-                  )}
-                  <span>{scanMessage.text}</span>
-                </div>
-                <button
-                  onClick={() => setScanMessage({ type: '', text: '' })}
-                  className="fs-alert-close"
-                  title="Effacer le message"
-                >
-                  <RefreshCw size={15} />
-                </button>
+            <>
+              <div className="fs-mode-tabs">
+                <button type="button" onClick={() => setAttendanceMode('scan')} className={`fs-tab-btn ${attendanceMode === 'scan' ? 'active' : ''}`}>Scan QR</button>
+                <button type="button" onClick={() => setAttendanceMode('manual')} className={`fs-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}>Présence manuelle</button>
               </div>
-            )}
-          </div>
-          )
-        ) : (
-          <div className="fs-placeholder-state">
-            <QrCode size={40} className="mb-2 stroke-1 text-orange-500 opacity-60" />
-            <p className="fs-placeholder-text">Sélectionnez une séance ci-dessus pour lancer la caméra</p>
-          </div>
-        )}
-      </div>
+              {attendanceMode === 'scan' ? (
+                <div className="fs-scanner-space"><div className="fs-reader-box"><div id="reader" /></div></div>
+              ) : (
+                <div className="fs-manual-container">
+                  <div className="fs-manual-scroll">
+                    {attendanceLoading ? <p className="fs-manual-loading">Chargement...</p> : pendingLearners.map((learner) => (
+                      <label key={learner.id_apprenant} className="fs-learner-row">
+                        <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => setManualSelected((current) => current.includes(learner.id_apprenant) ? current.filter((id) => id !== learner.id_apprenant) : [...current, learner.id_apprenant])} />
+                        <span className="fs-learner-name">{learner.prenom} {learner.nom}</span>
+                        <span className="fs-learner-mail">{learner.email}</span>
+                      </label>
+                    ))}
+                    {!pendingLearners.length && !attendanceLoading && <p className="fs-manual-loading">Tous les apprenants ont été marqués présents.</p>}
+                  </div>
+                  <button type="button" className="fs-submit-btn" disabled={!manualSelected.length} onClick={saveManual}>Enregistrer les présences sélectionnées</button>
+                </div>
+              )}
+              <button type="button" className="fs-submit-btn fs-close-attendance" disabled={closing} onClick={closeAttendance}>
+                {closing ? 'Clôture...' : 'Terminer le pointage'}
+              </button>
+            </>
+          )}
+
+          {scanMessage.text && <div className={`fs-scan-alert ${scanMessage.type}`}><div className="fs-alert-content">{scanMessage.type === 'success' ? <CheckCircle2 size={20} /> : scanMessage.type === 'error' ? <XCircle size={20} /> : <AlertCircle size={20} />}<span>{scanMessage.text}</span></div><button className="fs-alert-close" onClick={() => setScanMessage({ type: '', text: '' })}><RefreshCw size={15} /></button></div>}
+        </div>
+      )}
     </div>
   );
 }

@@ -52,12 +52,20 @@ export default function FormateurApprenants() {
   const [savingGrade, setSavingGrade] = useState(false);
   const [gradeMessage, setGradeMessage] = useState('');
   const [activeMenu, setActiveMenu] = useState(null);
+  const [attendanceStats, setAttendanceStats] = useState({ formations: [], seances: [], apprenants: [] });
+  const [attendanceView, setAttendanceView] = useState('formation');
 
   useEffect(() => {
     let active = true;
-    API.get('/formateur/apprenants')
-      .then((response) => {
-        if (active) setStudents(response.data);
+    Promise.all([
+      API.get('/formateur/apprenants'),
+      API.get('/formateur/apprenants/statistiques')
+    ])
+      .then(([studentResponse, statsResponse]) => {
+        if (active) {
+          setStudents(studentResponse.data);
+          setAttendanceStats(statsResponse.data);
+        }
       })
       .catch((error) => {
         if (active) setStudentsError(error.response?.data?.message || 'Impossible de charger les apprenants.');
@@ -176,6 +184,62 @@ export default function FormateurApprenants() {
           </div>
         </div>
       </div>
+
+      <section className="apprenants-attendance-section">
+        <div className="apprenants-attendance-header">
+          <div>
+            <h2>Taux de présence</h2>
+            <p>Consultez les présences par formation, séance ou apprenant.</p>
+          </div>
+          <div className="apprenants-attendance-tabs">
+            <button type="button" className={attendanceView === 'formation' ? 'active' : ''} onClick={() => setAttendanceView('formation')}>Par formation</button>
+            <button type="button" className={attendanceView === 'seance' ? 'active' : ''} onClick={() => setAttendanceView('seance')}>Par séance</button>
+            <button type="button" className={attendanceView === 'apprenant' ? 'active' : ''} onClick={() => setAttendanceView('apprenant')}>Par apprenant</button>
+          </div>
+        </div>
+
+        {attendanceView === 'formation' && (
+          <div className="apprenants-attendance-grid">
+            {attendanceStats.formations.map((formation) => (
+              <div className="apprenants-attendance-card" key={formation.id_formation}>
+                <strong>{formation.formation_titre}</strong>
+                <span>{formatRate(formation.taux_presence)} présents</span>
+                <small>{formation.presents} présents · {formation.absents} absents</small>
+              </div>
+            ))}
+          </div>
+        )}
+        {attendanceView === 'seance' && (
+          <div className="apprenants-attendance-table-wrap">
+            <table className="apprenants-attendance-table">
+              <thead><tr><th>Séance</th><th>Formation</th><th>Date</th><th>Présence</th></tr></thead>
+              <tbody>{attendanceStats.seances.map((seance) => (
+                <tr key={seance.id_seance}>
+                  <td>{seance.seance_titre || `Séance #${seance.id_seance}`}</td>
+                  <td>{seance.formation_titre}</td>
+                  <td>{formatDate(seance.date_seance)}</td>
+                  <td><strong>{formatRate(seance.taux_presence)}</strong> <small>({seance.presents}/{seance.total_enregistres})</small></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        {attendanceView === 'apprenant' && (
+          <div className="apprenants-attendance-table-wrap">
+            <table className="apprenants-attendance-table">
+              <thead><tr><th>Apprenant</th><th>Formation</th><th>Présences</th><th>Taux</th></tr></thead>
+              <tbody>{attendanceStats.apprenants.map((student) => (
+                <tr key={`${student.id_apprenant}-${student.id_formation}`}>
+                  <td>{student.prenom} {student.nom}</td>
+                  <td>{student.formation_titre}</td>
+                  <td>{student.presents}/{student.total_seances}</td>
+                  <td><strong>{formatRate(student.taux_presence)}</strong></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* LISTE DES APPRENANTS EN MODE CARTES */}
       <section className="apprenants-section">

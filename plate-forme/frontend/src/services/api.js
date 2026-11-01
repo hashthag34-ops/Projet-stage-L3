@@ -1,5 +1,5 @@
-// src/services/api.js
 import axios from 'axios';
+
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 const API = axios.create({
@@ -17,7 +17,6 @@ export const getFormationImageUrl = (imageUrl) => {
   return new URL(normalizedPath, `${backendOrigin}/`).toString();
 };
 
-// Intercepteur pour attacher le token JWT automatiquement
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {

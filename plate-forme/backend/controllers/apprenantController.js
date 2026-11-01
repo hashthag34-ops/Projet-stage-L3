@@ -29,9 +29,8 @@ exports.getHistoriqueFormations = async (req, res) => {
               COALESCE(presences.total_seances, 0)::INTEGER AS total_seances,
               COALESCE(presences.presentes, 0)::INTEGER AS presentes,
               COALESCE(presences.absentes, 0)::INTEGER AS absentes,
-              COALESCE(presences.retards, 0)::INTEGER AS retards,
               COALESCE(notes.evaluations, '[]'::json) AS notes,
-              COALESCE(certification.statut::TEXT, 'EN_ATTENTE') AS statut_certification,
+              certification.statut::TEXT AS statut_certification,
               certification.date_certification,
               certification.numero_certification,
               certification.fichier_certification
@@ -49,11 +48,7 @@ exports.getHistoriqueFormations = async (req, res) => {
                 COUNT(*) FILTER (
                   WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
                     AND (p.statut = 'ABSENT' OR p.id_presence IS NULL)
-                )::INTEGER AS absentes,
-                COUNT(*) FILTER (
-                  WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
-                    AND p.statut = 'RETARD'
-                )::INTEGER AS retards
+                )::INTEGER AS absentes
          FROM seance s
          LEFT JOIN presence p
            ON p.id_seance = s.id_seance AND p.id_apprenant = a.id_apprenant
@@ -113,7 +108,7 @@ exports.getMesSeances = async (req, res) => {
     // 2. Récupère le candidat associé à cet apprenant
     // 3. Récupère les inscriptions ACCEPTEES de ce candidat
     // 4. Joint les formations et leurs séances
-    // 5. Joint la table presence pour récupérer le statut du scan s'il existe (PRESENT / ABSENT / RETARD)
+    // 5. Joint la table presence pour récupérer le statut du scan s'il existe (PRESENT / ABSENT)
     const query = `
       SELECT 
         s.id_seance,
@@ -154,14 +149,14 @@ exports.getMesForums = async (req, res) => {
 
   try {
     const query = `
-      SELECT fo.id_forum, fo.nom, fo.description, f.titre AS titre_formation
+      SELECT fo.id_forum, fo.nom, fo.description, f.titre AS titre_formation, f.statut AS formation_statut
       FROM apprenant a
       JOIN inscription i ON a.id_candidat = i.id_candidat
       JOIN formation f ON i.id_formation = f.id_formation
       JOIN forum fo ON fo.id_formation = f.id_formation
       WHERE a.id_utilisateur = $1
         AND i.statut = 'ACCEPTEE'
-        AND f.date_fin >= CURRENT_DATE
+        AND fo.id_forum IS NOT NULL
     `;
     const { rows } = await db.query(query, [id_utilisateur]);
     res.json(rows);
@@ -181,7 +176,7 @@ exports.getMesEvaluations = async (req, res) => {
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
        WHERE a.id_utilisateur = $1
-         AND es.statut = 'PUBLIEE'
+         AND es.statut IN ('PUBLIEE', 'FERMEE')
          AND es.date_fermeture <= CURRENT_TIMESTAMP
          AND NOT EXISTS (
            SELECT 1 FROM evaluation_tentative et
@@ -200,7 +195,7 @@ exports.getMesEvaluations = async (req, res) => {
               latest.note, latest.date_debut, latest.date_fin
        FROM apprenant a
        JOIN inscription i ON i.id_candidat = a.id_candidat AND i.statut = 'ACCEPTEE'
-       JOIN evaluation_sujet es ON es.id_formation = i.id_formation AND es.statut = 'PUBLIEE'
+       JOIN evaluation_sujet es ON es.id_formation = i.id_formation AND es.statut IN ('PUBLIEE', 'FERMEE')
        JOIN formation f ON f.id_formation = es.id_formation
        LEFT JOIN LATERAL (
          SELECT et.id_tentative, et.statut, et.note, et.date_debut, et.date_fin
@@ -231,7 +226,18 @@ exports.getEvaluationApprenant = async (req, res) => {
        JOIN formation f ON f.id_formation = es.id_formation
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       WHERE es.id_evaluation_sujet = $1 AND es.statut = 'PUBLIEE'         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+       WHERE es.id_evaluation_sujet = $1 AND es.statut IN ('PUBLIEE', 'FERMEE')
+         AND (
+           es.date_fermeture IS NULL
+           OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+           OR EXISTS (
+             SELECT 1 FROM evaluation_tentative active_attempt
+             JOIN apprenant active_learner ON active_learner.id_apprenant = active_attempt.id_apprenant
+             WHERE active_attempt.id_evaluation_sujet = es.id_evaluation_sujet
+               AND active_learner.id_utilisateur = $2
+               AND active_attempt.statut = 'EN_COURS'
+           )
+         )
          AND a.id_utilisateur = $2`,
       [req.params.id, req.user.id_utilisateur]
     );
@@ -265,8 +271,17 @@ exports.startEvaluationAttempt = async (req, res) => {
        FROM evaluation_sujet es
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       WHERE es.id_evaluation_sujet = $1 AND es.statut = 'PUBLIEE'
-         AND (es.date_fermeture IS NULL OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+       WHERE es.id_evaluation_sujet = $1 AND es.statut IN ('PUBLIEE', 'FERMEE')
+         AND (
+           es.date_fermeture IS NULL
+           OR es.date_fermeture > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+           OR EXISTS (
+             SELECT 1 FROM evaluation_tentative active_attempt
+             WHERE active_attempt.id_evaluation_sujet = es.id_evaluation_sujet
+               AND active_attempt.id_apprenant = a.id_apprenant
+               AND active_attempt.statut = 'EN_COURS'
+           )
+         )
          AND a.id_utilisateur = $2`,
       [req.params.id, req.user.id_utilisateur]
     );
@@ -365,7 +380,7 @@ exports.saveEvaluationAnswer = async (req, res) => {
        JOIN inscription i ON i.id_candidat = a.id_candidat
          AND i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        WHERE et.id_tentative = $1 AND a.id_utilisateur = $2
-         AND et.statut = 'EN_COURS' AND es.statut = 'PUBLIEE'
+         AND et.statut = 'EN_COURS' AND es.statut IN ('PUBLIEE', 'FERMEE')
        FOR UPDATE OF et`,
       [req.params.id_tentative, req.user.id_utilisateur]
     );
@@ -432,7 +447,7 @@ exports.submitEvaluationAttempt = async (req, res) => {
        JOIN apprenant a ON a.id_apprenant = et.id_apprenant
        JOIN inscription i ON i.id_candidat = a.id_candidat
          AND i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
-       WHERE et.id_tentative = $1 AND a.id_utilisateur = $2 AND es.statut = 'PUBLIEE'
+       WHERE et.id_tentative = $1 AND a.id_utilisateur = $2 AND es.statut IN ('PUBLIEE', 'FERMEE')
        FOR UPDATE OF et`,
       [req.params.id_tentative, req.user.id_utilisateur]
     );
@@ -447,6 +462,10 @@ exports.submitEvaluationAttempt = async (req, res) => {
     }
 
     const deadline = attempt.deadline_epoch_ms;
+    if (deadline !== null && Number(deadline) <= Date.now()) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'Le temps de cette évaluation est écoulé.' });
+    }
 
     const { rows } = await client.query(
       `UPDATE evaluation_tentative
@@ -469,7 +488,30 @@ exports.submitEvaluationAttempt = async (req, res) => {
       [attempt.id_tentative, deadline]
     );
     await client.query('COMMIT');
-    res.json(rows[0]);
+    const correction = await client.query(
+      `SELECT eq.id_question, eq.numero_question, eq.enonce, eq.points,
+              selected.id_choix AS reponse_choisie,
+              selected.libelle AS reponse_choisie_libelle,
+              correct.id_choix AS reponse_correcte,
+              correct.libelle AS reponse_correcte_libelle,
+              CASE WHEN selected.est_correct THEN TRUE ELSE FALSE END AS correcte,
+              COALESCE(er.points_obtenus, 0) AS points_obtenus
+       FROM evaluation_question eq
+       LEFT JOIN evaluation_reponse er
+         ON er.id_question = eq.id_question AND er.id_tentative = $1
+       LEFT JOIN evaluation_choix selected ON selected.id_choix = er.id_choix
+       LEFT JOIN LATERAL (
+         SELECT ec.id_choix, ec.libelle, ec.est_correct
+         FROM evaluation_choix ec
+         WHERE ec.id_question = eq.id_question AND ec.est_correct = TRUE
+         ORDER BY ec.ordre
+         LIMIT 1
+       ) correct ON TRUE
+       WHERE eq.id_evaluation_sujet = $2
+       ORDER BY eq.numero_question`,
+      [attempt.id_tentative, attempt.id_evaluation_sujet]
+    );
+    res.json({ ...rows[0], correction: correction.rows });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Erreur soumission évaluation :', error);

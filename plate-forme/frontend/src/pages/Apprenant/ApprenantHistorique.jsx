@@ -25,8 +25,7 @@ const formatStatus = (status) => {
 
 const certificationLabel = (status) => {
   if (status === 'CERTIFIE') return 'Certifiée';
-  if (status === 'NON_CERTIFIE') return 'Non certifiée';
-  return 'En attente de décision';
+  return '';
 };
 
 export default function ApprenantHistorique() {
@@ -80,9 +79,8 @@ export default function ApprenantHistorique() {
           const completedSessions = Number(formation.total_seances) || 0;
           const presentCount = Number(formation.presentes) || 0;
           const absentCount = Number(formation.absentes) || 0;
-          const lateCount = Number(formation.retards) || 0;
           const attendanceRate = completedSessions
-            ? Math.round(((presentCount + lateCount) / completedSessions) * 100)
+            ? Math.round((presentCount / completedSessions) * 100)
             : null;
 
           return (
@@ -120,7 +118,6 @@ export default function ApprenantHistorique() {
                     <>
                       <p className="history-subbox-text">
                         {attendanceRate}% de présence · {presentCount} présent{presentCount > 1 ? 's' : ''}
-                        {lateCount > 0 ? ` · ${lateCount} retard${lateCount > 1 ? 's' : ''}` : ''}
                         {absentCount > 0 ? ` · ${absentCount} absence${absentCount > 1 ? 's' : ''}` : ''}
                       </p>
                       <p className="history-subbox-subtext">
@@ -134,7 +131,9 @@ export default function ApprenantHistorique() {
                   <h3 className="history-subbox-title">
                     <Award className="subbox-icon" size={16} /> Certification
                   </h3>
-                  <p className="history-subbox-text">{certificationLabel(formation.statut_certification)}</p>
+                  {formation.statut_certification === 'CERTIFIE' && (
+                    <p className="history-subbox-text">{certificationLabel(formation.statut_certification)}</p>
+                  )}
                   {formation.date_certification && (
                     <p className="history-subbox-subtext">
                       Décision du {formatDate(formation.date_certification)}

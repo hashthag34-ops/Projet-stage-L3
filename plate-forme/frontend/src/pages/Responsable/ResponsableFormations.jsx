@@ -302,6 +302,7 @@ export default function ResponsableFormations() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [editingStatus, setEditingStatus] = useState('BROUILLON');
 
   const [formData, setFormData] = useState({
     titre: '',
@@ -349,6 +350,7 @@ export default function ResponsableFormations() {
       URL.revokeObjectURL(imagePreviewUrl);
     }
     setEditingId(null);
+    setEditingStatus('BROUILLON');
     setSelectedFile(null);
     setImagePreviewUrl('');
     setImageInputType('url');
@@ -366,10 +368,15 @@ export default function ResponsableFormations() {
   };
 
   const handleOpenEdit = (f) => {
+    if (f.statut === 'ARCHIVEE') {
+      window.alert('Une formation archivée ne peut plus être modifiée.');
+      return;
+    }
     if (imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreviewUrl);
     }
     setEditingId(f.id_formation);
+    setEditingStatus(f.statut ?? 'BROUILLON');
     setSelectedFile(null);
     setImagePreviewUrl('');
     setImageInputType('url');
@@ -407,7 +414,19 @@ export default function ResponsableFormations() {
       const payload = { ...formData, image_url: finalImageUrl };
 
       if (editingId) {
-        await API.put(`/formations/${editingId}`, payload);
+        try {
+          await API.put(`/formations/${editingId}`, payload);
+        } catch (requestError) {
+          if (requestError.response?.status === 409 && requestError.response?.data?.code === 'SESSIONS_OUT_OF_RANGE') {
+            const confirmed = window.confirm(
+              `${requestError.response.data.message}\n\nVoulez-vous supprimer ces séances incompatibles et enregistrer les modifications ?`
+            );
+            if (!confirmed) throw requestError;
+            await API.put(`/formations/${editingId}`, { ...payload, confirm_delete_sessions: true });
+          } else {
+            throw requestError;
+          }
+        }
       } else {
         await API.post('/formations', payload);
       }
@@ -830,6 +849,7 @@ export default function ResponsableFormations() {
                     required 
                     value={formData.date_debut ?? ''} 
                     onChange={handleChange}
+                    disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
                     className="rf-input" 
                   />
                 </div>
@@ -841,6 +861,7 @@ export default function ResponsableFormations() {
                     required 
                     value={formData.date_fin ?? ''} 
                     onChange={handleChange}
+                    disabled={editingId && ['TERMINEE', 'ARCHIVEE'].includes(editingStatus)}
                     className="rf-input" 
                   />
                 </div>
@@ -855,6 +876,7 @@ export default function ResponsableFormations() {
                     required 
                     value={formData.date_limite_inscription ?? ''} 
                     onChange={handleChange}
+                    disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
                     className="rf-input" 
                   />
                 </div>
@@ -866,6 +888,7 @@ export default function ResponsableFormations() {
                     required 
                     value={formData.capacite_max ?? 20} 
                     onChange={handleChange}
+                    disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
                     className="rf-input" 
                   />
                 </div>
@@ -877,6 +900,7 @@ export default function ResponsableFormations() {
                   name="statut" 
                   value={formData.statut ?? 'BROUILLON'} 
                   onChange={handleChange}
+                  disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
                   className="rf-input"
                 >
                   <option value="BROUILLON">BROUILLON</option>

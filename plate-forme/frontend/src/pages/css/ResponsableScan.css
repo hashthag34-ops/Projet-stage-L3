@@ -103,6 +103,83 @@
   box-sizing: border-box;
 }
 
+.fs-seance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.fs-seance-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--fs-border);
+  border-radius: 14px;
+  background: var(--fs-subbox);
+  padding: 14px;
+  color: var(--fs-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fs-seance-card:hover {
+  border-color: var(--orange-primary);
+}
+
+.fs-seance-main,
+.fs-seance-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fs-seance-main strong {
+  font-size: 13px;
+}
+
+.fs-seance-main small,
+.fs-seance-meta {
+  color: var(--fs-muted);
+  font-size: 11px;
+}
+
+.fs-seance-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fs-today-badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--orange-primary);
+  padding: 2px 8px;
+  color: #18181b;
+  font-weight: 800;
+}
+
+.fs-seance-arrow {
+  font-size: 28px;
+  color: var(--orange-primary);
+}
+
+.fs-close-attendance {
+  margin-top: 16px;
+}
+
+.fs-closed-row {
+  justify-content: space-between;
+}
+
+.fs-closed-row select {
+  border: 1px solid var(--fs-border);
+  border-radius: 8px;
+  background: var(--fs-panel);
+  padding: 7px 9px;
+  color: var(--fs-text);
+}
+
 @media (min-width: 640px) {
   .fs-main-panel {
     padding: 24px;

@@ -41,11 +41,10 @@ export default function ApprenantDashboard() {
     fetchDashboardData();
   }, []);
 
-  const attendance = seances.filter((seance) => ['PRESENT', 'RETARD', 'ABSENT'].includes(seance.statut_presence));
+  const attendance = seances.filter((seance) => ['PRESENT', 'ABSENT'].includes(seance.statut_presence));
   const presentCount = seances.filter((seance) => seance.statut_presence === 'PRESENT').length;
-  const lateCount = seances.filter((seance) => seance.statut_presence === 'RETARD').length;
   const absentCount = seances.filter((seance) => seance.statut_presence === 'ABSENT').length;
-  const attendanceRate = attendance.length ? Math.round(((presentCount + lateCount) / attendance.length) * 100) : 0;
+  const attendanceRate = attendance.length ? Math.round((presentCount / attendance.length) * 100) : 0;
   const completedSessions = seances.filter((seance) => seance.statut_presence).length;
 
   if (loading) return <div className="student-loading">Chargement de ton espace...</div>;

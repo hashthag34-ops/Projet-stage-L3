@@ -35,18 +35,16 @@ export default function ApprenantPlanning() {
   const stats = useMemo(() => {
     const total = seances.length;
     const presents = seances.filter((s) => s.statut_presence === 'PRESENT').length;
-    const retards = seances.filter((s) => s.statut_presence === 'RETARD').length;
     const absents = seances.filter((s) => s.statut_presence === 'ABSENT').length;
     const aVenir = seances.filter((s) => !s.statut_presence || s.statut_presence === 'EN_ATTENTE').length;
-    const tauxPresence = total > 0 ? Math.round(((presents + retards) / total) * 100) : 0;
+    const tauxPresence = total > 0 ? Math.round((presents / total) * 100) : 0;
 
-    return { total, presents, retards, absents, aVenir, tauxPresence };
+    return { total, presents, absents, aVenir, tauxPresence };
   }, [seances]);
 
   const chartData = useMemo(() => {
     return [
       { name: 'Présent', value: stats.presents, color: '#f97316' },
-      { name: 'En retard', value: stats.retards, color: '#f59e0b' },
       { name: 'Absent', value: stats.absents, color: '#64748b' },
       { name: 'À venir', value: stats.aVenir, color: '#cbd5e1' },
     ].filter((item) => item.value > 0);
@@ -54,7 +52,6 @@ export default function ApprenantPlanning() {
 
   const legend = [
     { label: 'Présent', value: stats.presents, dotClass: 'dot-orange' },
-    { label: 'En retard', value: stats.retards, dotClass: 'dot-amber' },
     { label: 'Absent', value: stats.absents, dotClass: 'dot-slate' },
     { label: 'À venir', value: stats.aVenir, dotClass: 'dot-light' },
   ];
@@ -68,7 +65,7 @@ export default function ApprenantPlanning() {
 
   const matchesFilter = (s, id) => {
     if (id === 'PRESENT') return s.statut_presence === 'PRESENT';
-    if (id === 'ABSENT') return s.statut_presence === 'ABSENT' || s.statut_presence === 'RETARD';
+    if (id === 'ABSENT') return s.statut_presence === 'ABSENT';
     if (id === 'UPCOMING') return !s.statut_presence || s.statut_presence === 'EN_ATTENTE';
     return true;
   };
@@ -92,12 +89,6 @@ export default function ApprenantPlanning() {
         return (
           <span className="badge-presence present">
             <CheckCircle2 size={12} /> Présent
-          </span>
-        );
-      case 'RETARD':
-        return (
-          <span className="badge-presence retard">
-            <AlertTriangle size={12} /> En retard
           </span>
         );
       case 'ABSENT':

@@ -1,5 +1,5 @@
 // frontend/src/pages/Formateur/GsEvaluation.jsx
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -15,6 +15,15 @@ const toDateTimeLocal = (value) => {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
+const selectedResultsByEvaluation = (results, evaluationId) => results
+  .filter((result) => result.id_evaluation_sujet === evaluationId)
+  .map((result) => ({
+    ...result,
+    displayName: `${result.prenom} ${result.nom}`,
+    numericNote: Number(result.note || 0)
+  }))
+  .sort((a, b) => b.numericNote - a.numericNote);
+
 export default function GsEvaluation() {
   const [searchParams] = useSearchParams();
   const [formations, setFormations] = useState([]);
@@ -27,6 +36,7 @@ export default function GsEvaluation() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [publicationAt, setPublicationAt] = useState('');
   const [editDraft, setEditDraft] = useState(null);
+  const [expandedResultId, setExpandedResultId] = useState(null);
   const [subject, setSubject] = useState({ id_formation: searchParams.get('formation') || '', titre: '', description: '', duree_minutes: 60, obligatoire: true, date_fermeture: '' });
   const [question, setQuestion] = useState({ enonce: '', points: 5, choix: [{ libelle: '', est_correct: true }, { libelle: '', est_correct: false }] });
 
@@ -58,6 +68,35 @@ export default function GsEvaluation() {
   }, [selectedId]);
 
   const selectedResults = useMemo(() => results.filter((item) => item.id_evaluation_sujet === selectedId), [results, selectedId]);
+  const rankedFormationResults = useMemo(() => {
+    const groups = new Map();
+    results.forEach((result) => {
+      const key = String(result.formation_titre);
+      if (!groups.has(key)) groups.set(key, new Map());
+      const learners = groups.get(key);
+      if (!learners.has(result.id_apprenant)) learners.set(result.id_apprenant, []);
+      learners.get(result.id_apprenant).push(Number(result.note || 0));
+    });
+    return [...groups.entries()].map(([formation, learners]) => ({
+      formation,
+      learners: [...learners.entries()].map(([id, notes]) => ({
+        id,
+        name: (() => {
+          const learner = results.find((item) => item.id_apprenant === id);
+          return learner ? `${learner.prenom} ${learner.nom}` : `Apprenant #${id}`;
+        })(),
+        average: notes.reduce((total, note) => total + note, 0) / notes.length
+      })).sort((a, b) => b.average - a.average)
+    })).sort((a, b) => a.formation.localeCompare(b.formation));
+  }, [results]);
+
+  const rankedEvaluationResults = useMemo(() => evaluations.map((evaluation) => {
+    const learners = selectedResultsByEvaluation(results, evaluation.id_evaluation_sujet);
+    return {
+      ...evaluation,
+      learners
+    };
+  }).sort((a, b) => a.titre.localeCompare(b.titre)), [evaluations, results]);
 
   // Données statistiques par évaluation pour le AreaChart
   const evaluationChartData = useMemo(() => {
@@ -252,6 +291,50 @@ export default function GsEvaluation() {
         )}
       </section>
 
+      <section className="fe-ranking-section">
+        <h2 className="fe-section-heading">Classements</h2>
+        <div className="fe-ranking-grid">
+          <div className="fe-ranking-card">
+            <h3>Classement par formation</h3>
+            {rankedFormationResults.map((group) => (
+              <div key={group.formation} className="fe-ranking-group">
+                <h4>{group.formation}</h4>
+                {!group.learners.length ? <p className="fe-empty-results">Aucun résultat.</p> : (
+                  <ol>
+                    {group.learners.map((learner, index) => (
+                      <li key={learner.id}>
+                        <span><b>{index + 1}.</b> {learner.name}</span>
+                        <strong>{learner.average.toFixed(2)} / 20</strong>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="fe-ranking-card">
+            <h3>Classement par évaluation</h3>
+            {rankedEvaluationResults.map((evaluation) => (
+              <div key={evaluation.id_evaluation_sujet} className="fe-ranking-group">
+                <h4>{evaluation.titre}</h4>
+                <small>{evaluation.formation_titre}</small>
+                {!evaluation.learners.length ? <p className="fe-empty-results">Aucun résultat.</p> : (
+                  <ol>
+                    {evaluation.learners.map((learner, index) => (
+                      <li key={learner.id_tentative}>
+                        <span><b>{index + 1}.</b> {learner.displayName}</span>
+                        <strong>{learner.numericNote.toFixed(2)} / 20</strong>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* LISTE DES ÉVALUATIONS + ACCORDÉON */}
       <section className="fe-evaluations-section">
         <h2 className="fe-section-heading">Vos sujets d'évaluation</h2>
@@ -414,11 +497,40 @@ export default function GsEvaluation() {
                               </thead>
                               <tbody>
                                 {selectedResults.map((result) => (
-                                  <tr key={result.id_tentative}>
-                                    <td>{result.prenom} {result.nom}</td>
-                                    <td>{result.note ?? '—'} / 20</td>
-                                    <td>{result.statut}</td>
-                                  </tr>
+                                  <Fragment key={result.id_tentative}>
+                                    <tr key={result.id_tentative}>
+                                      <td>{result.prenom} {result.nom}</td>
+                                      <td>{result.note ?? '—'} / 20</td>
+                                      <td>
+                                        <span>{result.statut}</span>
+                                        <button
+                                          type="button"
+                                          className="fe-btn-secondary"
+                                          onClick={() => setExpandedResultId((current) => current === result.id_tentative ? null : result.id_tentative)}
+                                        >
+                                          {expandedResultId === result.id_tentative ? 'Masquer' : 'Voir les réponses'}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                    {expandedResultId === result.id_tentative && (
+                                      <tr key={`${result.id_tentative}-correction`}>
+                                        <td colSpan="3">
+                                          {!result.correction?.length ? (
+                                            <p>Aucune réponse enregistrée.</p>
+                                          ) : (
+                                            result.correction.map((answer) => (
+                                              <div key={answer.id_question} className={`fe-choice-pill ${answer.correcte ? 'correct' : ''}`}>
+                                                <strong>Question {answer.numero_question} : {answer.enonce}</strong>
+                                                <div>Réponse de l’apprenant : {answer.reponse_choisie || 'Aucune réponse'}</div>
+                                                {!answer.correcte && <div>Bonne réponse : {answer.reponse_correcte || '—'}</div>}
+                                                <div>{answer.correcte ? '✓ Correcte' : '✗ Incorrecte'} — {answer.points_obtenus}/{answer.points} pt</div>
+                                              </div>
+                                            ))
+                                          )}
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </Fragment>
                                 ))}
                               </tbody>
                             </table>

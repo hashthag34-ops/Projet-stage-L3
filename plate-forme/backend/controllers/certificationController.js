@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { emitRealtimeEvent } = require('../services/realtime');
 
 const getFormationId = (value) => {
   const id = Number(value);
@@ -54,7 +55,7 @@ exports.getAdminCertificationFormations = async (_req, res) => {
               COUNT(DISTINCT c.id_apprenant)
                 FILTER (WHERE c.statut = 'NON_CERTIFIE')::INTEGER AS non_certifies_count,
               COUNT(DISTINCT a.id_apprenant)
-                FILTER (WHERE c.id_certification IS NULL OR c.statut = 'EN_ATTENTE')::INTEGER AS en_attente_count
+                FILTER (WHERE c.id_certification IS NULL)::INTEGER AS en_attente_count
        FROM formation f
        LEFT JOIN inscription i
          ON i.id_formation = f.id_formation AND i.statut = 'ACCEPTEE'
@@ -82,7 +83,7 @@ exports.getAdminCertificationLearners = async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT DISTINCT a.id_apprenant, u.nom, u.prenom, u.email,
-              COALESCE(c.statut::TEXT, 'EN_ATTENTE') AS certification_statut,
+              c.statut::TEXT AS certification_statut,
               c.date_certification
        FROM inscription i
        JOIN apprenant a ON a.id_candidat = i.id_candidat
@@ -144,7 +145,7 @@ exports.getFormationLearners = async (req, res) => {
          SELECT i.id_apprenant,
                 COUNT(DISTINCT s.id_seance)::INTEGER AS seances_total,
                 COUNT(DISTINCT s.id_seance)
-                  FILTER (WHERE p.statut IN ('PRESENT', 'RETARD'))::INTEGER AS seances_presentes
+                  FILTER (WHERE p.statut = 'PRESENT')::INTEGER AS seances_presentes
          FROM inscrits i
          LEFT JOIN seance s ON s.id_formation = $1
          LEFT JOIN presence p
@@ -243,6 +244,24 @@ exports.saveCertificationSelection = async (req, res) => {
       return res.status(400).json({ message: 'Aucun apprenant accepté à enregistrer pour cette formation.' });
     }
 
+    const decisionsResult = await client.query(
+      `SELECT id_apprenant, statut::TEXT AS statut
+       FROM certification
+       WHERE id_formation = $1`,
+      [formationId]
+    );
+    const frozen = decisionsResult.rowCount >= learnerIds.length;
+    const frozenCertifiedIds = decisionsResult.rows
+      .filter((decision) => decision.statut === 'CERTIFIE')
+      .map((decision) => decision.id_apprenant)
+      .sort((a, b) => a - b);
+    const requestedCertifiedIds = [...certifiedLearnerIds].sort((a, b) => a - b);
+
+    if (frozen && JSON.stringify(frozenCertifiedIds) !== JSON.stringify(requestedCertifiedIds)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'La liste des apprenants certifiés est figée et ne peut plus être modifiée.' });
+    }
+
     await client.query(
       `INSERT INTO certification (id_apprenant, id_formation, statut, date_certification)
        SELECT id_apprenant, $1,
@@ -258,10 +277,18 @@ exports.saveCertificationSelection = async (req, res) => {
       [formationId, certifiedLearnerIds, learnerIds]
     );
 
+    await client.query(
+      `UPDATE formation
+       SET statut = 'ARCHIVEE', date_modification = CURRENT_TIMESTAMP
+       WHERE id_formation = $1 AND statut = 'TERMINEE'`,
+      [formationId]
+    );
     await client.query('COMMIT');
+    emitRealtimeEvent('formations:changed', { id_formation: formationId });
     res.json({
-      message: 'La liste des certifications a été enregistrée.',
-      certified_count: certifiedLearnerIds.length
+      message: 'La liste des certifications a été figée et la formation a été archivée.',
+      certified_count: certifiedLearnerIds.length,
+      archived: true
     });
   } catch (error) {
     if (client) {

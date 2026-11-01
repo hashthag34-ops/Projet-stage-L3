@@ -24,8 +24,7 @@ import '../css/Certification.css'; // Importation du CSS classique
 
 const statusLabels = {
   CERTIFIE: 'Certifié',
-  NON_CERTIFIE: 'Non certifié',
-  EN_ATTENTE: 'En attente'
+  NON_CERTIFIE: 'Non certifié'
 };
 
 const formatDate = (value) => {
@@ -236,8 +235,7 @@ export default function AdminCertification() {
               {[
                 ['TOUS', 'Tous'],
                 ['CERTIFIE', 'Certifiés'],
-                ['NON_CERTIFIE', 'Non certifiés'],
-                ['EN_ATTENTE', 'En attente']
+                ['NON_CERTIFIE', 'Non certifiés']
               ].map(([value, label]) => (
                 <button
                   key={value}

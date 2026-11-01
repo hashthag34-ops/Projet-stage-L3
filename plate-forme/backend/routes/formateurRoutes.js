@@ -20,6 +20,8 @@ router.get('/forums', formateurController.getForums);
 router.get('/forums/:id_forum/messages', forumController.getMessagesByForum);
 router.post('/forums/:id_forum/messages', forumUpload.single('fichier'), forumController.createMessage);
 router.get('/forums/:id_forum/messages/:id_message/download', forumController.downloadMessageFile);
+router.patch('/forums/:id_forum/messages/:id_message', forumController.updateMessage);
+router.delete('/forums/:id_forum/messages/:id_message', forumController.deleteMessage);
 
 router.get('/evaluations', formateurController.getEvaluations);
 router.post('/evaluations', formateurController.createEvaluation);

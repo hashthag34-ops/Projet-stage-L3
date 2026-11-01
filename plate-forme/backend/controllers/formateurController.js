@@ -284,7 +284,7 @@ exports.getStudentDetails = async (req, res) => {
       ),
       db.query(
         `SELECT COUNT(p.id_presence)::INTEGER AS total,
-                COUNT(p.id_presence) FILTER (WHERE p.statut IN ('PRESENT', 'RETARD'))::INTEGER AS present,
+                COUNT(p.id_presence) FILTER (WHERE p.statut = 'PRESENT')::INTEGER AS present,
                 COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absent
          FROM presence p
          JOIN seance s ON s.id_seance = p.id_seance
@@ -369,7 +369,7 @@ exports.getStudentStatistics = async (req, res) => {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     if (!formateurId) return res.status(403).json({ message: 'Profil formateur introuvable.' });
 
-    const { rows } = await db.query(
+    const formationsResult = await db.query(
       `WITH formations AS (
          SELECT f.id_formation, f.titre
          FROM formation f
@@ -403,7 +403,7 @@ exports.getStudentStatistics = async (req, res) => {
        presences AS (
          SELECT s.id_formation,
                 COUNT(p.id_presence)::INTEGER AS total,
-                COUNT(p.id_presence) FILTER (WHERE p.statut IN ('PRESENT', 'RETARD'))::INTEGER AS presents,
+                COUNT(p.id_presence) FILTER (WHERE p.statut = 'PRESENT')::INTEGER AS presents,
                 COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absents
          FROM seance s
          JOIN formations f ON f.id_formation = s.id_formation
@@ -425,7 +425,57 @@ exports.getStudentStatistics = async (req, res) => {
        ORDER BY f.titre`,
       [formateurId]
     );
-    res.json(rows);
+    const seancesResult = await db.query(
+      `SELECT s.id_seance, s.id_formation, s.titre AS seance_titre,
+              s.date_seance, s.heure_debut, s.heure_fin, f.titre AS formation_titre,
+              COUNT(p.id_presence)::INTEGER AS total_enregistres,
+              COUNT(p.id_presence) FILTER (WHERE p.statut = 'PRESENT')::INTEGER AS presents,
+              COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absents,
+              CASE WHEN COUNT(p.id_presence) = 0 THEN 0
+                   ELSE                    ROUND(100.0 * COUNT(p.id_presence) FILTER (WHERE p.statut = 'PRESENT') / COUNT(p.id_presence), 1)
+              END AS taux_presence
+       FROM seance s
+       JOIN formation f ON f.id_formation = s.id_formation
+       JOIN formation_formateur ff ON ff.id_formation = f.id_formation
+       LEFT JOIN presence p ON p.id_seance = s.id_seance
+       WHERE ff.id_formateur = $1
+       GROUP BY s.id_seance, f.id_formation, f.titre
+       ORDER BY s.date_seance DESC, s.heure_debut DESC`,
+      [formateurId]
+    );
+    const apprenantsResult = await db.query(
+      `WITH affectations AS (
+         SELECT DISTINCT a.id_apprenant, a.id_utilisateur, u.nom, u.prenom, u.email,
+                         f.id_formation, f.titre AS formation_titre
+         FROM apprenant a
+         JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+         JOIN inscription i ON i.id_candidat = a.id_candidat AND i.statut = 'ACCEPTEE'
+         JOIN formation f ON f.id_formation = i.id_formation
+         JOIN formation_formateur ff ON ff.id_formation = f.id_formation
+         WHERE ff.id_formateur = $1
+       ),
+       suivi AS (
+         SELECT af.*, COUNT(p.id_presence) FILTER (WHERE p.statut = 'PRESENT')::INTEGER AS presents,
+                COUNT(p.id_presence) FILTER (WHERE p.statut = 'ABSENT')::INTEGER AS absents,
+                COUNT(s.id_seance)::INTEGER AS total_seances
+         FROM affectations af
+         LEFT JOIN seance s ON s.id_formation = af.id_formation
+         LEFT JOIN presence p ON p.id_seance = s.id_seance AND p.id_apprenant = af.id_apprenant
+         GROUP BY af.id_apprenant, af.id_utilisateur, af.nom, af.prenom, af.email,
+                  af.id_formation, af.formation_titre
+       )
+       SELECT *, CASE WHEN total_seances = 0 THEN 0
+                      ELSE ROUND(100.0 * presents / total_seances, 1)
+                 END AS taux_presence
+       FROM suivi
+       ORDER BY formation_titre, nom, prenom`,
+      [formateurId]
+    );
+    res.json({
+      formations: formationsResult.rows,
+      seances: seancesResult.rows,
+      apprenants: apprenantsResult.rows
+    });
   } catch (error) {
     console.error('Erreur statistiques apprenants formateur :', error);
     res.status(500).json({ message: 'Erreur lors du chargement des statistiques.' });
@@ -692,7 +742,7 @@ exports.getResults = async (req, res) => {
        JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
        WHERE es.id_formateur = $1
-         AND es.statut = 'PUBLIEE'
+         AND es.statut IN ('PUBLIEE', 'FERMEE')
          AND es.date_fermeture <= CURRENT_TIMESTAMP
          AND NOT EXISTS (
            SELECT 1 FROM evaluation_tentative et
@@ -705,7 +755,34 @@ exports.getResults = async (req, res) => {
       `SELECT et.id_tentative, et.id_evaluation_sujet, et.id_apprenant,
               et.note, et.statut, et.date_debut, et.date_fin,
               u.nom, u.prenom, u.email, es.titre AS evaluation_titre,
-              f.titre AS formation_titre
+              f.titre AS formation_titre,
+              COALESCE((
+                SELECT json_agg(
+                         json_build_object(
+                           'id_question', eq.id_question,
+                           'numero_question', eq.numero_question,
+                           'enonce', eq.enonce,
+                           'points', eq.points,
+                           'reponse_choisie', selected.libelle,
+                           'reponse_correcte', correct.libelle,
+                           'correcte', COALESCE(selected.est_correct, FALSE),
+                           'points_obtenus', COALESCE(er.points_obtenus, 0)
+                         )
+                         ORDER BY eq.numero_question
+                       )
+                FROM evaluation_question eq
+                LEFT JOIN evaluation_reponse er
+                  ON er.id_question = eq.id_question AND er.id_tentative = et.id_tentative
+                LEFT JOIN evaluation_choix selected ON selected.id_choix = er.id_choix
+                LEFT JOIN LATERAL (
+                  SELECT ec.libelle, ec.est_correct
+                  FROM evaluation_choix ec
+                  WHERE ec.id_question = eq.id_question AND ec.est_correct = TRUE
+                  ORDER BY ec.ordre
+                  LIMIT 1
+                ) correct ON TRUE
+                WHERE eq.id_evaluation_sujet = es.id_evaluation_sujet
+              ), '[]'::json) AS correction
        FROM evaluation_tentative et
        JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
        JOIN formation f ON f.id_formation = es.id_formation
@@ -760,7 +837,8 @@ exports.getForums = async (req, res) => {
   try {
     const formateurId = await getFormateurId(req.user.id_utilisateur);
     const { rows } = await db.query(
-      `SELECT fo.id_forum, fo.nom, fo.description, f.id_formation, f.titre AS formation_titre
+      `SELECT fo.id_forum, fo.nom, fo.description, f.id_formation, f.titre AS formation_titre,
+              f.statut AS formation_statut
        FROM forum fo
        JOIN formation f ON f.id_formation = fo.id_formation
        JOIN formation_formateur ff ON ff.id_formation = f.id_formation

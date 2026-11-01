@@ -13,19 +13,43 @@ router.get('/seances/:id_seance/apprenants', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT a.id_apprenant, u.nom, u.prenom, u.email,
-              COALESCE(p.statut, 'ABSENT') AS statut_presence,
-              p.date_scan
+      `WITH eligible AS (
+         SELECT a.id_apprenant, u.nom, u.prenom, u.email
+         FROM seance s
+         JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
+         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+         WHERE s.id_seance = $1
+       ),
+       recorded_states AS (
+         SELECT COUNT(*)::INTEGER AS total
+         FROM eligible e
+         JOIN presence p ON p.id_apprenant = e.id_apprenant AND p.id_seance = $1
+       )
+       SELECT a.id_apprenant, a.nom, a.prenom, a.email,
+              p.statut AS statut_presence,
+              p.date_scan,
+              r.total AS total_enregistres
+       FROM eligible a
+       LEFT JOIN presence p ON p.id_seance = $1 AND p.id_apprenant = a.id_apprenant,
+       recorded_states r
+       ORDER BY a.nom, a.prenom`,
+      [idSeance]
+    );
+    const eligibleCountResult = await db.query(
+      `SELECT COUNT(*)::INTEGER AS total
        FROM seance s
        JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
        JOIN apprenant a ON a.id_candidat = i.id_candidat
-       JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
-       LEFT JOIN presence p ON p.id_seance = s.id_seance AND p.id_apprenant = a.id_apprenant
-       WHERE s.id_seance = $1
-       ORDER BY u.nom, u.prenom`,
+       WHERE s.id_seance = $1`,
       [idSeance]
     );
-    res.json(rows);
+    const eligibleTotal = eligibleCountResult.rows[0].total;
+    const totalRecorded = rows[0]?.total_enregistres || 0;
+    res.json({
+      closed: eligibleTotal > 0 && totalRecorded >= eligibleTotal,
+      apprenants: rows.map(({ total_enregistres, ...learner }) => learner)
+    });
   } catch (error) {
     console.error('Erreur chargement apprenants de la séance :', error);
     res.status(500).json({ error: 'Impossible de charger les apprenants.' });
@@ -41,16 +65,6 @@ router.post('/manuel', async (req, res) => {
 
   const idApprenants = [...new Set(ids.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
   try {
-    await db.query(
-      `DELETE FROM presence p
-       USING seance s, inscription i, apprenant a
-       WHERE p.id_seance = $1
-         AND s.id_seance = p.id_seance
-         AND i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-         AND a.id_candidat = i.id_candidat AND a.id_apprenant = p.id_apprenant
-         AND NOT (p.id_apprenant = ANY($2::INTEGER[]))`,
-      [idSeance, idApprenants]
-    );
     const { rows } = await db.query(
       `WITH apprenants_eligibles AS (
          SELECT a.id_apprenant, u.nom, u.prenom
@@ -76,6 +90,57 @@ router.post('/manuel', async (req, res) => {
     console.error('Erreur émargement manuel :', error);
     res.status(500).json({ error: 'Impossible d’enregistrer les présences manuelles.' });
   }
+});
+
+router.post('/seances/:id_seance/cloturer', async (req, res) => {
+    const idSeance = Number(req.params.id_seance);
+    try {
+      const { rows } = await db.query(
+        `INSERT INTO presence (id_apprenant, id_seance, date_scan, statut)
+         SELECT a.id_apprenant, s.id_seance, NOW(), 'ABSENT'
+         FROM seance s
+         JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
+         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         WHERE s.id_seance = $1
+           AND NOT EXISTS (
+             SELECT 1 FROM presence p
+             WHERE p.id_seance = s.id_seance AND p.id_apprenant = a.id_apprenant
+           )
+         ON CONFLICT (id_apprenant, id_seance) DO NOTHING
+         RETURNING id_apprenant`,
+        [idSeance]
+      );
+      res.json({ message: `Pointage clôturé. ${rows.length} apprenant(s) marqué(s) absent(s).` });
+    } catch (error) {
+      console.error('Erreur clôture du pointage :', error);
+      res.status(500).json({ error: 'Impossible de clôturer cette séance.' });
+    }
+});
+
+router.patch('/seances/:id_seance/apprenants/:id_apprenant', async (req, res) => {
+    const idSeance = Number(req.params.id_seance);
+    const idApprenant = Number(req.params.id_apprenant);
+    const statut = req.body.statut;
+    if (!['PRESENT', 'ABSENT'].includes(statut)) {
+      return res.status(400).json({ error: 'Statut de présence invalide.' });
+    }
+    try {
+      await db.query(
+        `INSERT INTO presence (id_apprenant, id_seance, date_scan, statut)
+         SELECT $2, $1, NOW(), $3::statut_presence
+         FROM seance s
+         JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
+         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         WHERE s.id_seance = $1 AND a.id_apprenant = $2
+         ON CONFLICT (id_apprenant, id_seance)
+         DO UPDATE SET statut = EXCLUDED.statut, date_scan = NOW()`,
+        [idSeance, idApprenant, statut]
+      );
+      res.json({ message: 'Présence modifiée.' });
+    } catch (error) {
+      console.error('Erreur modification présence :', error);
+      res.status(500).json({ error: 'Impossible de modifier la présence.' });
+    }
 });
 
 // Vérifier les droits du responsable (middleware d'authentification requis)

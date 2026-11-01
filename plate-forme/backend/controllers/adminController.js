@@ -3,6 +3,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const { randomUUID } = require('crypto');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 const { emitToRoles, disconnectUser } = require('../services/realtime');
 const getFrontendBaseUrl = require('../utils/frontendUrl');
 
@@ -45,6 +46,7 @@ exports.getUsers = async (req, res) => {
         latest_candidature.etablissement,
         latest_candidature.filiere,
         latest_candidature.statut AS candidature_statut,
+        COALESCE(learner_candidatures.candidatures, '[]'::jsonb) AS candidatures,
         CASE 
           WHEN a.id_administrateur IS NOT NULL THEN 'ADMINISTRATEUR'
           WHEN r.id_responsable IS NOT NULL THEN 'RESPONSABLE'
@@ -64,10 +66,32 @@ exports.getUsers = async (req, res) => {
         FROM inscription i
         JOIN candidat c ON c.id_candidat = i.id_candidat
         JOIN formation f ON f.id_formation = i.id_formation
-        WHERE c.email = u.email
+        WHERE c.id_utilisateur = u.id_utilisateur OR LOWER(c.email) = LOWER(u.email)
         ORDER BY i.date_inscription DESC
         LIMIT 1
       ) latest_candidature ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT JSONB_AGG(
+                 JSONB_BUILD_OBJECT(
+                   'id_inscription', i.id_inscription,
+                   'formation_titre', f.titre,
+                   'date_inscription', i.date_inscription,
+                   'statut', i.statut,
+                   'motivation', i.motivation,
+                   'objectif', i.objectif,
+                   'projet_apres_formation', i.projet_apres_formation,
+                   'niveau_etude', c.niveau_etude,
+                   'situation_professionnelle', c.situation_professionnelle,
+                   'etablissement', c.etablissement,
+                   'filiere', c.filiere
+                 )
+                 ORDER BY i.date_inscription DESC, i.id_inscription DESC
+               ) AS candidatures
+        FROM inscription i
+        JOIN candidat c ON c.id_candidat = i.id_candidat
+        JOIN formation f ON f.id_formation = i.id_formation
+        WHERE c.id_utilisateur = u.id_utilisateur OR LOWER(c.email) = LOWER(u.email)
+      ) learner_candidatures ON TRUE
       ORDER BY u.id_utilisateur DESC;
     `;
     const { rows } = await db.query(query);
@@ -80,7 +104,7 @@ exports.getUsers = async (req, res) => {
 
 // Créer un utilisateur et l'assigner à son rôle
 exports.createUser = async (req, res) => {
-  const { email, nom, prenom, role } = req.body;
+  const { email, nom, prenom, telephone = '', role, mot_de_passe } = req.body;
   const normalizedEmail = typeof email === 'string' ? email.trim() : '';
   const normalizedNom = typeof nom === 'string' ? nom.trim() : '';
   const normalizedPrenom = typeof prenom === 'string' ? prenom.trim() : '';
@@ -92,10 +116,35 @@ exports.createUser = async (req, res) => {
   ) {
     return res.status(400).json({ message: 'Veuillez renseigner le nom, le prénom, l’email et un rôle valide.' });
   }
+  if (role === 'ADMINISTRATEUR' && (typeof mot_de_passe !== 'string' || mot_de_passe.length < 8)) {
+    return res.status(400).json({ message: 'Le mot de passe administrateur doit contenir au moins 8 caractères.' });
+  }
 
   let client;
   let transactionStarted = false;
   try {
+    if (role === 'ADMINISTRATEUR') {
+      const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+      client = await db.connect();
+      await client.query('BEGIN');
+      transactionStarted = true;
+
+      const userRes = await client.query(
+        `INSERT INTO utilisateur (email, nom, prenom, telephone, mot_de_passe, statut_compte, email_verifie)
+         VALUES ($1, $2, $3, NULLIF($4, ''), $5, 'ACTIF', TRUE)
+         RETURNING id_utilisateur`,
+        [normalizedEmail, normalizedNom, normalizedPrenom, telephone.trim(), hashedPassword]
+      );
+      await client.query(
+        'INSERT INTO administrateur (id_utilisateur) VALUES ($1)',
+        [userRes.rows[0].id_utilisateur]
+      );
+      await client.query('COMMIT');
+      transactionStarted = false;
+      emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
+      return res.status(201).json({ message: 'Administrateur créé avec succès.' });
+    }
+
     const frontendBaseUrl = getFrontendBaseUrl(req);
     await transporter.verify();
     client = await db.connect();
@@ -182,6 +231,12 @@ exports.updateUserStatus = async (req, res) => {
   const { statut_compte } = req.body;
 
   try {
+    if (Number(id) === Number(req.user.id_utilisateur)) {
+      return res.status(400).json({ message: 'Vous ne pouvez pas modifier le statut de votre propre compte.' });
+    }
+    if (!['ACTIF', 'DESACTIVE', 'SUSPENDU'].includes(statut_compte)) {
+      return res.status(400).json({ message: 'Statut de compte invalide.' });
+    }
     const result = await db.query(
       'UPDATE utilisateur SET statut_compte = $1 WHERE id_utilisateur = $2',
       [statut_compte, id]
@@ -456,7 +511,7 @@ exports.createSyntheticCandidates = async (req, res) => {
 
 exports.getStatistics = async (req, res) => {
   try {
-    const [overview, formationsByMonth, applicationsByFormation, successByFormation, ratingsByFormation] = await Promise.all([
+    const [overview, formationOverview, formationsByMonth, applicationsByFormation, successByFormation, ratingsByFormation, formationRanking, evaluationRanking] = await Promise.all([
       db.query(
         `SELECT COUNT(*)::INTEGER AS utilisateurs,
                 COUNT(*) FILTER (WHERE ap.id_apprenant IS NOT NULL)::INTEGER AS apprenants,
@@ -468,6 +523,12 @@ exports.getStatistics = async (req, res) => {
          LEFT JOIN formateur fo ON fo.id_utilisateur = u.id_utilisateur
          LEFT JOIN responsable r ON r.id_utilisateur = u.id_utilisateur
          LEFT JOIN administrateur ad ON ad.id_utilisateur = u.id_utilisateur`
+      ),
+      db.query(
+        `SELECT COUNT(*)::INTEGER AS formations,
+                COUNT(*) FILTER (WHERE statut = 'ARCHIVEE')::INTEGER AS formations_archivees
+         FROM formation
+         WHERE statut <> 'BROUILLON'`
       ),
       db.query(
         `SELECT TO_CHAR(month_start, 'YYYY-MM') AS mois,
@@ -515,15 +576,70 @@ exports.getStatistics = async (req, res) => {
          LEFT JOIN formation_avis fa ON fa.id_formation = f.id_formation
          GROUP BY f.id_formation
          ORDER BY avis_count DESC, note_moyenne DESC NULLS LAST, f.titre`
+      ),
+      db.query(
+        `WITH notes AS (
+           SELECT e.id_formation, e.id_apprenant, e.note
+           FROM evaluation e
+           WHERE e.note IS NOT NULL
+           UNION ALL
+           SELECT es.id_formation, et.id_apprenant, et.note
+           FROM evaluation_tentative et
+           JOIN evaluation_sujet es ON es.id_evaluation_sujet = et.id_evaluation_sujet
+           WHERE et.note IS NOT NULL
+         ),
+         moyennes AS (
+           SELECT n.id_formation, n.id_apprenant, AVG(n.note) AS moyenne
+           FROM notes n GROUP BY n.id_formation, n.id_apprenant
+         )
+         SELECT f.id_formation, f.titre AS formation_titre,
+                COALESCE(json_agg(json_build_object(
+                  'id_apprenant', m.id_apprenant,
+                  'nom', u.nom,
+                  'prenom', u.prenom,
+                  'moyenne', ROUND(m.moyenne, 2)
+                ) ORDER BY m.moyenne DESC, u.nom, u.prenom) FILTER (WHERE m.id_apprenant IS NOT NULL), '[]'::json) AS apprenants
+         FROM formation f
+         LEFT JOIN moyennes m ON m.id_formation = f.id_formation
+         LEFT JOIN apprenant a ON a.id_apprenant = m.id_apprenant
+         LEFT JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+         GROUP BY f.id_formation, f.titre
+         ORDER BY f.titre`
+      ),
+      db.query(
+        `SELECT es.id_evaluation_sujet, es.titre AS evaluation_titre,
+                f.titre AS formation_titre,
+                COALESCE(json_agg(json_build_object(
+                  'id_tentative', r.id_tentative,
+                  'id_apprenant', r.id_apprenant,
+                  'nom', u.nom,
+                  'prenom', u.prenom,
+                  'note', r.note
+                ) ORDER BY r.note DESC, u.nom, u.prenom) FILTER (WHERE r.id_tentative IS NOT NULL), '[]'::json) AS apprenants
+         FROM evaluation_sujet es
+         JOIN formation f ON f.id_formation = es.id_formation
+         LEFT JOIN LATERAL (
+           SELECT DISTINCT ON (et.id_apprenant) et.id_tentative, et.id_apprenant, et.note
+           FROM evaluation_tentative et
+           WHERE et.id_evaluation_sujet = es.id_evaluation_sujet
+             AND et.note IS NOT NULL
+           ORDER BY et.id_apprenant, et.note DESC NULLS LAST
+         ) r ON TRUE
+         LEFT JOIN apprenant a ON a.id_apprenant = r.id_apprenant
+         LEFT JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
+         GROUP BY es.id_evaluation_sujet, es.titre, f.titre
+         ORDER BY f.titre, es.titre`
       )
     ]);
 
     res.json({
-      overview: overview.rows[0],
+      overview: { ...overview.rows[0], ...formationOverview.rows[0] },
       formationsByMonth: formationsByMonth.rows,
       applicationsByFormation: applicationsByFormation.rows,
       successByFormation: successByFormation.rows,
-      ratingsByFormation: ratingsByFormation.rows
+      ratingsByFormation: ratingsByFormation.rows,
+      formationRanking: formationRanking.rows,
+      evaluationRanking: evaluationRanking.rows
     });
   } catch (error) {
     console.error('Erreur statistiques administrateur :', error);

@@ -160,6 +160,9 @@ export default function AdminStats() {
     [statistics]
   );
 
+  const formationRanking = statistics?.formationRanking || [];
+  const evaluationRanking = statistics?.evaluationRanking || [];
+
   return (
     <div className="admin-stats-container">
       
@@ -236,6 +239,12 @@ export default function AdminStats() {
                   : `Moyenne : ${weightedRating.toFixed(1)} / 5 ★`
               }
               icon={Star}
+            />
+            <StatCard
+              label="Formations"
+              value={overview.formations}
+              detail={`${overview.formations_archivees || 0} formation(s) archivée(s) incluse(s)`}
+              icon={BookOpen}
             />
           </section>
 
@@ -434,6 +443,51 @@ export default function AdminStats() {
             </ChartPanel>
 
           </div>
+
+          <section className="admin-ranking-section">
+            <div className="admin-ranking-header">
+              <h2><Award size={17} /> Classements des apprenants</h2>
+              <p>Classement selon les résultats enregistrés.</p>
+            </div>
+            <div className="admin-ranking-grid">
+              <ChartPanel title="Classement par formation" subtitle="Moyenne générale des notes des apprenants">
+                <div className="admin-ranking-list">
+                  {formationRanking.map((formation) => (
+                    <div className="admin-ranking-group" key={formation.id_formation}>
+                      <h3>{formation.titre || formation.formation_titre}</h3>
+                      {formation.apprenants.length === 0 ? (
+                        <p className="chart-empty">Aucun résultat disponible.</p>
+                      ) : formation.apprenants.map((learner, index) => (
+                        <div className="admin-ranking-row" key={learner.id_apprenant}>
+                          <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
+                          <strong>{Number(learner.moyenne).toFixed(2)} / 20</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </ChartPanel>
+
+              <ChartPanel title="Classement par évaluation" subtitle="Meilleure note obtenue par apprenant">
+                <div className="admin-ranking-list">
+                  {evaluationRanking.map((evaluation) => (
+                    <div className="admin-ranking-group" key={evaluation.id_evaluation_sujet}>
+                      <h3>{evaluation.evaluation_titre}</h3>
+                      <small>{evaluation.formation_titre}</small>
+                      {evaluation.apprenants.length === 0 ? (
+                        <p className="chart-empty">Aucun résultat disponible.</p>
+                      ) : evaluation.apprenants.map((learner, index) => (
+                        <div className="admin-ranking-row" key={learner.id_tentative}>
+                          <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
+                          <strong>{Number(learner.note).toFixed(2)} / 20</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </ChartPanel>
+            </div>
+          </section>
         </>
       )}
     </div>

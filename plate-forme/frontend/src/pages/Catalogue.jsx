@@ -104,6 +104,8 @@ export default function Catalogue() {
   const [reviewSuccess, setReviewSuccess] = useState('');
   const [newComment, setNewComment] = useState({ note: 5, commentaire: '' });
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [catalogueReviews, setCatalogueReviews] = useState({});
+  const [visibleReviewCounts, setVisibleReviewCounts] = useState({});
 
   useEffect(() => {
     // Vérification de la session utilisateur
@@ -137,6 +139,20 @@ export default function Catalogue() {
     try {
       const res = await API.get('/formations/catalogue');
       setFormations(res.data);
+      const reviewFormations = res.data.filter(
+        (formation) => formation.statut === 'TERMINEE' || formation.statut === 'ARCHIVEE'
+      );
+      const reviewEntries = await Promise.all(
+        reviewFormations.map(async (formation) => {
+          try {
+            const reviewResponse = await API.get(`/formations/${formation.id_formation}/avis`);
+            return [formation.id_formation, Array.isArray(reviewResponse.data) ? reviewResponse.data : []];
+          } catch (error) {
+            return [formation.id_formation, []];
+          }
+        })
+      );
+      setCatalogueReviews(Object.fromEntries(reviewEntries));
     } catch (err) {
       console.error('Erreur lors du chargement du catalogue :', err);
     } finally {
@@ -237,6 +253,12 @@ export default function Catalogue() {
         return matchesSearch && matchesStatus;
       }),
     [formations, searchTerm, selectedStatus]
+  );
+  const activeFilteredFormations = filteredFormations.filter(
+    (formation) => formation.statut !== 'TERMINEE' && formation.statut !== 'ARCHIVEE'
+  );
+  const reviewFilteredFormations = filteredFormations.filter(
+    (formation) => formation.statut === 'TERMINEE' || formation.statut === 'ARCHIVEE'
   );
 
   return (
@@ -367,7 +389,7 @@ export default function Catalogue() {
               <SkeletonCard key={i} />
             ))}
           </div>
-        ) : filteredFormations.length === 0 ? (
+        ) : activeFilteredFormations.length === 0 && reviewFilteredFormations.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/40 py-16 text-xs text-slate-400">
             <i className="bi bi-search text-2xl mb-2 text-slate-400"></i>
             <p>Aucune formation trouvée.</p>
@@ -380,7 +402,7 @@ export default function Catalogue() {
                 : 'flex flex-col gap-4'
             }
           >
-            {filteredFormations.map((f) => {
+            {activeFilteredFormations.map((f) => {
               const ouverte = isInscriptionOuverte(f);
               const estApprenant = f.est_apprenant;
               const statutCandidature = f.statut_candidature;
@@ -429,6 +451,87 @@ export default function Catalogue() {
                       <div className="flex h-full w-full items-center justify-center bg-slate-200 dark:bg-zinc-800 text-slate-400">
                         <i className="bi bi-journal-bookmark text-3xl"></i>
                       </div>
+                    )}
+
+                    {reviewFilteredFormations.length > 0 && (
+                      <section className="mt-10 border-t border-slate-200 pt-8 dark:border-zinc-800">
+                        <div className="mb-5">
+                          <h2 className="text-xl text-slate-900 dark:text-white">Formations terminées & avis</h2>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                            Découvrez les retours des apprenants sur les formations terminées ou archivées.
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          {reviewFilteredFormations.map((formation) => {
+                            const formationReviews = catalogueReviews[formation.id_formation] || [];
+                            const visibleCount = visibleReviewCounts[formation.id_formation] || 3;
+                            const visibleReviews = formationReviews.slice(0, visibleCount);
+
+                            return (
+                              <article
+                                key={formation.id_formation}
+                                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                              >
+                                <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between dark:border-zinc-800">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="text-base text-slate-900 dark:text-white">{formation.titre}</h3>
+                                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                        {formation.statut === 'ARCHIVEE' ? 'Archivée' : 'Terminée'}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
+                                      {formation.description}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDetails(formation)}
+                                    className="shrink-0 text-xs text-orange-600 hover:underline dark:text-orange-400"
+                                  >
+                                    Voir la formation
+                                  </button>
+                                </div>
+
+                                <div className="divide-y divide-slate-100 dark:divide-zinc-800">
+                                  {visibleReviews.length ? visibleReviews.map((review) => (
+                                    <div key={review.id_avis} className="py-4">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span className="text-xs text-slate-800 dark:text-zinc-200">
+                                          {review.auteur || 'Anonyme'}
+                                        </span>
+                                        <Stars note={review.note} />
+                                      </div>
+                                      <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-zinc-400">
+                                        {review.commentaire}
+                                      </p>
+                                    </div>
+                                  )) : (
+                                    <p className="py-6 text-center text-xs text-slate-400">
+                                      Aucun avis publié pour cette formation.
+                                    </p>
+                                  )}
+                                </div>
+
+                                {visibleCount < formationReviews.length && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setVisibleReviewCounts((current) => ({
+                                      ...current,
+                                      [formation.id_formation]: (current[formation.id_formation] || 3) + 3,
+                                    }))}
+                                    className="mt-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                  >
+                                    Afficher plus
+                                    <i className="bi bi-chevron-down text-[10px]"></i>
+                                  </button>
+                                )}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </section>
                     )}
 
                     {/* Badge Statut flottant haut gauche */}

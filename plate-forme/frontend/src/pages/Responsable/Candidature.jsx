@@ -38,6 +38,14 @@ const candidateDetails = [
   ['Retour ou suggestion', (candidate) => candidate.retour_suggestion],
 ];
 
+const getCandidateStatusLabel = (status) => ({
+  EN_ATTENTE: 'En attente',
+  PRESELECTIONNEE: 'Présélectionnée',
+  ACCEPTEE: 'Acceptée',
+  REFUSEE: 'Refusée',
+  ANNULEE: 'Annulée',
+}[status] || status || 'Sans statut');
+
 function CandidateDetailsModal({ candidate, onClose }) {
   if (!candidate) return null;
 
@@ -159,6 +167,14 @@ export default function Candidatures() {
     niveau_etude: [...new Set(formationCandidates.map((candidate) => candidate.niveau_etude).filter(Boolean))],
     situation_professionnelle: [...new Set(formationCandidates.map((candidate) => candidate.situation_professionnelle).filter(Boolean))],
     genre: [...new Set(formationCandidates.map((candidate) => candidate.genre).filter(Boolean))],
+    statut: [...new Set([
+      'EN_ATTENTE',
+      'PRESELECTIONNEE',
+      'ACCEPTEE',
+      'REFUSEE',
+      'ANNULEE',
+      ...formationCandidates.map((candidate) => candidate.statut).filter(Boolean),
+    ])],
   }), [formationCandidates]);
 
   const filteredCandidates = useMemo(() => formationCandidates.filter((candidate) => {
@@ -174,6 +190,7 @@ export default function Candidatures() {
   const capacity = Number(selectedFormation?.capacite_max) || 0;
   const acceptedCount = formationCandidates.filter((candidate) => candidate.statut === 'ACCEPTEE').length;
   const refusedCount = formationCandidates.filter((candidate) => candidate.statut === 'REFUSEE').length;
+  const cancelledCount = formationCandidates.filter((candidate) => candidate.statut === 'ANNULEE').length;
   const preselectedCount = formationCandidates.filter((candidate) => candidate.statut === 'PRESELECTIONNEE').length;
   const remainingPlaces = Math.max(0, capacity - acceptedCount - preselectedCount);
   const selectedCandidates = formationCandidates.filter((candidate) => selectedCandidateIds.has(String(candidate.id_inscription)));
@@ -182,6 +199,23 @@ export default function Candidatures() {
 
   const toggleCandidate = (candidate) => {
     const id = String(candidate.id_inscription);
+    const currentlySelected = Array.from(selectedCandidateIds).filter((selectedId) => (
+      selectedId !== id && formationCandidates.some((item) =>
+        String(item.id_inscription) === selectedId && item.statut !== 'PRESELECTIONNEE'
+      )
+    )).length;
+    if (!selectedCandidateIds.has(id)
+      && candidate.statut !== 'PRESELECTIONNEE'
+      && remainingPlaces <= 0) {
+      window.alert(`La capacité maximale est atteinte avec les ${acceptedCount + preselectedCount} places déjà acceptées ou préselectionnées.`);
+      return;
+    }
+    if (!selectedCandidateIds.has(id)
+      && candidate.statut !== 'PRESELECTIONNEE'
+      && currentlySelected >= remainingPlaces) {
+      window.alert(`Il reste seulement ${remainingPlaces} place(s).`);
+      return;
+    }
     setSelectedCandidateIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -334,11 +368,12 @@ export default function Candidatures() {
 
           {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
 
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {[
               { label: 'Candidatures reçues', value: formationCandidates.length, icon: Users, color: 'text-blue-600 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400' },
               { label: 'Candidatures acceptées', value: acceptedCount, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400' },
               { label: 'Candidatures refusées', value: refusedCount, icon: X, color: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400' },
+              { label: 'Candidatures annulées', value: cancelledCount, icon: X, color: 'text-slate-600 bg-slate-100 dark:bg-zinc-800 dark:text-zinc-300' },
               { label: 'Places restantes', value: remainingPlaces, icon: GraduationCap, color: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400' },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className={`${cardClass} flex items-center gap-4 p-4`}>
@@ -376,8 +411,8 @@ export default function Candidatures() {
               ].map(([key, placeholder]) => (
                 <select key={key} value={filters[key]} onChange={(event) => setFilter(key, event.target.value)} className={`${inputClass} min-w-0`}>
                   <option value="TOUT">{placeholder}</option>
-                  {(candidateFilterValues[key] || ['EN_ATTENTE', 'PRESELECTIONNEE', 'ACCEPTEE', 'REFUSEE']).map((value) => (
-                    <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>
+                  {(candidateFilterValues[key] || ['EN_ATTENTE', 'PRESELECTIONNEE', 'ACCEPTEE', 'REFUSEE', 'ANNULEE']).map((value) => (
+                    <option key={value} value={value}>{key === 'statut' ? getCandidateStatusLabel(value) : value.replaceAll('_', ' ')}</option>
                   ))}
                 </select>
               ))}
@@ -391,13 +426,14 @@ export default function Candidatures() {
               <div className="p-10 text-center text-sm text-slate-500 dark:text-zinc-400">Aucun candidat ne correspond à ces filtres.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1050px] text-left text-sm">
+                <table className="w-full min-w-[1150px] text-left text-sm">
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-zinc-800/70 dark:text-zinc-400">
                     <tr>
                       <th className="w-12 px-4 py-3"><span className="sr-only">Sélection</span></th>
                       <th className="px-4 py-3">Candidat</th>
                       <th className="px-4 py-3">Situation professionnelle</th>
                       <th className="px-4 py-3">Date de candidature</th>
+                      <th className="px-4 py-3">Statut</th>
                       <th className="px-4 py-3">Genre</th>
                       <th className="px-4 py-3">Informations</th>
                       <th className="px-4 py-3">Compte apprenant</th>
@@ -406,7 +442,9 @@ export default function Candidatures() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                     {filteredCandidates.map((candidate) => {
-                      const canSelect = ['EN_ATTENTE', 'PRESELECTIONNEE'].includes(candidate.statut);
+                      const isAlreadyPreselected = candidate.statut === 'PRESELECTIONNEE';
+                      const canSelect = ['EN_ATTENTE', 'PRESELECTIONNEE'].includes(candidate.statut)
+                        && (isAlreadyPreselected || remainingPlaces > 0);
                       const checked = selectedCandidateIds.has(String(candidate.id_inscription));
                       return (
                         <tr key={candidate.id_inscription} className={`transition hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 ${checked ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`}>
@@ -429,6 +467,19 @@ export default function Candidatures() {
                           </td>
                           <td className="px-4 py-4 text-slate-600 dark:text-zinc-300">{candidate.situation_professionnelle || 'Non renseignée'}</td>
                           <td className="whitespace-nowrap px-4 py-4 text-slate-600 dark:text-zinc-300">{formatDate(candidate.date_inscription)}</td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              candidate.statut === 'ACCEPTEE'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                : candidate.statut === 'REFUSEE'
+                                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                                  : candidate.statut === 'ANNULEE'
+                                    ? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
+                                    : 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                            }`}>
+                              {getCandidateStatusLabel(candidate.statut)}
+                            </span>
+                          </td>
                           <td className="px-4 py-4 text-slate-600 dark:text-zinc-300">{candidate.genre || 'Non renseigné'}</td>
                           <td className="px-4 py-4">
                             <button onClick={() => setCandidateDetailsToShow(candidate)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-blue-400">
@@ -447,6 +498,8 @@ export default function Candidatures() {
                               <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Acceptée</span>
                             ) : candidate.statut === 'REFUSEE' ? (
                               <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">Refusée</span>
+                            ) : candidate.statut === 'ANNULEE' ? (
+                              <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300">Annulée par le candidat</span>
                             ) : (
                               <button
                                 onClick={() => handleDecision(candidate, 'REFUSEE')}
