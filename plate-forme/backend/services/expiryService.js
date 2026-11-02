@@ -37,7 +37,10 @@ const runExpiryTasks = async () => {
      JOIN inscription i
        ON i.id_formation = s.id_formation
       AND i.statut = 'ACCEPTEE'
-     JOIN apprenant a ON a.id_candidat = i.id_candidat
+     JOIN apprenant a ON EXISTS (
+       SELECT 1 FROM candidat c
+       WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+     )
      WHERE s.date_seance + s.heure_fin <= LOCALTIMESTAMP
      ON CONFLICT (id_apprenant, id_seance) DO NOTHING`
   );
@@ -105,7 +108,10 @@ const runExpiryTasks = async () => {
             LOCALTIMESTAMP, LOCALTIMESTAMP, 0, 'TERMINEE'
      FROM evaluation_sujet es
      JOIN inscription i ON i.id_formation = es.id_formation AND i.statut = 'ACCEPTEE'
-     JOIN apprenant a ON a.id_candidat = i.id_candidat
+     JOIN apprenant a ON EXISTS (
+       SELECT 1 FROM candidat c
+       WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+     )
      WHERE es.statut = 'FERMEE'
        AND NOT EXISTS (
          SELECT 1 FROM evaluation_tentative et

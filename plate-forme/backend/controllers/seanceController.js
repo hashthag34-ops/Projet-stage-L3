@@ -1,28 +1,14 @@
 // backend/controllers/seanceController.js
 const db = require('../config/db');
+const seance = require('../Models/seanceModel');
+
 
 // Récupérer toutes les séances (avec possibilité de filtrer par formation)
 exports.getSeances = async (req, res) => {
   const { id_formation } = req.query;
 
   try {
-    let query = `
-      SELECT 
-        s.id_seance,
-        s.id_formation,
-        s.titre,
-        s.description,
-        s.date_seance,
-        s.heure_debut,
-        s.heure_fin,
-        s.type_seance,
-        s.salle,
-        f.titre AS formation_titre,
-        COUNT(p.id_presence)::INTEGER AS total_presences
-      FROM seance s
-      JOIN formation f ON s.id_formation = f.id_formation
-      LEFT JOIN presence p ON p.id_seance = s.id_seance
-    `;
+    let query = seance.SQL_1;
     const params = [];
 
     if (id_formation) {
@@ -52,7 +38,7 @@ exports.createSeance = async (req, res) => {
   try {
     // 1. Vérification période de formation
     const formationRes = await db.query(
-      `SELECT date_debut, date_fin FROM formation WHERE id_formation = $1`,
+      seance.SQL_7,
       [id_formation]
     );
 
@@ -73,12 +59,7 @@ exports.createSeance = async (req, res) => {
 
     // 2. Chevauchement de salle
     if (salle && salle.trim() !== '') {
-      const overlapQuery = `
-        SELECT id_seance FROM seance
-        WHERE date_seance = $1
-          AND LOWER(salle) = LOWER($2)
-          AND (heure_debut < $3 AND heure_fin > $4)
-      `;
+      const overlapQuery = seance.SQL_2;
       const overlapRes = await db.query(overlapQuery, [date_seance, salle.trim(), heure_fin, heure_debut]);
 
       if (overlapRes.rows.length > 0) {
@@ -90,9 +71,7 @@ exports.createSeance = async (req, res) => {
 
     // 3. Insertion
     const newSeance = await db.query(
-      `INSERT INTO seance (id_formation, titre, description, date_seance, heure_debut, heure_fin, type_seance, salle)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
+      seance.SQL_9,
       [id_formation, titre, description, date_seance, heure_debut, heure_fin, type_seance, salle]
     );
 
@@ -117,7 +96,7 @@ exports.updateSeance = async (req, res) => {
 
   try {
     const seanceResult = await db.query(
-      `SELECT id_seance, id_formation FROM seance WHERE id_seance = $1`,
+      seance.SQL_8,
       [id_seance]
     );
     if (!seanceResult.rows[0]) {
@@ -126,7 +105,7 @@ exports.updateSeance = async (req, res) => {
 
     const targetFormationId = id_formation || seanceResult.rows[0].id_formation;
     const formationResult = await db.query(
-      `SELECT date_debut, date_fin FROM formation WHERE id_formation = $1`,
+      seance.SQL_7,
       [targetFormationId]
     );
     if (!formationResult.rows[0]) return res.status(404).json({ message: "Formation introuvable." });
@@ -143,10 +122,7 @@ exports.updateSeance = async (req, res) => {
 
     if (salle?.trim()) {
       const overlap = await db.query(
-        `SELECT id_seance FROM seance
-         WHERE id_seance <> $1 AND date_seance = $2
-           AND LOWER(salle) = LOWER($3)
-           AND heure_debut < $4 AND heure_fin > $5`,
+        seance.SQL_6,
         [id_seance, date_seance, salle.trim(), heure_fin, heure_debut]
       );
       if (overlap.rows[0]) {
@@ -155,11 +131,7 @@ exports.updateSeance = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE seance
-       SET id_formation = $1, titre = $2, description = $3, date_seance = $4,
-           heure_debut = $5, heure_fin = $6, type_seance = $7, salle = $8
-       WHERE id_seance = $9
-       RETURNING *`,
+      seance.SQL_5,
       [targetFormationId, titre, description || null, date_seance, heure_debut, heure_fin,
        type_seance || 'Cours Magistral', salle?.trim() || null, id_seance]
     );
@@ -176,11 +148,7 @@ exports.deleteSeance = async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT s.date_seance, COUNT(p.id_presence)::INTEGER AS total_presences
-       FROM seance s
-       LEFT JOIN presence p ON p.id_seance = s.id_seance
-       WHERE s.id_seance = $1
-       GROUP BY s.id_seance`,
+      seance.SQL_4,
       [id_seance]
     );
 
@@ -196,7 +164,7 @@ exports.deleteSeance = async (req, res) => {
       return res.status(409).json({ message: "Cette séance ne peut pas être supprimée car elle contient des données de présence." });
     }
 
-    await db.query(`DELETE FROM seance WHERE id_seance = $1`, [id_seance]);
+    await db.query(seance.SQL_3, [id_seance]);
     res.json({ message: "Séance supprimée avec succès." });
   } catch (err) {
     console.error("Erreur suppression séance :", err);

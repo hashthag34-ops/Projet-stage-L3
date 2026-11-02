@@ -1,5 +1,7 @@
 // backend/controllers/forumController.js
 const db = require('../config/db');
+const forum = require('../Models/forumModel');
+
 const fs = require('fs');
 const path = require('path');
 const { emitRoomEvent } = require('../services/realtime');
@@ -36,14 +38,7 @@ const canAccessForum = async (req, forumId) => {
   const userId = req.user.id_utilisateur;
   if (req.baseUrl.endsWith('/apprenant')) {
     const result = await db.query(
-      `SELECT 1
-       FROM forum fo
-       JOIN inscription i ON i.id_formation = fo.id_formation AND i.statut = 'ACCEPTEE'
-       JOIN apprenant a ON a.id_candidat = i.id_candidat
-       JOIN formation f ON f.id_formation = fo.id_formation
-       WHERE fo.id_forum = $1
-         AND a.id_utilisateur = $2
-      `,
+      forum.SQL_12,
       [forumId, userId]
     );
     return result.rowCount > 0;
@@ -51,18 +46,14 @@ const canAccessForum = async (req, forumId) => {
 
   if (req.baseUrl.endsWith('/formateur')) {
     const result = await db.query(
-      `SELECT 1
-       FROM forum fo
-       JOIN formation_formateur ff ON ff.id_formation = fo.id_formation
-       JOIN formateur f ON f.id_formateur = ff.id_formateur
-       WHERE fo.id_forum = $1 AND f.id_utilisateur = $2`,
+      forum.SQL_8,
       [forumId, userId]
     );
     return result.rowCount > 0;
   }
 
   if (req.baseUrl.endsWith('/responsable') && req.user.role === 'RESPONSABLE') {
-    const result = await db.query('SELECT 1 FROM forum WHERE id_forum = $1', [forumId]);
+    const result = await db.query(forum.SQL_11, [forumId]);
     return result.rowCount > 0;
   }
 
@@ -75,11 +66,7 @@ exports.getAllForums = async (req, res) => {
   }
   try {
     const { rows } = await db.query(
-      `SELECT fo.id_forum, fo.nom, fo.description, f.id_formation, f.titre AS formation_titre,
-              f.statut AS formation_statut
-       FROM forum fo
-       JOIN formation f ON f.id_formation = fo.id_formation
-       ORDER BY f.titre, fo.nom`
+      forum.SQL_10
     );
     res.json(rows);
   } catch (error) {
@@ -90,11 +77,7 @@ exports.getAllForums = async (req, res) => {
 
 const canSendToForum = async (forumId) => {
   const result = await db.query(
-    `SELECT 1
-     FROM forum fo
-     JOIN formation f ON f.id_formation = fo.id_formation
-     WHERE fo.id_forum = $1
-       AND f.statut NOT IN ('TERMINEE', 'ARCHIVEE')`,
+    forum.SQL_9,
     [forumId]
   );
   return result.rowCount > 0;
@@ -105,11 +88,7 @@ const canModerateForum = async (req, forumId) => {
 
   if (req.user.role === 'FORMATEUR' && req.baseUrl.endsWith('/formateur')) {
     const result = await db.query(
-      `SELECT 1
-       FROM forum fo
-       JOIN formation_formateur ff ON ff.id_formation = fo.id_formation
-       JOIN formateur f ON f.id_formateur = ff.id_formateur
-       WHERE fo.id_forum = $1 AND f.id_utilisateur = $2`,
+      forum.SQL_8,
       [forumId, req.user.id_utilisateur]
     );
     return result.rowCount > 0;
@@ -125,15 +104,7 @@ exports.getMessagesByForum = async (req, res) => {
     if (!(await canAccessForum(req, id_forum))) {
       return res.status(403).json({ message: 'Vous n’avez pas accès à ce forum.' });
     }
-    const query = `
-      SELECT m.id_message, m.contenu, m.date_envoi AS created_at, m.id_utilisateur,
-             COALESCE(u.nom, m.auteur_nom_archive) AS nom_expediteur,
-             COALESCE(u.prenom, m.auteur_prenom_archive) AS prenom
-      FROM message m
-      LEFT JOIN utilisateur u ON m.id_utilisateur = u.id_utilisateur
-      WHERE m.id_forum = $1
-      ORDER BY m.date_envoi ASC
-    `;
+    const query = forum.SQL_1;
     const { rows } = await db.query(query, [id_forum]);
     res.json(rows.map((row) => ({ ...row, ...decodeMessageContent(row.contenu) })));
   } catch (err) {
@@ -161,11 +132,7 @@ exports.createMessage = async (req, res) => {
       removeUploadedFile(req.file);
       return res.status(403).json({ message: 'L’envoi de messages est fermé pour cette formation.' });
     }
-    const query = `
-      INSERT INTO message (id_forum, id_utilisateur, contenu)
-      VALUES ($1, $2, $3)
-      RETURNING id_message, date_envoi AS created_at
-    `;
+    const query = forum.SQL_2;
     const { rows: messageRows } = await db.query(query, [
       id_forum,
       id_utilisateur,
@@ -174,7 +141,7 @@ exports.createMessage = async (req, res) => {
 
     // Retourner le message créé avec le nom de l'expéditeur
     const { rows: userRows } = await db.query(
-      'SELECT nom, prenom FROM utilisateur WHERE id_utilisateur = $1',
+      forum.SQL_7,
       [id_utilisateur]
     );
     const message = messageRows[0];
@@ -205,7 +172,7 @@ exports.updateMessage = async (req, res) => {
 
   try {
     const messageResult = await db.query(
-      `SELECT contenu, id_utilisateur FROM message WHERE id_message = $1 AND id_forum = $2`,
+      forum.SQL_5,
       [id_message, id_forum]
     );
     const message = messageResult.rows[0];
@@ -226,7 +193,7 @@ exports.updateMessage = async (req, res) => {
     }
 
     await db.query(
-      'UPDATE message SET contenu = $1 WHERE id_message = $2 AND id_forum = $3',
+      forum.SQL_6,
       [storedContent, id_message, id_forum]
     );
     emitRoomEvent(`forum:${id_forum}`, 'forum:message', { id_forum: Number(id_forum) });
@@ -242,7 +209,7 @@ exports.deleteMessage = async (req, res) => {
 
   try {
     const messageResult = await db.query(
-      `SELECT contenu, id_utilisateur FROM message WHERE id_message = $1 AND id_forum = $2`,
+      forum.SQL_5,
       [id_message, id_forum]
     );
     const message = messageResult.rows[0];
@@ -258,7 +225,7 @@ exports.deleteMessage = async (req, res) => {
     if (attachment.chemin_fichier) {
       await fs.promises.unlink(path.join(uploadDirectory, path.basename(attachment.chemin_fichier))).catch(() => {});
     }
-    await db.query('DELETE FROM message WHERE id_message = $1 AND id_forum = $2', [id_message, id_forum]);
+    await db.query(forum.SQL_4, [id_message, id_forum]);
     emitRoomEvent(`forum:${id_forum}`, 'forum:message', { id_forum: Number(id_forum) });
     res.json({ message: 'Message supprimé.' });
   } catch (error) {
@@ -276,9 +243,7 @@ exports.downloadMessageFile = async (req, res) => {
     }
 
     const { rows } = await db.query(
-      `SELECT contenu
-       FROM message
-       WHERE id_message = $1 AND id_forum = $2`,
+      forum.SQL_3,
       [id_message, id_forum]
     );
     const message = rows[0] ? decodeMessageContent(rows[0].contenu) : null;

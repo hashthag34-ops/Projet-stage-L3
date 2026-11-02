@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, QrCode, RefreshCw, XCircle } from 'lucide-react';
 import API from '../../services/api';
-import '../css/ResponsableScan.css';
-
 const toLocalDate = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -123,51 +121,51 @@ export default function Scan() {
   const pendingLearners = learners.filter((learner) => !['PRESENT', 'ABSENT'].includes(learner.statut_presence));
 
   return (
-    <div className="fs-container">
+    <div className="fs-container [margin:0_auto] [min-height:100vh] [max-width:680px] [background-color:var(--fs-bg)] [padding:16px_12px_48px_12px] [color:var(--fs-text)] [font-family:inherit] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
       <style>{`#reader button { background:#f97316!important;color:#18181b!important;border:0!important;border-radius:12px!important;padding:8px 16px!important } #reader img[alt="Info icon"]{display:none!important}`}</style>
-      <div className="fs-header-card">
-        <div className="fs-header-icon-wrap"><QrCode size={26} /></div>
-        <div><h1 className="fs-title">Gestion des présences</h1><p className="fs-subtitle">Sélectionnez une séance pour effectuer ou consulter l’émargement</p></div>
+      <div className="fs-header-card [margin-bottom:20px] [display:flex] [align-items:center] [gap:14px] [border-radius:20px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
+        <div className="fs-header-icon-wrap [display:flex] [height:48px] [width:48px] [flex-shrink:0] [align-items:center] [justify-content:center] [border-radius:16px] [background-color:var(--orange-primary)] [color:\#18181b] [box-shadow:0_4px_12px_rgba(249,_115,_22,_0.3)]"><QrCode size={26} /></div>
+        <div><h1 className="fs-title [margin:0] [font-size:18px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--fs-text)]">Gestion des présences</h1><p className="fs-subtitle [margin:4px_0_0_0] [font-size:11px] [color:var(--fs-muted)]">Sélectionnez une séance pour effectuer ou consulter l’émargement</p></div>
       </div>
 
       {!selectedSeance ? (
-        <div className="fs-main-panel">
-          <div className="fs-select-header"><label className="fs-label"><Calendar size={14} /> Toutes les séances</label></div>
-          {loading ? <div className="fs-loading-box">Chargement des séances...</div> : (
-            <div className="fs-seance-list">
+        <div className="fs-main-panel [border-radius:24px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_10px_30px_var(--shadow-color)] [box-sizing:border-box]">
+          <div className="fs-select-header [display:flex] [align-items:center] [justify-content:space-between] [margin-bottom:8px]"><label className="fs-label [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fs-muted)]"><Calendar size={14} /> Toutes les séances</label></div>
+          {loading ? <div className="fs-loading-box [border-radius:14px] [border:1px_solid_var(--fs-border)] [padding:12px] [text-align:center] [font-size:12px] [color:var(--fs-muted)] [background-color:var(--fs-subbox)]">Chargement des séances...</div> : (
+            <div className="fs-seance-list [display:grid] [gap:10px]">
               {seances.map((seance) => (
-                <button key={seance.id_seance} type="button" className="fs-seance-card" onClick={() => openSeance(seance)}>
-                  <span className="fs-seance-main">
+                <button key={seance.id_seance} type="button" className="fs-seance-card [width:100%] [display:grid] [grid-template-columns:minmax(0,_1fr)_auto_18px] [align-items:center] [gap:12px] [border:1px_solid_var(--fs-border)] [border-radius:14px] [background:var(--fs-subbox)] [padding:14px] [color:var(--fs-text)] [text-align:left] [cursor:pointer] [&:hover]:[border-color:var(--orange-primary)]" onClick={() => openSeance(seance)}>
+                  <span className="fs-seance-main [display:flex] [flex-direction:column] [gap:3px]">
                     <strong>{seance.titre || `Séance #${seance.id_seance}`}</strong>
                     <small>{seance.formation_titre}</small>
                   </span>
-                  <span className="fs-seance-meta">
-                    {toLocalDate(seance.date_seance) === today && <span className="fs-today-badge">Aujourd’hui</span>}
+                  <span className="fs-seance-meta [display:flex] [flex-direction:column] [gap:3px] [color:var(--fs-muted)] [font-size:11px]">
+                    {toLocalDate(seance.date_seance) === today && <span className="fs-today-badge [width:fit-content] [border-radius:999px] [background:var(--orange-primary)] [padding:2px_8px] [color:\#18181b] [font-weight:800]">Aujourd’hui</span>}
                     <span>{formatDate(seance.date_seance)}</span>
                     <span><Clock size={13} /> {seance.heure_debut?.slice(0, 5)} - {seance.heure_fin?.slice(0, 5)}</span>
                   </span>
-                  <span className="fs-seance-arrow">›</span>
+                  <span className="fs-seance-arrow [font-size:28px] [color:var(--orange-primary)]">›</span>
                 </button>
               ))}
-              {!seances.length && <p className="fs-manual-loading">Aucune séance programmée.</p>}
+              {!seances.length && <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Aucune séance programmée.</p>}
             </div>
           )}
         </div>
       ) : (
-        <div className="fs-main-panel">
-          <button type="button" className="fs-filter-toggle" onClick={() => setSelectedSeance(null)}>← Retour aux séances</button>
-          <div className="fs-details-banner">
-            <div><span className="fs-details-badge">{selectedSeance.type_seance || 'Séance'}</span><strong>{selectedSeance.titre || selectedSeance.formation_titre}</strong></div>
-            <div className="fs-details-right"><span><Calendar size={13} /> {formatDate(selectedSeance.date_seance)}</span><span><Clock size={13} /> {selectedSeance.heure_debut?.slice(0, 5)} - {selectedSeance.heure_fin?.slice(0, 5)}</span>{selectedSeance.salle && <span><MapPin size={13} /> {selectedSeance.salle}</span>}</div>
+        <div className="fs-main-panel [border-radius:24px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_10px_30px_var(--shadow-color)] [box-sizing:border-box]">
+          <button type="button" className="fs-filter-toggle [font-size:11px] [font-weight:700] [color:var(--orange-primary)] [background:none] [border:none] [cursor:pointer] [&:hover]:[text-decoration:underline]" onClick={() => setSelectedSeance(null)}>← Retour aux séances</button>
+          <div className="fs-details-banner [margin-bottom:20px] [display:flex] [flex-wrap:wrap] [align-items:center] [justify-content:space-between] [gap:12px] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)] [padding:14px_16px] [box-sizing:border-box]">
+            <div><span className="fs-details-badge [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:2px_8px] [font-size:10px] [font-weight:800] [color:var(--orange-primary)] [flex-shrink:0]">{selectedSeance.type_seance || 'Séance'}</span><strong>{selectedSeance.titre || selectedSeance.formation_titre}</strong></div>
+            <div className="fs-details-right [display:flex] [align-items:center] [gap:12px] [font-size:11px] [color:var(--fs-muted)] [flex-shrink:0]"><span><Calendar size={13} /> {formatDate(selectedSeance.date_seance)}</span><span><Clock size={13} /> {selectedSeance.heure_debut?.slice(0, 5)} - {selectedSeance.heure_fin?.slice(0, 5)}</span>{selectedSeance.salle && <span><MapPin size={13} /> {selectedSeance.salle}</span>}</div>
           </div>
 
           {closed ? (
-            <div className="fs-manual-container">
-              <h2 className="fs-label">Présences clôturées</h2>
-              <div className="fs-manual-scroll">
+            <div className="fs-manual-container [display:flex] [flex-direction:column] [gap:12px]">
+              <h2 className="fs-label [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fs-muted)]">Présences clôturées</h2>
+              <div className="fs-manual-scroll [max-height:320px] [overflow-y:auto] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)]">
                 {learners.map((learner) => (
-                  <div key={learner.id_apprenant} className="fs-learner-row fs-closed-row">
-                    <span className="fs-learner-name">{learner.prenom} {learner.nom}</span>
+                  <div key={learner.id_apprenant} className="fs-learner-row [display:flex] [cursor:pointer] [align-items:center] [gap:12px] [border-bottom:1px_solid_var(--fs-border)] [padding:12px_16px] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fs-hover)] fs-closed-row [justify-content:space-between]">
+                    <span className="fs-learner-name [min-width:0] [flex:1] [font-size:12px] [font-weight:700] [color:var(--fs-text)]">{learner.prenom} {learner.nom}</span>
                     <select value={learner.statut_presence || 'ABSENT'} onChange={(event) => updateClosedStatus(learner.id_apprenant, event.target.value)}>
                       <option value="PRESENT">Présent</option>
                       <option value="ABSENT">Absent</option>
@@ -178,34 +176,34 @@ export default function Scan() {
             </div>
           ) : (
             <>
-              <div className="fs-mode-tabs">
+              <div className="fs-mode-tabs [margin-bottom:16px] [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:4px] [border-radius:14px] [background-color:var(--fs-subbox)] [padding:4px] [border:1px_solid_var(--fs-border)]">
                 <button type="button" onClick={() => setAttendanceMode('scan')} className={`fs-tab-btn ${attendanceMode === 'scan' ? 'active' : ''}`}>Scan QR</button>
                 <button type="button" onClick={() => setAttendanceMode('manual')} className={`fs-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}>Présence manuelle</button>
               </div>
               {attendanceMode === 'scan' ? (
-                <div className="fs-scanner-space"><div className="fs-reader-box"><div id="reader" /></div></div>
+                <div className="fs-scanner-space [display:flex] [flex-direction:column] [gap:16px]"><div className="fs-reader-box [overflow:hidden] [border-radius:20px] [border:2px_dashed_rgba(249,_115,_22,_0.4)] [background-color:var(--fs-subbox)] [padding:8px] [box-sizing:border-box]"><div id="reader" /></div></div>
               ) : (
-                <div className="fs-manual-container">
-                  <div className="fs-manual-scroll">
-                    {attendanceLoading ? <p className="fs-manual-loading">Chargement...</p> : pendingLearners.map((learner) => (
-                      <label key={learner.id_apprenant} className="fs-learner-row">
+                <div className="fs-manual-container [display:flex] [flex-direction:column] [gap:12px]">
+                  <div className="fs-manual-scroll [max-height:320px] [overflow-y:auto] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)]">
+                    {attendanceLoading ? <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Chargement...</p> : pendingLearners.map((learner) => (
+                      <label key={learner.id_apprenant} className="fs-learner-row [display:flex] [cursor:pointer] [align-items:center] [gap:12px] [border-bottom:1px_solid_var(--fs-border)] [padding:12px_16px] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fs-hover)]">
                         <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => setManualSelected((current) => current.includes(learner.id_apprenant) ? current.filter((id) => id !== learner.id_apprenant) : [...current, learner.id_apprenant])} />
-                        <span className="fs-learner-name">{learner.prenom} {learner.nom}</span>
-                        <span className="fs-learner-mail">{learner.email}</span>
+                        <span className="fs-learner-name [min-width:0] [flex:1] [font-size:12px] [font-weight:700] [color:var(--fs-text)]">{learner.prenom} {learner.nom}</span>
+                        <span className="fs-learner-mail [font-size:11px] [color:var(--fs-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis] [max-width:150px]">{learner.email}</span>
                       </label>
                     ))}
-                    {!pendingLearners.length && !attendanceLoading && <p className="fs-manual-loading">Tous les apprenants ont été marqués présents.</p>}
+                    {!pendingLearners.length && !attendanceLoading && <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Tous les apprenants ont été marqués présents.</p>}
                   </div>
-                  <button type="button" className="fs-submit-btn" disabled={!manualSelected.length} onClick={saveManual}>Enregistrer les présences sélectionnées</button>
+                  <button type="button" className="fs-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s]" disabled={!manualSelected.length} onClick={saveManual}>Enregistrer les présences sélectionnées</button>
                 </div>
               )}
-              <button type="button" className="fs-submit-btn fs-close-attendance" disabled={closing} onClick={closeAttendance}>
+              <button type="button" className="fs-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] fs-close-attendance [margin-top:16px]" disabled={closing} onClick={closeAttendance}>
                 {closing ? 'Clôture...' : 'Terminer le pointage'}
               </button>
             </>
           )}
 
-          {scanMessage.text && <div className={`fs-scan-alert ${scanMessage.type}`}><div className="fs-alert-content">{scanMessage.type === 'success' ? <CheckCircle2 size={20} /> : scanMessage.type === 'error' ? <XCircle size={20} /> : <AlertCircle size={20} />}<span>{scanMessage.text}</span></div><button className="fs-alert-close" onClick={() => setScanMessage({ type: '', text: '' })}><RefreshCw size={15} /></button></div>}
+          {scanMessage.text && <div className={`fs-scan-alert ${scanMessage.type}`}><div className="fs-alert-content [display:flex] [align-items:center] [gap:10px] [min-width:0]">{scanMessage.type === 'success' ? <CheckCircle2 size={20} /> : scanMessage.type === 'error' ? <XCircle size={20} /> : <AlertCircle size={20} />}<span>{scanMessage.text}</span></div><button className="fs-alert-close [background:none] [border:none] [cursor:pointer] [color:inherit] [opacity:0.7] [padding:4px] [&:hover]:[opacity:1]" onClick={() => setScanMessage({ type: '', text: '' })}><RefreshCw size={15} /></button></div>}
         </div>
       )}
     </div>

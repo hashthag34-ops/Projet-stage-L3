@@ -29,7 +29,7 @@ import {
   Legend
 } from 'recharts';
 import API from '../../services/api';
-import '../css/AdminStats.css'; // Importation du CSS classique
+
 
 const ORANGE_PALETTE = [
   '#f97316', // Orange principal ODC
@@ -48,13 +48,13 @@ const monthName = (month) =>
 const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="custom-tooltip">
-        {label && <p className="tooltip-label">{label}</p>}
+      <div className="custom-tooltip [border-radius:16px] [border:1px_solid_var(--border-color)] [background-color:var(--tooltip-bg)] [padding:14px] [box-shadow:0_10px_25px_var(--shadow-color)] [backdrop-filter:blur(12px)]">
+        {label && <p className="tooltip-label [margin:0_0_6px_0] [font-size:12px] [font-weight:700] [color:var(--text-primary)]">{label}</p>}
         {payload.map((entry, index) => (
-          <div key={`item-${index}`} className="tooltip-item">
-            <span className="tooltip-dot" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
-            <span className="tooltip-name">{entry.name}:</span>
-            <span className="tooltip-value">
+          <div key={`item-${index}`} className="tooltip-item [display:flex] [align-items:center] [gap:8px] [font-size:12px] [font-weight:600] [margin-top:4px]">
+            <span className="tooltip-dot [height:8px] [width:8px] [border-radius:50%]" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
+            <span className="tooltip-name [color:var(--text-secondary)]">{entry.name}:</span>
+            <span className="tooltip-value [font-weight:800] [color:var(--orange-primary)]">
               {entry.value} {suffix}
             </span>
           </div>
@@ -67,34 +67,34 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
 
 function StatCard({ label, value, detail, icon: Icon }) {
   return (
-    <article className="stat-card">
-      <div className="stat-card-header">
+    <article className="stat-card [display:flex] [flex-direction:column] [justify-content:space-between] [overflow:hidden] [border-radius:24px] [background-color:var(--panel-bg)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [border:1px_solid_var(--border-color)] [transition:all_0.3s] [&:hover]:[box-shadow:0_10px_25px_var(--shadow-color)]">
+      <div className="stat-card-header [display:flex] [align-items:flex-start] [justify-content:space-between] [gap:12px]">
         <div>
-          <p className="stat-card-label">{label}</p>
-          <p className="stat-card-value">{value ?? 0}</p>
+          <p className="stat-card-label [font-size:12px] [font-weight:700] [color:var(--text-secondary)] [margin:0]">{label}</p>
+          <p className="stat-card-value [margin-top:8px] [font-size:24px] [font-weight:900] [color:var(--text-primary)] [font-variant-numeric:tabular-nums]">{value ?? 0}</p>
         </div>
-        <div className="stat-card-icon-wrapper">
+        <div className="stat-card-icon-wrapper [display:flex] [height:36px] [width:36px] [flex-shrink:0] [align-items:center] [justify-content:center] [border-radius:14px] [background-color:var(--orange-bg-light)] [color:var(--orange-primary)]">
           <Icon size={18} />
         </div>
       </div>
-      <p className="stat-card-detail">{detail}</p>
+      <p className="stat-card-detail [margin-top:12px] [font-size:11px] [font-weight:600] [color:var(--text-secondary)]">{detail}</p>
     </article>
   );
 }
 
 function ChartPanel({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="chart-panel">
-      <div className="chart-panel-header">
+    <section className="chart-panel [display:flex] [flex-direction:column] [border-radius:24px] [background-color:var(--panel-bg)] [padding:24px] [box-shadow:0_1px_3px_var(--shadow-color)] [border:1px_solid_var(--border-color)] [transition:all_0.3s]">
+      <div className="chart-panel-header [display:flex] [align-items:flex-start] [justify-content:space-between] [gap:16px] [margin-bottom:24px]">
         <div>
-          <h2 className="chart-panel-title">
-            {Icon && <Icon size={16} className="chart-title-icon" />}
+          <h2 className="chart-panel-title [display:flex] [align-items:center] [gap:8px] [font-size:14px] [font-weight:700] [color:var(--text-primary)] [margin:0]">
+            {Icon && <Icon size={16} className="chart-title-icon [color:var(--orange-primary)]" />}
             {title}
           </h2>
-          <p className="chart-panel-subtitle">{subtitle}</p>
+          <p className="chart-panel-subtitle [margin-top:2px] [font-size:11px] [color:var(--text-secondary)]">{subtitle}</p>
         </div>
       </div>
-      <div className="chart-panel-body">{children}</div>
+      <div className="chart-panel-body [flex:1]">{children}</div>
     </section>
   );
 }
@@ -164,15 +164,15 @@ export default function AdminStats() {
   const evaluationRanking = statistics?.evaluationRanking || [];
 
   return (
-    <div className="admin-stats-container">
+    <div className="admin-stats-container [display:flex] [flex-direction:column] [gap:32px] [padding:8px_16px] [font-family:inherit] [color:var(--text-primary)] [background-color:var(--stats-bg)] [transition:background-color_0.3s_ease,_color_0.3s_ease] [box-sizing:border-box]">
       
       {/* En-tête principal */}
-      <header className="admin-stats-header">
+      <header className="admin-stats-header [display:flex] [flex-direction:column] [justify-content:space-between] [gap:16px]">
         <div>
-          <div className="admin-badge">
+          <div className="admin-badge [display:inline-flex] [align-items:center] [gap:8px] [padding:4px_12px] [border-radius:9999px] [background-color:var(--orange-bg-light)] [font-size:12px] [font-weight:700] [color:var(--orange-primary)]">
             <Sparkles size={13} /> Panneau Administration
           </div>
-          <h1 className="admin-title">Vue statistique globale</h1>
+          <h1 className="admin-title [margin-top:8px] [font-size:24px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--text-primary)]">Vue statistique globale</h1>
         </div>
 
         <button
@@ -181,7 +181,7 @@ export default function AdminStats() {
           disabled={loading}
           aria-label="Actualiser les statistiques"
           title="Actualiser"
-          className="refresh-btn"
+          className="refresh-btn [display:inline-flex] [align-items:center] [gap:8px] [padding:10px_16px] [border-radius:16px] [background-color:var(--panel-bg)] [color:var(--text-primary)] [border:1px_solid_var(--border-color)] [font-size:12px] [font-weight:700] [box-shadow:0_1px_2px_var(--shadow-color)] [cursor:pointer] [transition:all_0.2s] [&:hover]:[background-color:var(--hover-bg)]"
         >
           <RefreshCw size={15} className={`refresh-icon ${loading ? 'spinning' : ''}`} />
           <span>Actualiser</span>
@@ -190,28 +190,28 @@ export default function AdminStats() {
 
       {/* Message d'erreur */}
       {error && (
-        <div role="alert" className="error-banner">
+        <div role="alert" className="error-banner [padding:16px] [border-radius:16px] [background-color:rgba(239,_68,_68,_0.1)] [color:\#ef4444] [font-size:12px] [font-weight:700] [border:1px_solid_rgba(239,_68,_68,_0.2)]">
           {error}
         </div>
       )}
 
       {/* Skeletons / Chargement */}
       {loading && !statistics ? (
-        <div className="stats-skeleton-wrapper">
-          <div className="stats-grid-4">
+        <div className="stats-skeleton-wrapper [display:flex] [flex-direction:column] [gap:24px]">
+          <div className="stats-grid-4 [display:grid] [gap:16px] [grid-template-columns:1fr]">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton-card" />
+              <div key={i} className="skeleton-card [height:112px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
             ))}
           </div>
-          <div className="stats-grid-2">
-            <div className="skeleton-chart" />
-            <div className="skeleton-chart" />
+          <div className="stats-grid-2 [display:grid] [gap:24px] [grid-template-columns:1fr]">
+            <div className="skeleton-chart [height:320px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
+            <div className="skeleton-chart [height:320px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
           </div>
         </div>
       ) : statistics && (
         <>
           {/* Cartes KPI */}
-          <section className="stats-grid-4">
+          <section className="stats-grid-4 [display:grid] [gap:16px] [grid-template-columns:1fr]">
             <StatCard
               label="Comptes Utilisateurs"
               value={overview.utilisateurs}
@@ -249,7 +249,7 @@ export default function AdminStats() {
           </section>
 
           {/* Grille de Graphiques Fluides */}
-          <div className="stats-grid-2">
+          <div className="stats-grid-2 [display:grid] [gap:24px] [grid-template-columns:1fr]">
             
             {/* 1. AreaChart : Formations créées */}
             <ChartPanel
@@ -257,7 +257,7 @@ export default function AdminStats() {
               subtitle="Évolution chronologique sur les 12 derniers mois"
               icon={TrendingUp}
             >
-              <div className="chart-container">
+              <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                     <defs>
@@ -303,9 +303,9 @@ export default function AdminStats() {
               icon={PieChartIcon}
             >
               {applicationData.length === 0 ? (
-                <div className="chart-empty">Aucune donnée disponible.</div>
+                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucune donnée disponible.</div>
               ) : (
-                <div className="chart-container">
+                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -335,7 +335,7 @@ export default function AdminStats() {
                         align="center"
                         iconType="circle"
                         formatter={(value) => (
-                          <span className="legend-text">
+                          <span className="legend-text [font-size:10px] [font-weight:600] [color:var(--text-secondary)]">
                             {value.length > 18 ? `${value.substring(0, 18)}…` : value}
                           </span>
                         )}
@@ -353,9 +353,9 @@ export default function AdminStats() {
               icon={CheckCircle2}
             >
               {successData.length === 0 ? (
-                <div className="chart-empty">Aucune évaluation terminée.</div>
+                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucune évaluation terminée.</div>
               ) : (
-                <div className="chart-container">
+                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                       <defs>
@@ -405,9 +405,9 @@ export default function AdminStats() {
               icon={Star}
             >
               {averageRating.length === 0 ? (
-                <div className="chart-empty">Aucun avis publié pour le moment.</div>
+                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun avis publié pour le moment.</div>
               ) : (
-                <div className="chart-container">
+                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={averageRating} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
@@ -444,21 +444,21 @@ export default function AdminStats() {
 
           </div>
 
-          <section className="admin-ranking-section">
+          <section className="admin-ranking-section [display:flex] [flex-direction:column] [gap:16px]">
             <div className="admin-ranking-header">
               <h2><Award size={17} /> Classements des apprenants</h2>
               <p>Classement selon les résultats enregistrés.</p>
             </div>
-            <div className="admin-ranking-grid">
+            <div className="admin-ranking-grid [display:grid] [gap:16px]">
               <ChartPanel title="Classement par formation" subtitle="Moyenne générale des notes des apprenants">
-                <div className="admin-ranking-list">
+                <div className="admin-ranking-list [max-height:420px] [overflow-y:auto]">
                   {formationRanking.map((formation) => (
-                    <div className="admin-ranking-group" key={formation.id_formation}>
+                    <div className="admin-ranking-group [border-radius:14px] [background:var(--stat-subbox)] [padding:14px] [margin-bottom:12px]" key={formation.id_formation}>
                       <h3>{formation.titre || formation.formation_titre}</h3>
                       {formation.apprenants.length === 0 ? (
-                        <p className="chart-empty">Aucun résultat disponible.</p>
+                        <p className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun résultat disponible.</p>
                       ) : formation.apprenants.map((learner, index) => (
-                        <div className="admin-ranking-row" key={learner.id_apprenant}>
+                        <div className="admin-ranking-row [display:flex] [align-items:center] [justify-content:space-between] [gap:12px] [border-bottom:1px_solid_var(--stat-border)] [padding:9px_0] [font-size:12px]" key={learner.id_apprenant}>
                           <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
                           <strong>{Number(learner.moyenne).toFixed(2)} / 20</strong>
                         </div>
@@ -469,15 +469,15 @@ export default function AdminStats() {
               </ChartPanel>
 
               <ChartPanel title="Classement par évaluation" subtitle="Meilleure note obtenue par apprenant">
-                <div className="admin-ranking-list">
+                <div className="admin-ranking-list [max-height:420px] [overflow-y:auto]">
                   {evaluationRanking.map((evaluation) => (
-                    <div className="admin-ranking-group" key={evaluation.id_evaluation_sujet}>
+                    <div className="admin-ranking-group [border-radius:14px] [background:var(--stat-subbox)] [padding:14px] [margin-bottom:12px]" key={evaluation.id_evaluation_sujet}>
                       <h3>{evaluation.evaluation_titre}</h3>
                       <small>{evaluation.formation_titre}</small>
                       {evaluation.apprenants.length === 0 ? (
-                        <p className="chart-empty">Aucun résultat disponible.</p>
+                        <p className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun résultat disponible.</p>
                       ) : evaluation.apprenants.map((learner, index) => (
-                        <div className="admin-ranking-row" key={learner.id_tentative}>
+                        <div className="admin-ranking-row [display:flex] [align-items:center] [justify-content:space-between] [gap:12px] [border-bottom:1px_solid_var(--stat-border)] [padding:9px_0] [font-size:12px]" key={learner.id_tentative}>
                           <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
                           <strong>{Number(learner.note).toFixed(2)} / 20</strong>
                         </div>

@@ -1,30 +1,14 @@
 // backend/controllers/userController.js
 const db = require('../config/db');
+const user = require('../Models/userModel');
+
 const bcrypt = require('bcrypt');
 const { emitToRoles, disconnectUser } = require('../services/realtime');
 
 // 1. Récupérer les utilisateurs avec leur rôle déduit
 exports.getAllUsers = async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        u.id_utilisateur, u.nom, u.prenom, u.email, u.statut_compte, u.date_creation,
-        CASE 
-          WHEN a.id_administrateur IS NOT NULL THEN 'ADMINISTRATEUR'
-          WHEN r.id_responsable IS NOT NULL THEN 'RESPONSABLE'
-          WHEN f.id_formateur IS NOT NULL THEN 'FORMATEUR'
-          WHEN ap.id_apprenant IS NOT NULL THEN 'APPRENANT'
-          ELSE 'UTILISATEUR'
-        END AS role,
-        f.specialite,
-        r.fonction
-      FROM utilisateur u
-      LEFT JOIN administrateur a ON u.id_utilisateur = a.id_utilisateur
-      LEFT JOIN responsable r ON u.id_utilisateur = r.id_utilisateur
-      LEFT JOIN formateur f ON u.id_utilisateur = f.id_utilisateur
-      LEFT JOIN apprenant ap ON u.id_utilisateur = ap.id_utilisateur
-      ORDER BY u.date_creation DESC;
-    `;
+    const query = user.SQL_1;
     const { rows } = await db.query(query);
     res.status(200).json(rows);
   } catch (error) {
@@ -36,9 +20,10 @@ exports.getAllUsers = async (req, res) => {
 // 2. Créer un utilisateur et l'assigner à sa table rôle
 exports.createUser = async (req, res) => {
   const { nom, prenom, email, mot_de_passe, role, specialite, fonction } = req.body;
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
   try {
-    const userCheck = await db.query('SELECT * FROM utilisateur WHERE email = $1', [email]);
+    const userCheck = await db.query(user.SQL_16, [normalizedEmail]);
     if (userCheck.rows.length > 0) {
       return res.status(400).json({ message: "Cet email est déjà utilisé" });
     }
@@ -46,40 +31,39 @@ exports.createUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(mot_de_passe, saltRounds);
 
-    await db.query('BEGIN');
+    await db.query(user.SQL_6);
 
     // Insertion dans utilisateur
-    const insertUserQuery = `
-      INSERT INTO utilisateur (nom, prenom, email, mot_de_passe)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id_utilisateur, nom, prenom, email;
-    `;
-    const userRes = await db.query(insertUserQuery, [nom, prenom, email, hashedPassword]);
+    const insertUserQuery = user.SQL_2;
+    const userRes = await db.query(insertUserQuery, [nom, prenom, normalizedEmail, hashedPassword]);
     const newUser = userRes.rows[0];
 
     // Insertion selon le rôle
     if (role === 'FORMATEUR') {
       await db.query(
-        'INSERT INTO formateur (id_utilisateur, specialite) VALUES ($1, $2)', 
+        user.SQL_15,
         [newUser.id_utilisateur, specialite || 'Général']
       );
     } else if (role === 'RESPONSABLE') {
       await db.query(
-        'INSERT INTO responsable (id_utilisateur, fonction) VALUES ($1, $2)', 
+        user.SQL_14,
         [newUser.id_utilisateur, fonction || 'Responsable Formation']
       );
     } else if (role === 'ADMINISTRATEUR') {
       await db.query(
-        'INSERT INTO administrateur (id_utilisateur) VALUES ($1)', 
+        user.SQL_13,
         [newUser.id_utilisateur]
       );
     }
 
-    await db.query('COMMIT');
+    await db.query(user.SQL_4);
     res.status(201).json({ message: "Utilisateur créé avec succès !", user: { ...newUser, role } });
   } catch (error) {
-    await db.query('ROLLBACK');
+    await db.query(user.SQL_3);
     console.error("Erreur createUser :", error);
+    if (error.code === '23505') {
+      return res.status(400).json({ message: "Cet email est déjà utilisé" });
+    }
     res.status(500).json({ message: "Erreur lors de la création de l'utilisateur" });
   }
 };
@@ -92,15 +76,15 @@ exports.deleteUser = async (req, res) => {
 
   try {
     client = await db.connect();
-    await client.query('BEGIN');
+    await client.query(user.SQL_6);
     transactionStarted = true;
-    await client.query('DELETE FROM formateur WHERE id_utilisateur = $1', [id]);
-    await client.query('DELETE FROM responsable WHERE id_utilisateur = $1', [id]);
-    await client.query('DELETE FROM administrateur WHERE id_utilisateur = $1', [id]);
+    await client.query(user.SQL_12, [id]);
+    await client.query(user.SQL_11, [id]);
+    await client.query(user.SQL_10, [id]);
     
     // Keep the learner profile so its attendance, evaluations and certifications remain linked.
-    const { rowCount } = await client.query('DELETE FROM utilisateur WHERE id_utilisateur = $1', [id]);
-    await client.query('COMMIT');
+    const { rowCount } = await client.query(user.SQL_9, [id]);
+    await client.query(user.SQL_4);
     transactionStarted = false;
 
     if (rowCount === 0) {
@@ -112,7 +96,7 @@ exports.deleteUser = async (req, res) => {
   } catch (error) {
     if (transactionStarted) {
       try {
-        await client.query('ROLLBACK');
+        await client.query(user.SQL_3);
       } catch (rollbackError) {
         console.error('Erreur lors de l’annulation de la suppression :', rollbackError);
       }
@@ -131,25 +115,21 @@ exports.updateUserProfile = async (req, res) => {
     const userId = req.user.id_utilisateur || req.user.id; // Déduit du token via verifyToken
     const photo_profil = req.file ? req.file.filename : null;
 
-    await db.query('BEGIN');
+    await db.query(user.SQL_6);
 
     if (photo_profil) {
       await db.query(
-        `UPDATE utilisateur 
-         SET nom = $1, prenom = $2, telephone = $3, age = $4, photo_profil = $5 
-         WHERE id_utilisateur = $6`,
+        user.SQL_8,
         [nom, prenom, telephone, age, photo_profil, userId]
       );
     } else {
       await db.query(
-        `UPDATE utilisateur 
-         SET nom = $1, prenom = $2, telephone = $3, age = $4 
-         WHERE id_utilisateur = $5`,
+        user.SQL_7,
         [nom, prenom, telephone, age, userId]
       );
     }
 
-    await db.query('COMMIT'); // <-- ESSENTIEL pour valider la transaction SQL !
+    await db.query(user.SQL_4); // <-- ESSENTIEL pour valider la transaction SQL !
 
     res.status(200).json({
       message: "Profil mis à jour avec succès !",
@@ -158,7 +138,7 @@ exports.updateUserProfile = async (req, res) => {
     });
 
   } catch (error) {
-    await db.query('ROLLBACK');
+    await db.query(user.SQL_3);
     console.error("Erreur updateUserProfile :", error);
     res.status(500).json({ message: "Erreur lors de la modification du profil" });
   }
@@ -170,16 +150,16 @@ exports.updateUser = async (req, res) => {
   const { nom, prenom, email } = req.body || {};
 
   try {
-    await db.query('BEGIN');
+    await db.query(user.SQL_6);
     await db.query(
-      `UPDATE utilisateur SET nom = $1, prenom = $2, email = $3 WHERE id_utilisateur = $4`,
+      user.SQL_5,
       [nom, prenom, email, id]
     );
-    await db.query('COMMIT');
+    await db.query(user.SQL_4);
 
     res.status(200).json({ message: "Utilisateur mis à jour avec succès !" });
   } catch (error) {
-    await db.query('ROLLBACK');
+    await db.query(user.SQL_3);
     console.error("Erreur updateUser :", error);
     res.status(500).json({ message: "Erreur lors de la modification de l'utilisateur" });
   }

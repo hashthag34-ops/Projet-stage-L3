@@ -17,7 +17,10 @@ router.get('/seances/:id_seance/apprenants', async (req, res) => {
          SELECT a.id_apprenant, u.nom, u.prenom, u.email
          FROM seance s
          JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         JOIN apprenant a ON EXISTS (
+           SELECT 1 FROM candidat c
+           WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+         )
          JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
          WHERE s.id_seance = $1
        ),
@@ -40,7 +43,10 @@ router.get('/seances/:id_seance/apprenants', async (req, res) => {
       `SELECT COUNT(*)::INTEGER AS total
        FROM seance s
        JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-       JOIN apprenant a ON a.id_candidat = i.id_candidat
+       JOIN apprenant a ON EXISTS (
+         SELECT 1 FROM candidat c
+         WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+       )
        WHERE s.id_seance = $1`,
       [idSeance]
     );
@@ -70,7 +76,10 @@ router.post('/manuel', async (req, res) => {
          SELECT a.id_apprenant, u.nom, u.prenom
          FROM seance s
          JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         JOIN apprenant a ON EXISTS (
+           SELECT 1 FROM candidat c
+           WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+         )
          JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
          WHERE s.id_seance = $1 AND a.id_apprenant = ANY($2::INTEGER[])
        ), presence_enregistree AS (
@@ -100,7 +109,10 @@ router.post('/seances/:id_seance/cloturer', async (req, res) => {
          SELECT a.id_apprenant, s.id_seance, NOW(), 'ABSENT'
          FROM seance s
          JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         JOIN apprenant a ON EXISTS (
+           SELECT 1 FROM candidat c
+           WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+         )
          WHERE s.id_seance = $1
            AND NOT EXISTS (
              SELECT 1 FROM presence p
@@ -130,7 +142,10 @@ router.patch('/seances/:id_seance/apprenants/:id_apprenant', async (req, res) =>
          SELECT $2, $1, NOW(), $3::statut_presence
          FROM seance s
          JOIN inscription i ON i.id_formation = s.id_formation AND i.statut = 'ACCEPTEE'
-         JOIN apprenant a ON a.id_candidat = i.id_candidat
+         JOIN apprenant a ON EXISTS (
+           SELECT 1 FROM candidat c
+           WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+         )
          WHERE s.id_seance = $1 AND a.id_apprenant = $2
          ON CONFLICT (id_apprenant, id_seance)
          DO UPDATE SET statut = EXCLUDED.statut, date_scan = NOW()`,
@@ -176,7 +191,10 @@ router.post('/scan', async (req, res) => {
         JOIN inscription i
           ON i.id_formation = s.id_formation
          AND i.statut = 'ACCEPTEE'
-        JOIN apprenant a ON a.id_candidat = i.id_candidat
+        JOIN apprenant a ON EXISTS (
+          SELECT 1 FROM candidat c
+          WHERE c.id_utilisateur = a.id_utilisateur AND c.id_candidat = i.id_candidat
+        )
         JOIN utilisateur u ON u.id_utilisateur = a.id_utilisateur
         WHERE s.id_seance = $2
           AND a.id_apprenant = $1

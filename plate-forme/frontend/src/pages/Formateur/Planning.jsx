@@ -1,7 +1,6 @@
 // frontend/src/pages/Formateur/Planning.jsx
 import { useEffect, useState } from 'react';
-import API from '../../services/api';
-import '../css/FormateurPlanning.css'; // Importation du CSS classique
+import API from '../../services/api';
 
 export default function FormateurPlanning() {
   const [seances, setSeances] = useState([]);
@@ -201,38 +200,38 @@ export default function FormateurPlanning() {
     formatDateLocal(seance.date_seance) >= todayISO && Number(seance.total_presences || 0) === 0;
 
   return (
-    <div className="fp-container">
+    <div className="fp-container [min-height:100vh] [background-color:var(--fp-bg)] [color:var(--fp-text)] [font-family:inherit] [padding:12px] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
 
       {/* CONTENEUR PRINCIPAL */}
-      <div className="fp-main-card">
+      <div className="fp-main-card [background-color:var(--fp-panel)] [border-radius:24px] [border:1px_solid_var(--fp-border)] [box-shadow:0_1px_3px_var(--shadow-color)] [padding:16px] [position:relative] [box-sizing:border-box]">
         
         {/* BARRE SUPÉRIEURE DE NAVIGATION */}
-        <div className="fp-topbar">
+        <div className="fp-topbar [margin-bottom:24px] [display:flex] [flex-direction:column] [gap:16px] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:20px]">
           
-          <div className="fp-topbar-left">
-            <h1 className="fp-month-title capitalize">
+          <div className="fp-topbar-left [display:flex] [flex-wrap:wrap] [align-items:center] [justify-content:space-between] [gap:12px] [width:100%]">
+            <h1 className="fp-month-title [margin:0] [font-size:20px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--fp-text)] capitalize">
               {monthName}
             </h1>
 
-            <div className="fp-nav-controls">
+            <div className="fp-nav-controls [display:flex] [align-items:center] [gap:8px]">
               <button 
                 onClick={() => setCurrentDate(new Date())}
-                className="fp-today-btn"
+                className="fp-today-btn [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:6px_12px] [font-size:11px] [font-weight:700] [color:var(--fp-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--fp-hover)]"
               >
                 Aujourd'hui
               </button>
 
-              <div className="fp-arrows-group">
+              <div className="fp-arrows-group [display:flex] [align-items:center] [gap:4px]">
                 <button
                   onClick={() => navigateTime(-1)}
-                  className="fp-arrow-btn"
+                  className="fp-arrow-btn [display:flex] [height:32px] [width:32px] [align-items:center] [justify-content:center] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [color:var(--fp-muted)] [cursor:pointer] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--fp-hover)] [&:hover]:[color:var(--fp-text)]"
                   title="Précédent"
                 >
                   <i className="bi bi-chevron-left text-xs"></i>
                 </button>
                 <button
                   onClick={() => navigateTime(1)}
-                  className="fp-arrow-btn"
+                  className="fp-arrow-btn [display:flex] [height:32px] [width:32px] [align-items:center] [justify-content:center] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [color:var(--fp-muted)] [cursor:pointer] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--fp-hover)] [&:hover]:[color:var(--fp-text)]"
                   title="Suivant"
                 >
                   <i className="bi bi-chevron-right text-xs"></i>
@@ -241,11 +240,11 @@ export default function FormateurPlanning() {
             </div>
           </div>
 
-          <div className="fp-topbar-right">
+          <div className="fp-topbar-right [display:flex] [flex-wrap:wrap] [align-items:center] [gap:10px]">
             <select
               value={selectedFormation}
               onChange={(e) => setSelectedFormation(e.target.value)}
-              className="fp-select"
+              className="fp-select [width:100%] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:8px_12px] [font-size:11px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box]"
             >
               <option value="">Toutes les formations</option>
               {formations.map(f => (
@@ -255,7 +254,7 @@ export default function FormateurPlanning() {
 
             <button
               onClick={() => handleOpenCreateForDate(selectedDateISO)}
-              className="fp-create-btn desktop-only"
+              className="fp-create-btn [display:flex] [align-items:center] [gap:8px] [border-radius:12px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:8px_16px] [font-size:11px] [font-weight:800] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [&:hover]:[opacity:0.9] desktop-only"
             >
               <i className="bi bi-plus-lg text-sm"></i>
               <span>Nouvelle Séance</span>
@@ -266,10 +265,10 @@ export default function FormateurPlanning() {
         {/* ========================================================= */}
         {/* VUE MOBILE / TABLETTE                                     */}
         {/* ========================================================= */}
-        <div className="fp-mobile-view">
+        <div className="fp-mobile-view [display:block]">
           
           {/* Bandeau de jours défilant horizontalement */}
-          <div className="fp-days-strip">
+          <div className="fp-days-strip [display:flex] [align-items:center] [gap:8px] [overflow-x:auto] [padding-bottom:16px] [padding-top:4px] [scrollbar-width:none]">
             {weekDays.map((day, idx) => {
               const dateISO = formatDateLocal(day);
               const isSelected = selectedDateISO === dateISO;
@@ -281,7 +280,7 @@ export default function FormateurPlanning() {
                   onClick={() => setCurrentDate(day)}
                   className={`fp-day-pill ${isSelected ? 'selected' : ''}`}
                 >
-                  <span className="fp-day-name">
+                  <span className="fp-day-name [font-size:10px] [font-weight:800] [text-transform:uppercase]">
                     {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
                   </span>
                   <span className={`fp-day-num ${isToday && !isSelected ? 'today' : ''}`}>
@@ -294,38 +293,38 @@ export default function FormateurPlanning() {
 
           {/* Liste chronologique des séances du jour */}
           {loading ? (
-            <div className="fp-loading">Chargement...</div>
+            <div className="fp-loading [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--fp-muted)]">Chargement...</div>
           ) : currentDaySeances.length === 0 ? (
-            <div className="fp-empty-day">
+            <div className="fp-empty-day [padding:48px_16px] [text-align:center] [font-size:12px] [color:var(--fp-muted)] [border:2px_dashed_var(--fp-border)] [border-radius:16px] [margin:16px_0]">
               Aucune séance programmée pour cette journée.
             </div>
           ) : (
-            <div className="fp-mobile-seances-list">
+            <div className="fp-mobile-seances-list [display:flex] [flex-direction:column] [gap:12px] [margin:16px_0]">
               {currentDaySeances.map((s) => (
                 <div
                   key={s.id_seance}
                   onClick={() => setSelectedSeanceDetails(s)}
-                  className="fp-mobile-seance-card"
+                  className="fp-mobile-seance-card [display:flex] [align-items:flex-start] [gap:12px] [padding:16px] [border-radius:16px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--fp-hover)]"
                 >
-                  <div className="fp-mobile-time">
-                    <p className="fp-time-start">{s.heure_debut?.substring(0, 5)}</p>
-                    <p className="fp-time-end">{s.heure_fin?.substring(0, 5)}</p>
+                  <div className="fp-mobile-time [text-align:right] [flex-shrink:0] [min-width:48px]">
+                    <p className="fp-time-start [margin:0] [font-size:12px] [font-weight:800] [color:var(--fp-text)]">{s.heure_debut?.substring(0, 5)}</p>
+                    <p className="fp-time-end [margin:2px_0_0_0] [font-size:10px] [font-weight:700] [color:var(--fp-muted)]">{s.heure_fin?.substring(0, 5)}</p>
                   </div>
 
-                  <div className="fp-mobile-details">
-                    <span className="fp-mobile-badge">
+                  <div className="fp-mobile-details [flex:1] [min-width:0] [border-left:2px_solid_var(--orange-primary)] [padding-left:12px]">
+                    <span className="fp-mobile-badge [display:inline-block] [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:2px_8px] [font-size:9px] [font-weight:800] [color:var(--orange-primary)] [margin-bottom:4px]">
                       {s.type_seance || 'Séance'}
                     </span>
-                    <h4 className="fp-mobile-title">
+                    <h4 className="fp-mobile-title [margin:0] [font-size:12px] [font-weight:800] [color:var(--fp-text)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
                       {s.titre || s.type_seance}
                     </h4>
                     {s.formation_titre && (
-                      <p className="fp-mobile-formation">
+                      <p className="fp-mobile-formation [margin:2px_0_0_0] [font-size:11px] [color:var(--fp-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
                         {s.formation_titre}
                       </p>
                     )}
                     {s.salle && (
-                      <p className="fp-mobile-room">
+                      <p className="fp-mobile-room [margin:4px_0_0_0] [font-size:10px] [color:var(--fp-muted)] [display:flex] [align-items:center] [gap:4px]">
                         <i className="bi bi-geo-alt"></i> {s.salle}
                       </p>
                     )}
@@ -338,7 +337,7 @@ export default function FormateurPlanning() {
           {/* Bouton Flottant (FAB) d'ajout sur Mobile */}
           <button
             onClick={() => handleOpenCreateForDate(selectedDateISO)}
-            className="fp-fab-btn"
+            className="fp-fab-btn [position:fixed] [bottom:24px] [right:24px] [z-index:40] [display:flex] [height:52px] [width:52px] [align-items:center] [justify-content:center] [border-radius:50%] [background-color:var(--orange-primary)] [color:\#18181b] [box-shadow:0_10px_25px_rgba(249,_115,_22,_0.4)] [border:none] [cursor:pointer]"
           >
             <i className="bi bi-plus-lg text-lg"></i>
           </button>
@@ -347,23 +346,23 @@ export default function FormateurPlanning() {
         {/* ========================================================= */}
         {/* VUE DESKTOP (GRILLE SEMAINE)                              */}
         {/* ========================================================= */}
-        <div className="fp-desktop-view">
+        <div className="fp-desktop-view [display:none]">
           {loading ? (
-            <div className="fp-loading lg">Chargement du planning...</div>
+            <div className="fp-loading [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--fp-muted)] lg">Chargement du planning...</div>
           ) : (
-            <div className="fp-grid-wrapper">
+            <div className="fp-grid-wrapper [min-width:900px]">
               
               {/* En-tête des jours */}
-              <div className="fp-grid-header-row">
-                <div className="fp-time-col-header">
+              <div className="fp-grid-header-row [display:grid] [grid-template-columns:repeat(8,_minmax(0,_1fr))] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:12px] [text-align:center]">
+                <div className="fp-time-col-header [font-size:11px] [font-weight:800] [color:var(--fp-muted)] [display:flex] [align-items:center] [justify-content:center] [text-transform:uppercase]">
                   Heure
                 </div>
                 {weekDays.map((day, idx) => {
                   const dateISO = formatDateLocal(day);
                   const isToday = formatDateLocal(new Date()) === dateISO;
                   return (
-                    <div key={idx} className="fp-day-col-header">
-                      <span className="fp-header-dayname">
+                    <div key={idx} className="fp-day-col-header [display:flex] [flex-direction:column] [align-items:center]">
+                      <span className="fp-header-dayname [font-size:10px] [font-weight:700] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)]">
                         {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </span>
                       <span className={`fp-header-daynum ${isToday ? 'today' : ''}`}>
@@ -375,14 +374,14 @@ export default function FormateurPlanning() {
               </div>
 
               {/* Lignes Heures + Créneaux */}
-              <div className="fp-grid-body">
+              <div className="fp-grid-body [position:relative]">
                 {hoursList.map((hour, hIdx) => {
                   const currentSlotHour = parseInt(hour.substring(0, 2), 10);
 
                   return (
-                    <div key={hIdx} className="fp-hour-row">
+                    <div key={hIdx} className="fp-hour-row [display:grid] [grid-template-columns:repeat(8,_minmax(0,_1fr))] [min-height:90px] [border-bottom:1px_solid_var(--fp-border)]">
                       
-                      <div className="fp-hour-label">
+                      <div className="fp-hour-label [padding-right:12px] [padding-top:6px] [text-align:right] [font-size:11px] [font-weight:700] [color:var(--fp-muted)]">
                         {hour}
                       </div>
 
@@ -401,7 +400,7 @@ export default function FormateurPlanning() {
                           <div
                             key={dIdx}
                             onClick={() => handleOpenCreateForDate(dateISO)}
-                            className="fp-slot-cell"
+                            className="fp-slot-cell [padding:6px] [border-left:1px_solid_var(--fp-border)] [cursor:pointer] [position:relative] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fp-hover)]"
                           >
                             {daySeances.map(s => {
                               const startHour = parseInt(s.heure_debut.substring(0, 2), 10);
@@ -417,29 +416,29 @@ export default function FormateurPlanning() {
                                     setSelectedSeanceDetails(s);
                                   }}
                                   style={{ height: computedHeight }}
-                                  className="fp-event-card"
+                                  className="fp-event-card [position:absolute] [left:6px] [right:6px] [top:6px] [z-index:20] [cursor:pointer] [border-radius:16px] [border:1px_solid_rgba(249,_115,_22,_0.3)] [background-color:var(--fp-panel)] [padding:10px] [display:flex] [flex-direction:column] [justify-content:space-between] [overflow:hidden] [box-shadow:0_4px_12px_var(--shadow-color)] [box-sizing:border-box] [transition:border-color_0.2s] [&:hover]:[border-color:var(--orange-primary)]"
                                 >
                                   <div>
-                                    <div className="fp-event-top-row">
+                                    <div className="fp-event-top-row [display:flex] [align-items:center] [justify-content:space-between] [font-size:9px] [font-weight:800] [color:var(--orange-primary)] [text-transform:uppercase]">
                                       <span>{s.type_seance || 'Séance'}</span>
-                                      <span className="fp-event-time">
+                                      <span className="fp-event-time [color:var(--fp-muted)] [font-weight:600]">
                                         {s.heure_debut?.substring(0, 5)}
                                       </span>
                                     </div>
 
-                                    <h4 className="fp-event-title">
+                                    <h4 className="fp-event-title [margin:4px_0_0_0] [font-size:11px] [font-weight:800] [color:var(--fp-text)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
                                       {s.titre || s.type_seance}
                                     </h4>
 
                                     {s.formation_titre && (
-                                      <p className="fp-event-formation">
+                                      <p className="fp-event-formation [margin:2px_0_0_0] [font-size:9px] [color:var(--fp-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
                                         {s.formation_titre}
                                       </p>
                                     )}
                                   </div>
 
                                   {s.salle && (
-                                    <div className="fp-event-room">
+                                    <div className="fp-event-room [font-size:9px] [font-weight:700] [color:var(--fp-muted)] [display:flex] [align-items:center] [gap:4px]">
                                       <i className="bi bi-geo-alt"></i> {s.salle}
                                     </div>
                                   )}
@@ -463,34 +462,34 @@ export default function FormateurPlanning() {
 
       {/* Modal Création de Séance */}
       {showModal && (
-        <div className="fp-modal-backdrop" onClick={closeModal}>
-          <div className="fp-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="fp-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={closeModal}>
+          <div className="fp-modal-card [position:relative] [width:100%] [max-width:440px] [max-height:90vh] [overflow-y:auto] [border-radius:24px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-panel)] [padding:24px] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [box-sizing:border-box]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
-              className="fp-modal-close"
+              className="fp-modal-close [position:absolute] [right:16px] [top:16px] [background:none] [border:none] [cursor:pointer] [color:var(--fp-muted)] [padding:4px] [&:hover]:[color:var(--fp-text)]"
             >
               <i className="bi bi-x-lg text-lg"></i>
             </button>
 
-            <h2 className="fp-modal-heading">
+            <h2 className="fp-modal-heading [margin:0_0_16px_0] [font-size:16px] [font-weight:900] [color:var(--fp-text)] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:12px]">
               {editingSeanceId ? 'Modifier la séance' : 'Programmer une Séance'}
             </h2>
 
             {errorMsg && (
-              <div className="fp-error-banner">
+              <div className="fp-error-banner [margin-bottom:16px] [display:flex] [align-items:center] [gap:8px] [border-radius:12px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [background-color:rgba(225,_29,_72,_0.1)] [padding:12px] [font-size:11px] [font-weight:700] [color:\#e11d48]">
                 <i className="bi bi-exclamation-circle shrink-0 text-base"></i>
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="fp-form-space">
+            <form onSubmit={handleSubmit} className="fp-form-space [display:flex] [flex-direction:column] [gap:16px]">
               <div>
-                <label className="fp-field-label">Formation</label>
+                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Formation</label>
                 <select
                   required
                   value={formData.id_formation}
                   onChange={handleModalFormationChange}
-                  className="fp-input"
+                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                 >
                   <option value="">Sélectionner une formation</option>
                   {formations.map(f => (
@@ -499,13 +498,13 @@ export default function FormateurPlanning() {
                 </select>
               </div>
 
-              <div className="fp-modal-grid-2">
+              <div className="fp-modal-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
                 <div>
-                  <label className="fp-field-label">Type de Séance</label>
+                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Type de Séance</label>
                   <select
                     value={formData.type_seance}
                     onChange={(e) => setFormData({ ...formData, type_seance: e.target.value })}
-                    className="fp-input"
+                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                   >
                     <option value="Cours Magistral">Cours Magistral</option>
                     <option value="Travaux Pratiques (TP)">Travaux Pratiques (TP)</option>
@@ -516,19 +515,19 @@ export default function FormateurPlanning() {
                 </div>
 
                 <div>
-                  <label className="fp-field-label">Salle / Lieu</label>
+                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Salle / Lieu</label>
                   <input
                     type="text"
                     placeholder="Labo 2 / Zoom"
                     value={formData.salle}
                     onChange={(e) => setFormData({ ...formData, salle: e.target.value })}
-                    className="fp-input"
+                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="fp-field-label">Date</label>
+                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Date</label>
                 <input
                   type="date"
                   required
@@ -537,41 +536,41 @@ export default function FormateurPlanning() {
                   max={activeModalFormation?.date_fin ? formatDateLocal(activeModalFormation.date_fin) : ''}
                   value={formData.date_seance}
                   onChange={(e) => setFormData({ ...formData, date_seance: e.target.value })}
-                  className="fp-input"
+                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                 />
               </div>
 
-              <div className="fp-modal-grid-2">
+              <div className="fp-modal-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
                 <div>
-                  <label className="fp-field-label">Heure Début</label>
+                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Heure Début</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_debut}
                     onChange={(e) => setFormData({ ...formData, heure_debut: e.target.value })}
-                    className="fp-input"
+                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                   />
                 </div>
                 <div>
-                  <label className="fp-field-label">Heure Fin</label>
+                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Heure Fin</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_fin}
                     onChange={(e) => setFormData({ ...formData, heure_fin: e.target.value })}
-                    className="fp-input"
+                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="fp-field-label">Description (Optionnel)</label>
+                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Description (Optionnel)</label>
                 <textarea
                   rows="2"
                   placeholder="Informations complémentaires..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="fp-input resize-none"
+                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s] resize-none"
                 />
               </div>
 
@@ -583,7 +582,7 @@ export default function FormateurPlanning() {
               </button>
               <button
                 type="submit"
-                className="fp-submit-btn"
+                className="fp-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [margin-top:8px] [transition:opacity_0.2s] [&:hover]:[opacity:0.9]"
               >
                 {editingSeanceId ? 'Enregistrer les modifications' : 'Valider la Séance'}
               </button>
@@ -594,38 +593,38 @@ export default function FormateurPlanning() {
 
       {/* Modal Détails Séance */}
       {selectedSeanceDetails && (
-        <div className="fp-modal-backdrop" onClick={() => setSelectedSeanceDetails(null)}>
-          <div className="fp-modal-card max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="fp-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={() => setSelectedSeanceDetails(null)}>
+          <div className="fp-modal-card [position:relative] [width:100%] [max-width:440px] [max-height:90vh] [overflow-y:auto] [border-radius:24px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-panel)] [padding:24px] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [box-sizing:border-box] max-w-sm" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedSeanceDetails(null)}
-              className="fp-modal-close"
+              className="fp-modal-close [position:absolute] [right:16px] [top:16px] [background:none] [border:none] [cursor:pointer] [color:var(--fp-muted)] [padding:4px] [&:hover]:[color:var(--fp-text)]"
             >
               <i className="bi bi-x-lg text-lg"></i>
             </button>
 
-            <div className="fp-details-badges">
-              <span className="fp-badge">
+            <div className="fp-details-badges [display:flex] [flex-wrap:wrap] [gap:8px] [margin-bottom:8px]">
+              <span className="fp-badge [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:4px_10px] [font-size:10px] [font-weight:800] [color:var(--orange-primary)]">
                 {selectedSeanceDetails.type_seance || 'Séance'}
               </span>
             </div>
 
-            <h3 className="fp-details-title">
+            <h3 className="fp-details-title [margin:0_0_16px_0] [font-size:16px] [font-weight:900] [color:var(--fp-text)]">
               {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance}
             </h3>
 
-            <div className="fp-details-box">
-              <div className="fp-details-row">
+            <div className="fp-details-box [margin-bottom:20px] [display:flex] [flex-direction:column] [gap:10px] [border-radius:16px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:16px] [font-size:12px] [color:var(--fp-text)]">
+              <div className="fp-details-row [display:flex] [align-items:center] [gap:10px]">
                 <i className="bi bi-clock shrink-0 text-sm"></i>
                 <span>
                   {new Date(selectedSeanceDetails.date_seance).toLocaleDateString('fr-FR')} ({selectedSeanceDetails.heure_debut?.substring(0, 5)} - {selectedSeanceDetails.heure_fin?.substring(0, 5)})
                 </span>
               </div>
-              <div className="fp-details-row">
+              <div className="fp-details-row [display:flex] [align-items:center] [gap:10px]">
                 <i className="bi bi-geo-alt shrink-0 text-sm"></i>
                 <span>Salle : <strong>{selectedSeanceDetails.salle || 'Non spécifiée'}</strong></span>
               </div>
               {selectedSeanceDetails.description && (
-                <div className="fp-details-desc">
+                <div className="fp-details-desc [padding-top:8px] [border-top:1px_solid_var(--fp-border)] [font-style:italic] [color:var(--fp-muted)]">
                   <p>{selectedSeanceDetails.description}</p>
                 </div>
               )}
@@ -635,7 +634,7 @@ export default function FormateurPlanning() {
               onClick={() => handleDelete(selectedSeanceDetails.id_seance)}
               disabled={!canDeleteSeance(selectedSeanceDetails)}
               title={!canDeleteSeance(selectedSeanceDetails) ? "Séance terminée ou contenant des présences" : "Supprimer cette séance"}
-              className="fp-delete-btn"
+              className="fp-delete-btn [display:flex] [width:100%] [align-items:center] [justify-content:center] [gap:8px] [border-radius:14px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [background-color:rgba(225,_29,_72,_0.1)] [padding:12px] [font-size:12px] [font-weight:800] [color:\#e11d48] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:rgba(225,_29,_72,_0.2)]"
             >
               <i className="bi bi-trash text-sm"></i>
               {canDeleteSeance(selectedSeanceDetails) ? 'Supprimer cette séance' : 'Suppression non autorisée'}

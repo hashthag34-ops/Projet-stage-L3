@@ -38,8 +38,7 @@ import {
   CartesianGrid
 } from 'recharts';
 import API from '../../services/api';
-import { getRealtimeSocket } from '../../services/realtime';
-import '../css/GsUsers.css'; // Importation du CSS classique
+import { getRealtimeSocket } from '../../services/realtime';
 
 const BACKEND_URL = import.meta.env.VITE_URL;
 
@@ -452,20 +451,20 @@ export default function GsUsers() {
   };
 
   return (
-    <div className="gs-users-container">
+    <div className="gs-users-container [position:relative] [min-height:100vh] [display:flex] [flex-direction:column] [gap:24px] [font-family:inherit] [color:var(--gs-text)] [background-color:var(--gs-bg)] [transition:background-color_0.3s_ease,_color_0.3s_ease] [padding:8px_16px] [box-sizing:border-box]">
 
       {/* Header */}
-      <header className="gs-users-header">
+      <header className="gs-users-header [display:flex] [flex-direction:column] [justify-content:space-between] [gap:16px]">
         <div>
-          <div className="gs-badge">
+          <div className="gs-badge [display:inline-flex] [align-items:center] [gap:8px] [padding:4px_12px] [border-radius:9999px] [background-color:var(--gs-input-bg)] [font-size:12px] [font-weight:400] [color:var(--gs-muted)] [border:1px_solid_var(--gs-border)]">
             <Sparkles size={13} /> Administration Système
           </div>
-          <h1 className="gs-title">Gestion des Membres</h1>
+          <h1 className="gs-title [margin-top:4px] [font-size:24px] [font-weight:400] [letter-spacing:-0.025em] [color:var(--gs-text)]">Gestion des Membres</h1>
         </div>
 
         <button
           onClick={() => setShowStatsModal(!showStatsModal)}
-          className="gs-btn-secondary"
+          className="gs-btn-secondary [display:inline-flex] [align-items:center] [justify-content:center] [gap:8px] [border-radius:16px] [border:1px_solid_var(--gs-border)] [background-color:var(--gs-panel)] [padding:10px_16px] [font-size:12px] [font-weight:500] [color:var(--gs-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]"
         >
           <BarChart3 size={15} />
           <span>{showStatsModal ? 'Masquer Statistiques' : 'Afficher Statistiques'}</span>
@@ -475,22 +474,22 @@ export default function GsUsers() {
 
       {/* STATISTIQUES MODAL */}
       {showStatsModal && (
-        <div className="stats-modal-card">
-          <div className="stats-modal-header">
+        <div className="stats-modal-card [overflow:hidden] [border-radius:24px] [border:1px_solid_var(--gs-border)] [background-color:var(--gs-panel)] [padding:24px] [box-shadow:0_10px_30px_var(--shadow-color)] [animation:slideDown_0.4s_ease-out]">
+          <div className="stats-modal-header [display:flex] [align-items:center] [justify-content:space-between] [margin-bottom:24px]">
             <h2>Aperçu analytique des utilisateurs</h2>
-            <button onClick={() => setShowStatsModal(false)} className="icon-close-btn">
+            <button onClick={() => setShowStatsModal(false)} className="icon-close-btn [border-radius:50%] [padding:6px] [background:none] [border:none] [color:var(--gs-muted)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]">
               <X size={16} />
             </button>
           </div>
 
-          <div className="stats-grid">
-            <div className="stat-box">
-              <span className="stat-box-title">Comptes et candidatures ces 6 derniers mois</span>
-              <div className="stat-legend">
-                <span className="legend-item"><span className="dot-black" />Comptes créés</span>
-                <span className="legend-item"><span className="dot-orange" />Candidatures envoyées</span>
+          <div className="stats-grid [display:grid] [gap:24px] [grid-template-columns:1fr]">
+            <div className="stat-box [border-radius:16px] [background-color:var(--gs-hover)] [padding:16px] [border:1px_solid_var(--gs-border)]">
+              <span className="stat-box-title [font-size:11px] [font-weight:400] [color:var(--gs-muted)]">Comptes et candidatures ces 6 derniers mois</span>
+              <div className="stat-legend [display:flex] [flex-wrap:wrap] [gap:12px] [font-size:10px] [color:var(--gs-muted)] [margin-top:8px]">
+                <span className="legend-item [display:inline-flex] [align-items:center] [gap:6px]"><span className="dot-black [height:8px] [width:8px] [border-radius:50%] [background-color:var(--gs-text)]" />Comptes créés</span>
+                <span className="legend-item [display:inline-flex] [align-items:center] [gap:6px]"><span className="dot-orange [height:8px] [width:8px] [border-radius:50%] [background-color:var(--orange-primary)]" />Candidatures envoyées</span>
               </div>
-              <div className="chart-wrapper">
+              <div className="chart-wrapper [margin-top:16px] [height:192px] [width:100%]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyCreationChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <defs>
@@ -528,9 +527,9 @@ export default function GsUsers() {
               </div>
             </div>
 
-            <div className="stat-box">
-              <span className="stat-box-title">Répartition des rôles</span>
-              <div className="chart-wrapper" style={{ marginTop: '24px' }}>
+            <div className="stat-box [border-radius:16px] [background-color:var(--gs-hover)] [padding:16px] [border:1px_solid_var(--gs-border)]">
+              <span className="stat-box-title [font-size:11px] [font-weight:400] [color:var(--gs-muted)]">Répartition des rôles</span>
+              <div className="chart-wrapper [margin-top:16px] [height:192px] [width:100%]" style={{ marginTop: '24px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={roleChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
@@ -547,34 +546,34 @@ export default function GsUsers() {
       )}
 
       {/* Recherche et Filtres */}
-      <div className="gs-controls-bar">
-        <div className="search-input-wrapper">
-          <Search size={15} className="search-icon" />
+      <div className="gs-controls-bar [display:flex] [flex-direction:column] [gap:12px]">
+        <div className="search-input-wrapper [position:relative] [flex:1]">
+          <Search size={15} className="search-icon [position:absolute] [left:14px] [top:50%] [transform:translateY(-50%)] [color:var(--gs-muted)]" />
           <input
             value={search ?? ''}
             onChange={(e) => { setSearch(e.target.value); setMobileIndex(0); }}
             placeholder="Rechercher par nom, email ou rôle..."
-            className="gs-input pl-10"
+            className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box] pl-10"
           />
         </div>
-        <div className="sort-select-wrapper">
+        <div className="sort-select-wrapper [position:relative]">
           <select
             value={sort ?? 'recent'}
             onChange={(e) => setSort(e.target.value)}
-            className="gs-input cursor-pointer appearance-none pr-8"
+            className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box] cursor-pointer appearance-none pr-8"
           >
             <option value="recent">Tri : Récent</option>
             <option value="name">Tri : Nom A-Z</option>
             <option value="role">Tri : Rôle</option>
           </select>
-          <ArrowUpDown size={13} className="sort-icon-select" />
+          <ArrowUpDown size={13} className="sort-icon-select [pointer-events:none] [position:absolute] [right:12px] [top:50%] [transform:translateY(-50%)] [color:var(--gs-muted)]" />
         </div>
-        <div className="action-buttons-group">
+        <div className="action-buttons-group [display:flex] [gap:8px]">
           <button
             type="button"
             onClick={handlePrintUsers}
             disabled={loading || filteredUsers.length === 0}
-            className="gs-btn-secondary"
+            className="gs-btn-secondary [display:inline-flex] [align-items:center] [justify-content:center] [gap:8px] [border-radius:16px] [border:1px_solid_var(--gs-border)] [background-color:var(--gs-panel)] [padding:10px_16px] [font-size:12px] [font-weight:500] [color:var(--gs-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]"
           >
             <Printer size={14} />
             Imprimer
@@ -583,7 +582,7 @@ export default function GsUsers() {
             type="button"
             onClick={handleExportExcel}
             disabled={loading || filteredUsers.length === 0}
-            className="gs-btn-secondary"
+            className="gs-btn-secondary [display:inline-flex] [align-items:center] [justify-content:center] [gap:8px] [border-radius:16px] [border:1px_solid_var(--gs-border)] [background-color:var(--gs-panel)] [padding:10px_16px] [font-size:12px] [font-weight:500] [color:var(--gs-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]"
           >
             <FileSpreadsheet size={14} />
             Exporter Excel
@@ -593,12 +592,12 @@ export default function GsUsers() {
 
       {/* Tableau des utilisateurs */}
       {loading ? (
-        <div className="loading-state">Chargement des membres...</div>
+        <div className="loading-state [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--gs-muted)]">Chargement des membres...</div>
       ) : filteredUsers.length === 0 ? (
-        <div className="empty-state">Aucun utilisateur trouvé.</div>
+        <div className="empty-state [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--gs-muted)]">Aucun utilisateur trouvé.</div>
       ) : (
-        <div className="table-responsive-container">
-          <table className="gs-table">
+        <div className="table-responsive-container [overflow-x:auto]">
+          <table className="gs-table [width:100%] [text-align:left] [font-size:12px] [border-collapse:separate] [border-spacing:0_8px]">
             <thead>
               <tr>
                 <th className="px-4 py-2">Utilisateur</th>
@@ -614,29 +613,29 @@ export default function GsUsers() {
                 <tr
                   key={user.id_utilisateur}
                   onClick={() => setSelectedUser(user)}
-                  className="gs-table-row"
+                  className="gs-table-row [cursor:pointer] [transition:all_0.2s]"
                 >
-                  <td className="td-cell cell-left">
-                    <div className="user-cell-flex">
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)] cell-left [border-left:1px_solid_var(--gs-border)] [border-top-left-radius:16px] [border-bottom-left-radius:16px]">
+                    <div className="user-cell-flex [display:flex] [align-items:center] [gap:12px]">
                       <UserAvatar user={user} />
                       <div>
-                        <p className="user-name-text">{user.prenom} {user.nom}</p>
-                        <p className="user-id-text">ID #{user.id_utilisateur}</p>
+                        <p className="user-name-text [font-weight:400] [color:var(--gs-text)] [margin:0]">{user.prenom} {user.nom}</p>
+                        <p className="user-id-text [font-size:10px] [color:var(--gs-muted)] [margin:2px_0_0_0]">ID #{user.id_utilisateur}</p>
                       </div>
                     </div>
                   </td>
 
-                  <td className="td-cell cell-email">
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)] cell-email [font-weight:400] [color:var(--gs-muted)]">
                     {user.email}
                   </td>
 
-                  <td className="td-cell">
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)]">
                     <span className={`badge-role ${getRoleBadgeClass(user.role)}`}>
                       {user.role}
                     </span>
                   </td>
 
-                  <td className="td-cell" onClick={(e) => e.stopPropagation()}>
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)]" onClick={(e) => e.stopPropagation()}>
                     <select
                       value={user.statut_compte ?? 'ACTIF'}
                       onChange={(e) => handleStatusChange(user.id_utilisateur, e.target.value)}
@@ -648,24 +647,24 @@ export default function GsUsers() {
                     </select>
                   </td>
 
-                  <td className="td-cell">
-                    <div className="presence-wrapper">
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)]">
+                    <div className="presence-wrapper [display:flex] [align-items:center] [gap:8px]">
                       <span className={`presence-dot ${user.is_online ? 'online' : 'offline'}`} />
                       <span className={user.is_online ? 'presence-text-online' : 'presence-text-offline'}>
                         {user.is_online ? 'En ligne' : 'Hors ligne'}
                       </span>
                     </div>
-                    <p className="presence-subdate">
+                    <p className="presence-subdate [margin:2px_0_0_0] [font-size:10px] [color:var(--gs-muted)]">
                       {user.is_online
                         ? `Connecté depuis ${formatPresenceDate(user.date_derniere_connexion)}`
                         : `Dernière déconnexion ${formatPresenceDate(user.date_derniere_deconnexion)}`}
                     </p>
                   </td>
 
-                  <td className="td-cell cell-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="td-cell [padding:12px_16px] [background-color:var(--gs-panel)] [border-top:1px_solid_var(--gs-border)] [border-bottom:1px_solid_var(--gs-border)] cell-right [border-right:1px_solid_var(--gs-border)] [border-top-right-radius:16px] [border-bottom-right-radius:16px] [text-align:right]" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedUser(user)}
-                      className="icon-action-btn"
+                      className="icon-action-btn [border-radius:12px] [padding:6px] [background:none] [border:none] [color:var(--gs-muted)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-border)] [&:hover]:[color:var(--gs-text)]"
                     >
                       <Info size={15} />
                     </button>
@@ -680,7 +679,7 @@ export default function GsUsers() {
       {/* BOUTON FLOTTANT CRÉER UN UTILISATEUR (FAB) */}
       <button
         onClick={() => setShowCreate(true)}
-        className="fab-btn"
+        className="fab-btn [position:fixed] [bottom:24px] [right:24px] [z-index:40] [display:flex] [height:48px] [width:48px] [align-items:center] [justify-content:center] [border-radius:50%] [background-color:var(--gs-text)] [color:var(--gs-bg)] [box-shadow:0_10px_25px_var(--shadow-color)] [border:none] [cursor:pointer] [transition:transform_0.2s] [&:hover]:[transform:scale(1.05)]"
         title="Créer un utilisateur"
       >
         <UserPlus size={20} />
@@ -696,21 +695,21 @@ export default function GsUsers() {
             onClick={(e) => e.stopPropagation()}
             className={`drawer-panel ${isClosing ? 'slide-out-right' : 'slide-in-right'}`}
           >
-            <div className="drawer-header">
-              <span className="drawer-subtitle">Détails de l'utilisateur</span>
-              <button onClick={handleCloseDrawer} className="icon-close-btn">
+            <div className="drawer-header [display:flex] [align-items:center] [justify-content:space-between] [border-bottom:1px_solid_var(--gs-border)] [padding-bottom:16px]">
+              <span className="drawer-subtitle [font-size:12px] [color:var(--gs-muted)]">Détails de l'utilisateur</span>
+              <button onClick={handleCloseDrawer} className="icon-close-btn [border-radius:50%] [padding:6px] [background:none] [border:none] [color:var(--gs-muted)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]">
                 <X size={16} />
               </button>
             </div>
 
-            <div className="drawer-profile-section">
+            <div className="drawer-profile-section [display:flex] [align-items:center] [gap:16px] [margin:24px_0]">
               <UserAvatar user={selectedUser} large />
               <div>
-                <h3 className="drawer-user-title">
+                <h3 className="drawer-user-title [font-size:16px] [font-weight:500] [color:var(--gs-text)] [margin:0]">
                   {selectedUser.prenom} {selectedUser.nom}
                 </h3>
-                <p className="drawer-user-email">{selectedUser.email}</p>
-                <div className="drawer-badges-flex">
+                <p className="drawer-user-email [font-size:12px] [color:var(--gs-muted)] [margin:2px_0_0_0]">{selectedUser.email}</p>
+                <div className="drawer-badges-flex [display:flex] [align-items:center] [gap:8px] [margin-top:8px]">
                   <span className={`badge-role ${getRoleBadgeClass(selectedUser.role)}`}>
                     {selectedUser.role}
                   </span>
@@ -721,52 +720,52 @@ export default function GsUsers() {
               </div>
             </div>
 
-            <div className="drawer-info-list">
-              <span className="section-title">Informations de contact</span>
+            <div className="drawer-info-list [display:flex] [flex-direction:column] [gap:12px] [flex:1]">
+              <span className="section-title [font-size:11px] [font-weight:500] [color:var(--gs-muted)] [margin-bottom:4px]">Informations de contact</span>
 
-              <div className="info-card">
-                <p className="info-card-label">Téléphone</p>
-                <p className="info-card-value">
+              <div className="info-card [border-radius:16px] [background-color:var(--gs-hover)] [padding:14px] [border:1px_solid_var(--gs-border)]">
+                <p className="info-card-label [font-size:10px] [color:var(--gs-muted)] [margin:0]">Téléphone</p>
+                <p className="info-card-value [margin-top:2px] [font-size:12px] [font-weight:400] [color:var(--gs-text)]">
                   {selectedUser.telephone || 'Non renseigné'}
                 </p>
               </div>
 
-              <div className="info-card">
-                <p className="info-card-label">Présence</p>
+              <div className="info-card [border-radius:16px] [background-color:var(--gs-hover)] [padding:14px] [border:1px_solid_var(--gs-border)]">
+                <p className="info-card-label [font-size:10px] [color:var(--gs-muted)] [margin:0]">Présence</p>
                 <p className={`info-card-value font-medium ${selectedUser.is_online ? 'presence-text-online' : ''}`}>
                   {selectedUser.is_online ? 'En ligne' : 'Hors ligne'}
                 </p>
-                <p className="info-card-subtext">
+                <p className="info-card-subtext [margin-top:4px] [font-size:10px] [color:var(--gs-muted)]">
                   Dernière connexion : {formatPresenceDate(selectedUser.date_derniere_connexion)}
                 </p>
-                <p className="info-card-subtext">
+                <p className="info-card-subtext [margin-top:4px] [font-size:10px] [color:var(--gs-muted)]">
                   Dernière déconnexion : {formatPresenceDate(selectedUser.date_derniere_deconnexion)}
                 </p>
               </div>
 
               {selectedUser.specialite && (
-                <div className="info-card">
-                  <p className="info-card-label">Spécialité</p>
-                  <p className="info-card-value">{selectedUser.specialite}</p>
+                <div className="info-card [border-radius:16px] [background-color:var(--gs-hover)] [padding:14px] [border:1px_solid_var(--gs-border)]">
+                  <p className="info-card-label [font-size:10px] [color:var(--gs-muted)] [margin:0]">Spécialité</p>
+                  <p className="info-card-value [margin-top:2px] [font-size:12px] [font-weight:400] [color:var(--gs-text)]">{selectedUser.specialite}</p>
                 </div>
               )}
 
               {selectedUser.fonction && (
-                <div className="info-card">
-                  <p className="info-card-label">Fonction</p>
-                  <p className="info-card-value">{selectedUser.fonction}</p>
+                <div className="info-card [border-radius:16px] [background-color:var(--gs-hover)] [padding:14px] [border:1px_solid_var(--gs-border)]">
+                  <p className="info-card-label [font-size:10px] [color:var(--gs-muted)] [margin:0]">Fonction</p>
+                  <p className="info-card-value [margin-top:2px] [font-size:12px] [font-weight:400] [color:var(--gs-text)]">{selectedUser.fonction}</p>
                 </div>
               )}
 
               {selectedUser.role === 'APPRENANT' && (
-                <div className="info-card">
-                  <p className="info-card-label">Candidatures</p>
+                <div className="info-card [border-radius:16px] [background-color:var(--gs-hover)] [padding:14px] [border:1px_solid_var(--gs-border)]">
+                  <p className="info-card-label [font-size:10px] [color:var(--gs-muted)] [margin:0]">Candidatures</p>
                   {Array.isArray(selectedUser.candidatures) && selectedUser.candidatures.length > 0 ? (
                     <div className="mt-2 space-y-2">
                       {selectedUser.candidatures.map((candidature) => (
                         <div key={candidature.id_inscription} className="rounded-lg border border-slate-200 px-3 py-2 dark:border-zinc-700">
-                          <p className="info-card-value">{candidature.formation_titre || 'Formation inconnue'}</p>
-                          <p className="info-card-subtext">
+                          <p className="info-card-value [margin-top:2px] [font-size:12px] [font-weight:400] [color:var(--gs-text)]">{candidature.formation_titre || 'Formation inconnue'}</p>
+                          <p className="info-card-subtext [margin-top:4px] [font-size:10px] [color:var(--gs-muted)]">
                             {candidature.statut || 'Sans statut'}{candidature.date_inscription
                               ? ` - ${new Date(candidature.date_inscription).toLocaleDateString('fr-FR')}`
                               : ''}
@@ -775,21 +774,21 @@ export default function GsUsers() {
                       ))}
                     </div>
                   ) : (
-                    <p className="info-card-value">Aucune candidature</p>
+                    <p className="info-card-value [margin-top:2px] [font-size:12px] [font-weight:400] [color:var(--gs-text)]">Aucune candidature</p>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="drawer-footer-actions">
-              <span className="section-title">Mettre à jour l'accès</span>
+            <div className="drawer-footer-actions [margin-top:32px] [border-top:1px_solid_var(--gs-border)] [padding-top:24px] [display:flex] [flex-direction:column] [gap:16px]">
+              <span className="section-title [font-size:11px] [font-weight:500] [color:var(--gs-muted)] [margin-bottom:4px]">Mettre à jour l'accès</span>
 
-              <div className="status-select-container">
-                <span className="status-select-label">Statut du Compte</span>
+              <div className="status-select-container [display:flex] [align-items:center] [justify-content:space-between] [border-radius:16px] [border:1px_solid_var(--gs-border)] [padding:12px] [background-color:var(--gs-hover)]">
+                <span className="status-select-label [font-size:12px] [color:var(--gs-text)]">Statut du Compte</span>
                 <select
                   value={selectedUser.statut_compte ?? 'ACTIF'}
                   onChange={(e) => handleStatusChange(selectedUser.id_utilisateur, e.target.value)}
-                  className="status-dropdown-drawer"
+                  className="status-dropdown-drawer [border-radius:12px] [background-color:var(--gs-panel)] [border:1px_solid_var(--gs-border)] [padding:6px_12px] [font-size:12px] [color:var(--gs-text)] [outline:none] [cursor:pointer]"
                 >
                   <option value="ACTIF">ACTIF</option>
                   <option value="DESACTIVE">DÉSACTIVÉ</option>
@@ -801,7 +800,7 @@ export default function GsUsers() {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={isDeletingUser}
-                className="gs-btn-danger"
+                className="gs-btn-danger [display:inline-flex] [width:100%] [align-items:center] [justify-content:center] [gap:8px] [border-radius:16px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [padding:12px] [font-size:12px] [font-weight:500] [color:\#e11d48] [background:transparent] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:rgba(225,_29,_72,_0.08)]"
               >
                 <Trash2 size={14} />
                 {isDeletingUser ? 'Suppression...' : 'Supprimer cet utilisateur'}
@@ -809,7 +808,7 @@ export default function GsUsers() {
 
               <button
                 onClick={handleCloseDrawer}
-                className="gs-btn-dark-full"
+                className="gs-btn-dark-full [width:100%] [border-radius:16px] [background-color:var(--gs-text)] [color:var(--gs-bg)] [padding:12px] [font-size:12px] [font-weight:500] [border:none] [cursor:pointer] [transition:opacity_0.2s] [box-sizing:border-box] [text-align:center] [&:hover]:[opacity:0.9]"
               >
                 Fermer
               </button>
@@ -820,23 +819,23 @@ export default function GsUsers() {
 
       {/* Modal Création de Compte */}
       {showCreate && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <div className="modal-header">
+        <div className="modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(9,_9,_11,_0.4)] [padding:16px] [backdrop-filter:blur(2px)]">
+          <div className="modal-card [width:100%] [max-width:440px] [border-radius:24px] [background-color:var(--gs-panel)] [padding:24px] [box-shadow:0_20px_40px_var(--shadow-color)] [border:1px_solid_var(--gs-border)]">
+            <div className="modal-header [display:flex] [align-items:center] [justify-content:space-between] [border-bottom:1px_solid_var(--gs-border)] [padding-bottom:12px] [margin-bottom:16px]">
               <h3>Créer un nouveau membre</h3>
-              <button onClick={() => setShowCreate(false)} className="icon-close-btn">
+              <button onClick={() => setShowCreate(false)} className="icon-close-btn [border-radius:50%] [padding:6px] [background:none] [border:none] [color:var(--gs-muted)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--gs-hover)]">
                 <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-grid-2">
-                <input name="nom" placeholder="Nom" required value={formData.nom ?? ''} onChange={handleChange} className="gs-input" />
-                <input name="prenom" placeholder="Prénom" required value={formData.prenom ?? ''} onChange={handleChange} className="gs-input" />
+            <form onSubmit={handleSubmit} className="modal-form [display:flex] [flex-direction:column] [gap:12px]">
+              <div className="form-grid-2 [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:8px]">
+                <input name="nom" placeholder="Nom" required value={formData.nom ?? ''} onChange={handleChange} className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]" />
+                <input name="prenom" placeholder="Prénom" required value={formData.prenom ?? ''} onChange={handleChange} className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]" />
               </div>
 
-              <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className="gs-input" />
-              <input name="telephone" placeholder="Téléphone" value={formData.telephone ?? ''} onChange={handleChange} className="gs-input" />
+              <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]" />
+              <input name="telephone" placeholder="Téléphone" value={formData.telephone ?? ''} onChange={handleChange} className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]" />
 
               {formData.role === 'ADMINISTRATEUR' && (
                 <input
@@ -847,16 +846,16 @@ export default function GsUsers() {
                   required
                   value={formData.mot_de_passe ?? ''}
                   onChange={handleChange}
-                  className="gs-input"
+                  className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]"
                 />
               )}
 
-              <select name="role" value={formData.role ?? 'FORMATEUR'} onChange={handleChange} className="gs-input">
+              <select name="role" value={formData.role ?? 'FORMATEUR'} onChange={handleChange} className="gs-input [width:100%] [border-radius:16px] [background-color:var(--gs-input-bg)] [padding:12px] [font-size:12px] [font-weight:400] [color:var(--gs-text)] [outline:none] [border:1px_solid_var(--gs-border)] [transition:background-color_0.2s,_ring_0.2s] [box-sizing:border-box]">
                 <option value="FORMATEUR">Formateur</option>
                 <option value="RESPONSABLE">Responsable</option>
                 <option value="ADMINISTRATEUR">Administrateur</option>
               </select>
-              <p className="modal-hint">
+              <p className="modal-hint [font-size:11px] [color:var(--gs-muted)] [margin:0] [line-height:1.4]">
                 {formData.role === 'ADMINISTRATEUR'
                   ? 'Le compte administrateur est configuré immédiatement, sans e-mail.'
                   : 'Un lien sécurisé sera envoyé à cette adresse pour configurer le compte.'}
@@ -864,7 +863,7 @@ export default function GsUsers() {
 
               <button
                 type="submit"
-                className="gs-btn-dark-full"
+                className="gs-btn-dark-full [width:100%] [border-radius:16px] [background-color:var(--gs-text)] [color:var(--gs-bg)] [padding:12px] [font-size:12px] [font-weight:500] [border:none] [cursor:pointer] [transition:opacity_0.2s] [box-sizing:border-box] [text-align:center] [&:hover]:[opacity:0.9]"
               >
                 {formData.role === 'ADMINISTRATEUR' ? 'Créer l’administrateur' : 'Créer et envoyer l’invitation'}
               </button>

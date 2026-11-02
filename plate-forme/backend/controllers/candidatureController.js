@@ -1,5 +1,7 @@
 // backend/controllers/candidatureController.js
 const db = require('../config/db');
+const candidature = require('../Models/candidatureModel');
+
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
@@ -111,63 +113,40 @@ exports.validerCandidature = async (req, res) => {
     const frontendBaseUrl = getFrontendBaseUrl(req);
     await verifyEmailTransport();
     client = await db.connect();
-    await client.query('BEGIN');
+    await client.query(candidature.SQL_8);
     transactionStarted = true;
 
     // 1. Récupérer les détails de l'inscription et du candidat
     const resInscription = await client.query(
-      `SELECT i.id_inscription, i.statut, c.id_candidat, c.email, c.nom, c.prenom, c.telephone, c.age, f.titre as formation_titre
-       FROM inscription i
-       JOIN candidat c ON i.id_candidat = c.id_candidat
-       JOIN formation f ON i.id_formation = f.id_formation
-       WHERE i.id_inscription = $1`,
+      candidature.SQL_26,
       [id_inscription]
     );
 
     if (resInscription.rows.length === 0) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(404).json({ message: "Inscription introuvable" });
     }
 
     const cand = resInscription.rows[0];
     const capacityRes = await client.query(
-      `SELECT capacite_max, COUNT(*) FILTER (WHERE i.statut = 'ACCEPTEE')::INTEGER AS acceptes
-       FROM formation f
-       LEFT JOIN inscription i ON i.id_formation = f.id_formation
-       WHERE f.id_formation = (
-         SELECT id_formation FROM inscription WHERE id_inscription = $1
-       )
-       GROUP BY f.id_formation, f.capacite_max`,
+      candidature.SQL_25,
       [id_inscription]
     );
     const capacity = capacityRes.rows[0]?.capacite_max;
     const accepted = capacityRes.rows[0]?.acceptes || 0;
     if (capacity != null && accepted >= Number(capacity)) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(400).json({ message: 'La capacité maximale de cette formation est déjà atteinte.' });
     }
 
     // 2. Mettre à jour le statut de l'inscription
     await client.query(
-      `UPDATE inscription 
-       SET statut = 'ACCEPTEE', date_decision = CURRENT_TIMESTAMP 
-       WHERE id_inscription = $1`,
+      candidature.SQL_24,
       [id_inscription]
     );
 
     await client.query(
-      `UPDATE inscription pending
-       SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
-       FROM formation f
-       WHERE f.id_formation = pending.id_formation
-         AND pending.id_formation = (SELECT id_formation FROM inscription WHERE id_inscription = $1)
-         AND pending.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
-         AND f.capacite_max IS NOT NULL
-         AND (
-           SELECT COUNT(*) FROM inscription occupied
-           WHERE occupied.id_formation = f.id_formation
-             AND occupied.statut = 'ACCEPTEE'
-         ) >= f.capacite_max`,
+      candidature.SQL_23,
       [id_inscription]
     );
 
@@ -177,7 +156,7 @@ exports.validerCandidature = async (req, res) => {
     let needsSetup = false;
     let setupToken = null;
     const resUser = await client.query(
-      `SELECT id_utilisateur, mot_de_passe FROM utilisateur WHERE LOWER(email) = LOWER($1)`,
+      candidature.SQL_15,
       [cand.email]
     );
 
@@ -187,9 +166,7 @@ exports.validerCandidature = async (req, res) => {
       needsSetup = !resUser.rows[0].mot_de_passe;
     } else {
       const resNewUser = await client.query(
-        `INSERT INTO utilisateur (email, nom, prenom, telephone, age, statut_compte)
-         VALUES ($1, $2, $3, $4, $5, 'ACTIF')
-         RETURNING id_utilisateur`,
+        candidature.SQL_22,
         [cand.email, cand.nom, cand.prenom, cand.telephone, cand.age]
       );
       id_utilisateur = resNewUser.rows[0].id_utilisateur;
@@ -201,21 +178,15 @@ exports.validerCandidature = async (req, res) => {
       setupToken = crypto.randomBytes(32).toString('hex');
       const setupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
       await client.query(
-        `UPDATE utilisateur
-         SET jeton_activation_hash = $1,
-             jeton_activation_expiration = CURRENT_TIMESTAMP + INTERVAL '24 hours'
-         WHERE id_utilisateur = $2`,
+        candidature.SQL_21,
         [setupTokenHash, id_utilisateur]
       );
     }
 
     // 4. Créer l'entrée apprenant liée à l'utilisateur
     const resApprenant = await client.query(
-      `INSERT INTO apprenant (id_utilisateur, id_candidat, statut)
-       VALUES ($1, $2, 'ACTIF')
-       ON CONFLICT (id_candidat) DO UPDATE SET statut = 'ACTIF'
-       RETURNING id_apprenant`,
-      [id_utilisateur, cand.id_candidat]
+      candidature.SQL_20,
+      [id_utilisateur]
     );
 
     const id_apprenant = resApprenant.rows[0].id_apprenant;
@@ -236,7 +207,7 @@ exports.validerCandidature = async (req, res) => {
 
     // 6. Enregistrer le QR Code dans la table UTILISATEUR
     await client.query(
-      `UPDATE utilisateur SET qr_code = $1 WHERE id_utilisateur = $2`,
+      candidature.SQL_9,
       [qrCodeDataURL, id_utilisateur]
     );
 
@@ -251,7 +222,7 @@ exports.validerCandidature = async (req, res) => {
       qrCodeDataURL
     }, frontendBaseUrl);
 
-    await client.query('COMMIT');
+    await client.query(candidature.SQL_3);
     transactionStarted = false;
     emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
     emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
@@ -262,7 +233,7 @@ exports.validerCandidature = async (req, res) => {
   } catch (err) {
     if (transactionStarted && client) {
       try {
-        await client.query('ROLLBACK');
+        await client.query(candidature.SQL_2);
       } catch (rollbackError) {
         console.error('Erreur lors de l’annulation de la validation :', rollbackError);
       }
@@ -285,46 +256,7 @@ exports.validerCandidature = async (req, res) => {
 
 exports.getCandidatures = async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        i.id_inscription,
-        i.statut,
-        i.date_inscription,
-        i.motivation,
-        i.conditions_acceptees,
-        c.id_candidat,
-        c.nom,
-        c.prenom,
-        c.email,
-        c.telephone,
-        c.age,
-        c.genre,
-        c.niveau_etude,
-        c.situation_professionnelle,
-        c.etablissement,
-        c.filiere,
-        COALESCE(a.id_apprenant IS NOT NULL AND u.mot_de_passe IS NOT NULL, FALSE) AS est_apprenant,
-        f.id_formation,
-        f.titre AS formation_titre,
-        f.capacite_max,
-        i.objectif,
-        i.projet_apres_formation,
-        i.source_information,
-        i.formation_precedente,
-        i.retour_suggestion,
-        i.a_deja_suivi_formation,
-        (
-          SELECT COUNT(*)::INTEGER 
-          FROM inscription i2 
-          WHERE i2.id_formation = f.id_formation AND i2.statut = 'ACCEPTEE'
-        ) AS total_acceptes
-      FROM inscription i
-      JOIN candidat c ON i.id_candidat = c.id_candidat
-      JOIN formation f ON i.id_formation = f.id_formation
-      LEFT JOIN utilisateur u ON LOWER(u.email) = LOWER(c.email)
-      LEFT JOIN apprenant a ON a.id_candidat = c.id_candidat AND a.id_utilisateur = u.id_utilisateur
-      ORDER BY i.date_inscription DESC;
-    `;
+    const query = candidature.SQL_1;
 
     const { rows } = await db.query(query);
     return res.status(200).json(rows);
@@ -352,59 +284,49 @@ exports.validerPromotion = async (req, res) => {
     const frontendBaseUrl = getFrontendBaseUrl(req);
     await verifyEmailTransport();
     client = await db.connect();
-    await client.query('BEGIN');
+    await client.query(candidature.SQL_8);
     transactionStarted = true;
 
     const resFormation = await client.query(
-      `SELECT capacite_max FROM formation WHERE id_formation = $1 FOR UPDATE`,
+      candidature.SQL_19,
       [id_formation]
     );
 
     if (resFormation.rows.length === 0) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(404).json({ message: "Formation introuvable." });
     }
 
     const capaciteMax = resFormation.rows[0].capacite_max;
 
     const resPreselection = await client.query(
-      `SELECT i.id_inscription, c.id_candidat, c.email, c.nom, c.prenom, c.telephone, c.age, f.titre as formation_titre
-       FROM inscription i
-       JOIN candidat c ON i.id_candidat = c.id_candidat
-       JOIN formation f ON i.id_formation = f.id_formation
-       WHERE i.id_formation = $1
-         AND (
-           ($2::INTEGER[] IS NULL AND i.statut = 'PRESELECTIONNEE')
-           OR ($2::INTEGER[] IS NOT NULL AND i.id_inscription = ANY($2::INTEGER[])
-             AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE'))
-         )
-       FOR UPDATE`,
+      candidature.SQL_18,
       [id_formation, selectedIds]
     );
 
     const candidats = resPreselection.rows;
     if (selectedIds && candidats.length !== selectedIds.length) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(400).json({
         message: "Un ou plusieurs candidats sélectionnés ne sont plus disponibles pour cette promotion."
       });
     }
 
     const resAcceptes = await client.query(
-      `SELECT COUNT(*)::INTEGER AS total FROM inscription WHERE id_formation = $1 AND statut = 'ACCEPTEE'`,
+      candidature.SQL_17,
       [id_formation]
     );
     const totalAcceptes = resAcceptes.rows[0].total;
 
     if (totalAcceptes + candidats.length > capaciteMax) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(400).json({
         message: `La limite est dépassée : ${totalAcceptes} place(s) sont déjà attribuées et ${candidats.length} candidat(s) sont sélectionnés pour une capacité maximale de ${capaciteMax}.`
       });
     }
 
     if (candidats.length === 0) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(400).json({ message: "Aucun candidat en attente de validation pour cette formation." });
     }
 
@@ -412,9 +334,7 @@ exports.validerPromotion = async (req, res) => {
 
     for (const cand of candidats) {
       await client.query(
-        `UPDATE inscription 
-         SET statut = 'ACCEPTEE', date_decision = CURRENT_TIMESTAMP 
-         WHERE id_inscription = $1`,
+        candidature.SQL_16,
         [cand.id_inscription]
       );
 
@@ -423,7 +343,7 @@ exports.validerPromotion = async (req, res) => {
       let needsSetup = false;
       let setupToken = null;
       const resUser = await client.query(
-        `SELECT id_utilisateur, mot_de_passe FROM utilisateur WHERE LOWER(email) = LOWER($1)`,
+        candidature.SQL_15,
         [cand.email]
       );
 
@@ -432,15 +352,12 @@ exports.validerPromotion = async (req, res) => {
         isExistingUser = true;
         needsSetup = !resUser.rows[0].mot_de_passe;
         await client.query(
-          `UPDATE utilisateur SET statut_compte = 'ACTIF', nom = $1, prenom = $2, telephone = $3, age = $4
-           WHERE id_utilisateur = $5`,
+          candidature.SQL_14,
           [cand.nom, cand.prenom, cand.telephone, cand.age, id_utilisateur]
         );
       } else {
         const resNewUser = await client.query(
-          `INSERT INTO utilisateur (email, nom, prenom, telephone, age, statut_compte)
-           VALUES ($1, $2, $3, $4, $5, 'ACTIF')
-           RETURNING id_utilisateur`,
+          candidature.SQL_13,
           [cand.email, cand.nom, cand.prenom, cand.telephone, cand.age]
         );
         id_utilisateur = resNewUser.rows[0].id_utilisateur;
@@ -449,18 +366,7 @@ exports.validerPromotion = async (req, res) => {
       }
 
       await client.query(
-        `UPDATE inscription i
-         SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
-         FROM formation f
-         WHERE f.id_formation = i.id_formation
-           AND i.id_formation = $1
-           AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
-           AND f.capacite_max IS NOT NULL
-           AND (
-             SELECT COUNT(*) FROM inscription occupied
-             WHERE occupied.id_formation = f.id_formation
-               AND occupied.statut = 'ACCEPTEE'
-           ) >= f.capacite_max`,
+        candidature.SQL_12,
         [id_formation]
       );
 
@@ -468,20 +374,14 @@ exports.validerPromotion = async (req, res) => {
         setupToken = crypto.randomBytes(32).toString('hex');
         const setupTokenHash = crypto.createHash('sha256').update(setupToken).digest('hex');
         await client.query(
-          `UPDATE utilisateur
-           SET jeton_activation_hash = $1,
-               jeton_activation_expiration = CURRENT_TIMESTAMP + INTERVAL '24 hours'
-           WHERE id_utilisateur = $2`,
+          candidature.SQL_11,
           [setupTokenHash, id_utilisateur]
         );
       }
 
       const resApprenant = await client.query(
-        `INSERT INTO apprenant (id_utilisateur, id_candidat, statut)
-         VALUES ($1, $2, 'ACTIF')
-         ON CONFLICT (id_candidat) DO UPDATE SET statut = 'ACTIF'
-         RETURNING id_apprenant`,
-        [id_utilisateur, cand.id_candidat]
+        candidature.SQL_10,
+        [id_utilisateur]
       );
       const id_apprenant = resApprenant.rows[0].id_apprenant;
 
@@ -499,7 +399,7 @@ exports.validerPromotion = async (req, res) => {
       });
 
       await client.query(
-        `UPDATE utilisateur SET qr_code = $1 WHERE id_utilisateur = $2`,
+        candidature.SQL_9,
         [qrCodeDataURL, id_utilisateur]
       );
 
@@ -519,7 +419,7 @@ exports.validerPromotion = async (req, res) => {
       await sendAcceptanceEmail(item, frontendBaseUrl);
     }
 
-    await client.query('COMMIT');
+    await client.query(candidature.SQL_3);
     transactionStarted = false;
     emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
     emitToRoles(['ADMINISTRATEUR'], 'users:changed', {});
@@ -532,7 +432,7 @@ exports.validerPromotion = async (req, res) => {
   } catch (err) {
     if (transactionStarted && client) {
       try {
-        await client.query('ROLLBACK');
+        await client.query(candidature.SQL_2);
       } catch (rollbackError) {
         console.error('Erreur lors de l’annulation de la validation globale :', rollbackError);
       }
@@ -564,34 +464,27 @@ exports.togglePreselection = async (req, res) => {
   let transactionStarted = false;
   try {
     client = await db.connect();
-    await client.query('BEGIN');
+    await client.query(candidature.SQL_8);
     transactionStarted = true;
 
     const candidature = await client.query(
-      `SELECT i.id_formation, f.capacite_max, i.statut AS statut_actuel
-       FROM inscription i
-       JOIN formation f ON f.id_formation = i.id_formation
-       WHERE i.id_inscription = $1
-       FOR UPDATE`,
+      candidature.SQL_7,
       [id_inscription]
     );
     if (candidature.rowCount === 0) {
-      await client.query('ROLLBACK');
+      await client.query(candidature.SQL_2);
       return res.status(404).json({ message: "Candidature introuvable." });
     }
     const { id_formation, capacite_max, statut_actuel } = candidature.rows[0];
 
     if (statut === 'PRESELECTIONNEE') {
       const occupied = await client.query(
-        `SELECT COUNT(*)::INTEGER AS total
-         FROM inscription
-         WHERE id_formation = $1
-           AND statut IN ('ACCEPTEE', 'PRESELECTIONNEE')`,
+        candidature.SQL_6,
         [id_formation]
       );
       if (capacite_max != null && occupied.rows[0].total >= Number(capacite_max)
         && statut_actuel !== 'PRESELECTIONNEE') {
-        await client.query('ROLLBACK');
+        await client.query(candidature.SQL_2);
         return res.status(400).json({
           message: 'La capacité maximale est atteinte avec les candidatures acceptées et préselectionnées.',
         });
@@ -599,30 +492,21 @@ exports.togglePreselection = async (req, res) => {
     }
 
     await client.query(
-      `UPDATE inscription SET statut = $1, date_decision = CASE WHEN $1 = 'REFUSEE' THEN CURRENT_TIMESTAMP ELSE date_decision END
-       WHERE id_inscription = $2`,
+      candidature.SQL_5,
       [statut, id_inscription]
     );
 
     await client.query(
-      `UPDATE inscription i
-       SET statut = 'REFUSEE', date_decision = CURRENT_TIMESTAMP
-       WHERE i.id_formation = $1
-         AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
-         AND (
-           SELECT COUNT(*) FROM inscription occupied
-           WHERE occupied.id_formation = i.id_formation
-             AND occupied.statut = 'ACCEPTEE'
-         ) >= $2`,
+      candidature.SQL_4,
       [id_formation, capacite_max]
     );
 
-    await client.query('COMMIT');
+    await client.query(candidature.SQL_3);
     transactionStarted = false;
     emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {});
     res.json({ message: "Statut de pré-sélection mis à jour." });
   } catch (err) {
-    if (transactionStarted) await client.query('ROLLBACK');
+    if (transactionStarted) await client.query(candidature.SQL_2);
     console.error("Erreur lors du changement de statut de la candidature :", err);
     res.status(500).json({ message: "Erreur lors du changement de statut." });
   } finally {

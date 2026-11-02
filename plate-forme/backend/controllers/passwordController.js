@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const password = require('../Models/passwordModel');
+
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -46,29 +48,14 @@ const createAndSendCode = async (user, requestCodeQuery) => {
     return true;
   } catch (error) {
     await db.query(
-      `UPDATE utilisateur
-       SET password_reset_code_hash = NULL,
-           password_reset_code_expiration = NULL,
-           password_reset_code_requested_at = NULL,
-           password_reset_code_attempts = 0
-       WHERE id_utilisateur = $1 AND password_reset_code_hash = $2`,
+      password.SQL_10,
       [user.id_utilisateur, codeHash]
     );
     throw error;
   }
 };
 
-const codeRequestQuery = `
-  UPDATE utilisateur
-  SET password_reset_code_hash = $1,
-      password_reset_code_expiration = CURRENT_TIMESTAMP + INTERVAL '10 minutes',
-      password_reset_code_requested_at = CURRENT_TIMESTAMP,
-      password_reset_code_attempts = 0
-  WHERE id_utilisateur = $2
-    AND (password_reset_code_requested_at IS NULL
-         OR password_reset_code_requested_at < CURRENT_TIMESTAMP - INTERVAL '1 minute')
-  RETURNING id_utilisateur
-`;
+const codeRequestQuery = password.SQL_1;
 
 const verifyCodeAndUpdatePassword = async (user, code, newPassword) => {
   if (!user.password_reset_code_hash
@@ -79,12 +66,7 @@ const verifyCodeAndUpdatePassword = async (user, code, newPassword) => {
   const isCodeValid = await bcrypt.compare(code, user.password_reset_code_hash);
   if (!isCodeValid) {
     await db.query(
-      `UPDATE utilisateur
-       SET password_reset_code_attempts = LEAST(password_reset_code_attempts + 1, $2)
-       WHERE id_utilisateur = $1
-         AND password_reset_code_hash = $3
-         AND password_reset_code_expiration > CURRENT_TIMESTAMP
-         AND password_reset_code_attempts < $2`,
+      password.SQL_9,
       [user.id_utilisateur, MAX_CODE_ATTEMPTS, user.password_reset_code_hash]
     );
     return false;
@@ -92,16 +74,7 @@ const verifyCodeAndUpdatePassword = async (user, code, newPassword) => {
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   const result = await db.query(
-    `UPDATE utilisateur
-     SET mot_de_passe = $1,
-         password_reset_code_hash = NULL,
-         password_reset_code_expiration = NULL,
-         password_reset_code_requested_at = NULL,
-         password_reset_code_attempts = 0
-     WHERE id_utilisateur = $2
-       AND password_reset_code_hash = $3
-       AND password_reset_code_expiration > CURRENT_TIMESTAMP
-       AND password_reset_code_attempts < $4`,
+    password.SQL_8,
     [passwordHash, user.id_utilisateur, user.password_reset_code_hash, MAX_CODE_ATTEMPTS]
   );
   return result.rowCount > 0;
@@ -115,11 +88,7 @@ exports.requestForgotPasswordCode = async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id_utilisateur, email
-       FROM utilisateur
-       WHERE LOWER(email) = LOWER($1)
-         AND statut_compte = 'ACTIF'
-         AND COALESCE(email_verifie, TRUE) = TRUE`,
+      password.SQL_7,
       [email]
     );
 
@@ -148,12 +117,7 @@ exports.resetForgottenPassword = async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id_utilisateur, password_reset_code_hash, password_reset_code_expiration,
-              password_reset_code_attempts
-       FROM utilisateur
-       WHERE LOWER(email) = LOWER($1)
-         AND statut_compte = 'ACTIF'
-         AND COALESCE(email_verifie, TRUE) = TRUE`,
+      password.SQL_6,
       [email.trim()]
     );
     const updated = rows.length > 0
@@ -173,11 +137,7 @@ exports.resetForgottenPassword = async (req, res) => {
 exports.requestAuthenticatedPasswordCode = async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id_utilisateur, email
-       FROM utilisateur
-       WHERE id_utilisateur = $1
-         AND mot_de_passe IS NOT NULL
-         AND statut_compte = 'ACTIF'`,
+      password.SQL_5,
       [req.user.id_utilisateur]
     );
 
@@ -214,10 +174,7 @@ exports.changePassword = async (req, res) => {
         return res.status(400).json({ message: 'Le code de vérification doit contenir 8 chiffres.' });
       }
       const { rows } = await db.query(
-        `SELECT id_utilisateur, password_reset_code_hash, password_reset_code_expiration,
-                password_reset_code_attempts
-         FROM utilisateur
-         WHERE id_utilisateur = $1 AND statut_compte = 'ACTIF'`,
+        password.SQL_4,
         [req.user.id_utilisateur]
       );
       const updated = rows.length > 0
@@ -228,8 +185,7 @@ exports.changePassword = async (req, res) => {
       }
     } else {
       const { rows } = await db.query(
-        `SELECT mot_de_passe FROM utilisateur
-         WHERE id_utilisateur = $1 AND statut_compte = 'ACTIF'`,
+        password.SQL_3,
         [req.user.id_utilisateur]
       );
       if (rows.length === 0 || !rows[0].mot_de_passe
@@ -239,13 +195,7 @@ exports.changePassword = async (req, res) => {
 
       const passwordHash = await bcrypt.hash(newPassword, 10);
       await db.query(
-        `UPDATE utilisateur
-         SET mot_de_passe = $1,
-             password_reset_code_hash = NULL,
-             password_reset_code_expiration = NULL,
-             password_reset_code_requested_at = NULL,
-             password_reset_code_attempts = 0
-         WHERE id_utilisateur = $2`,
+        password.SQL_2,
         [passwordHash, req.user.id_utilisateur]
       );
     }

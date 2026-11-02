@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { Award, BookOpen, CalendarCheck2, ClipboardList, GraduationCap } from 'lucide-react';
 import API from '../../services/api';
-import '../css/ApprenantHistorique.css'; // Importation du CSS classique
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -44,37 +43,37 @@ export default function ApprenantHistorique() {
   }, []);
 
   return (
-    <main className="history-container">
-      <header className="history-header">
-        <h1 className="history-title">Historique de mes formations</h1>
-        <p className="history-desc">
+    <main className="mx-auto w-full max-w-6xl space-y-6 px-3 pb-8 text-slate-900">
+      <header className="rounded-3xl border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-8">
+        <h1 className="text-2xl font-bold text-slate-950 md:text-3xl">Historique de mes formations</h1>
+        <p className="mt-2 text-sm text-slate-500">
           Retrouvez vos notes, votre assiduité et vos décisions de certification.
         </p>
       </header>
 
       {loading && (
-        <p role="status" className="history-state-box">
+        <p role="status" className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center text-sm text-slate-500">
           Chargement de votre historique…
         </p>
       )}
 
       {error && (
-        <p role="alert" className="history-error-alert">
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {error}
         </p>
       )}
 
       {!loading && !error && formations.length === 0 && (
-        <section className="history-empty-box">
-          <BookOpen className="empty-icon-svg" size={30} />
-          <p className="empty-title">Aucune formation dans votre historique</p>
-          <p className="empty-subtitle">
+        <section className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
+          <BookOpen className="mb-3 text-orange-500" size={30} />
+          <p className="font-bold text-slate-900">Aucune formation dans votre historique</p>
+          <p className="mt-2 max-w-lg text-sm text-slate-500">
             Les formations pour lesquelles votre inscription est acceptée apparaîtront ici.
           </p>
         </section>
       )}
 
-      <div className="history-list">
+      <div className="grid gap-5">
         {formations.map((formation) => {
           const completedSessions = Number(formation.total_seances) || 0;
           const presentCount = Number(formation.presentes) || 0;
@@ -86,87 +85,87 @@ export default function ApprenantHistorique() {
           return (
             <article
               key={formation.id_formation}
-              className="history-card"
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="history-card-header">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5">
                 <div>
-                  <div className="history-card-title-row">
-                    <GraduationCap className="history-card-icon" size={19} />
-                    <h2 className="history-card-name">{formation.titre}</h2>
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="text-orange-500" size={19} />
+                    <h2 className="font-bold text-slate-950">{formation.titre}</h2>
                   </div>
-                  <p className="history-card-dates">
+                  <p className="mt-1 text-xs text-slate-500">
                     {formatDate(formation.date_debut)} – {formatDate(formation.date_fin)}
                   </p>
                 </div>
-                <span className="history-status-badge">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                   {formatStatus(formation.statut_formation)}
                 </span>
               </div>
 
               {formation.description && (
-                <p className="history-card-desc">{formation.description}</p>
+                <p className="px-5 pt-5 text-sm leading-6 text-slate-600">{formation.description}</p>
               )}
 
-              <div className="history-grid">
-                <section className="history-subbox">
-                  <h3 className="history-subbox-title">
-                    <CalendarCheck2 className="subbox-icon" size={16} /> Présence
+              <div className="grid gap-4 p-5 md:grid-cols-2">
+                <section className="rounded-xl bg-slate-50 p-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <CalendarCheck2 className="text-orange-500" size={16} /> Présence
                   </h3>
                   {completedSessions === 0 ? (
-                    <p className="history-subbox-text">Aucune séance terminée.</p>
+                    <p className="mt-3 text-sm text-slate-600">Aucune séance terminée.</p>
                   ) : (
                     <>
-                      <p className="history-subbox-text">
+                      <p className="mt-3 text-sm text-slate-600">
                         {attendanceRate}% de présence · {presentCount} présent{presentCount > 1 ? 's' : ''}
                         {absentCount > 0 ? ` · ${absentCount} absence${absentCount > 1 ? 's' : ''}` : ''}
                       </p>
-                      <p className="history-subbox-subtext">
+                      <p className="mt-1 text-xs text-slate-500">
                         {completedSessions} séance{completedSessions > 1 ? 's' : ''} terminée{completedSessions > 1 ? 's' : ''}
                       </p>
                     </>
                   )}
                 </section>
 
-                <section className="history-subbox">
-                  <h3 className="history-subbox-title">
-                    <Award className="subbox-icon" size={16} /> Certification
+                <section className="rounded-xl bg-slate-50 p-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <Award className="text-orange-500" size={16} /> Certification
                   </h3>
                   {formation.statut_certification === 'CERTIFIE' && (
-                    <p className="history-subbox-text">{certificationLabel(formation.statut_certification)}</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-700">{certificationLabel(formation.statut_certification)}</p>
                   )}
                   {formation.date_certification && (
-                    <p className="history-subbox-subtext">
+                    <p className="mt-1 text-xs text-slate-500">
                       Décision du {formatDate(formation.date_certification)}
                     </p>
                   )}
                   {formation.numero_certification && (
-                    <p className="history-subbox-subtext break-all">
+                    <p className="mt-1 break-all text-xs text-slate-500">
                       N° {formation.numero_certification}
                     </p>
                   )}
                 </section>
 
-                <section className="history-subbox full-width">
-                  <h3 className="history-subbox-title">
-                    <ClipboardList className="subbox-icon" size={16} /> Notes
+                <section className="rounded-xl bg-slate-50 p-4 md:col-span-2">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <ClipboardList className="text-orange-500" size={16} /> Notes
                   </h3>
                   {formation.notes.length === 0 ? (
-                    <p className="history-subbox-text">Aucune note enregistrée pour cette formation.</p>
+                    <p className="mt-3 text-sm text-slate-600">Aucune note enregistrée pour cette formation.</p>
                   ) : (
-                    <ul className="history-notes-list">
+                    <ul className="mt-3 space-y-2">
                       {formation.notes.map((note) => (
-                        <li key={`${note.origine}-${note.id_note}`} className="history-note-item">
+                        <li key={`${note.origine}-${note.id_note}`} className="flex items-center justify-between gap-4 rounded-lg bg-white px-4 py-3">
                           <div>
-                            <p className="note-type">{note.type_evaluation}</p>
-                            <p className="note-origin">
+                            <p className="text-sm font-bold text-slate-800">{note.type_evaluation}</p>
+                            <p className="mt-1 text-xs text-slate-500">
                               {note.origine === 'MANUELLE' ? 'Note du formateur' : 'Évaluation en ligne'}
                               {note.date_evaluation ? ` · ${formatDate(note.date_evaluation)}` : ''}
                             </p>
                             {note.commentaire && (
-                              <p className="note-comment">{note.commentaire}</p>
+                              <p className="mt-2 text-sm text-slate-600">{note.commentaire}</p>
                             )}
                           </div>
-                          <span className="note-score">{note.note} / 20</span>
+                          <span className="shrink-0 font-bold text-orange-500">{note.note} / 20</span>
                         </li>
                       ))}
                     </ul>

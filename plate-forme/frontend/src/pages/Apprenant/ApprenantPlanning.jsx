@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import API from '../../services/api';
-import '../css/ApprenantPlanning.css'; // Importation du CSS classique
 
 const FILTERS = [
   { id: 'ALL', label: 'Toutes' },
@@ -87,19 +86,19 @@ export default function ApprenantPlanning() {
     switch (statut) {
       case 'PRESENT':
         return (
-          <span className="badge-presence present">
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700">
             <CheckCircle2 size={12} /> Présent
           </span>
         );
       case 'ABSENT':
         return (
-          <span className="badge-presence absent">
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700">
             <CircleDashed size={12} /> Absent
           </span>
         );
       default:
         return (
-          <span className="badge-presence upcoming">
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
             <Clock3 size={12} /> À venir
           </span>
         );
@@ -107,20 +106,20 @@ export default function ApprenantPlanning() {
   };
 
   return (
-    <div className="planning-container">
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-8 text-slate-900">
 
       {/* En-tête */}
-      <header className="planning-header">
+      <header className="flex flex-col justify-between gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-6 shadow-sm md:flex-row md:items-center md:px-8">
         <div>
-          <h1 className="planning-title">
+          <h1 className="text-2xl font-bold text-slate-950 md:text-3xl">
             Mon planning
           </h1>
-          <p className="planning-desc">
+          <p className="mt-2 text-sm text-slate-500">
             Retrouvez vos séances et suivez votre assiduité.
           </p>
         </div>
         {!loading && (
-          <p className="planning-count-text">
+          <p className="text-sm font-semibold text-slate-500">
             {seances.length} séance{seances.length > 1 ? 's' : ''} au programme
           </p>
         )}
@@ -130,11 +129,11 @@ export default function ApprenantPlanning() {
       {!loading && seances.length > 0 && (
         <section
           aria-label="Bilan de présence"
-          className="planning-stats-card"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <div className="stats-inner-flex">
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
             {/* Donut */}
-            <div className="donut-wrapper">
+            <div className="relative h-44 w-44 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -163,23 +162,23 @@ export default function ApprenantPlanning() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="donut-center-text">
-                <span className="donut-percent">
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-bold text-slate-950">
                   {stats.tauxPresence}%
                 </span>
-                <span className="donut-label">Présence</span>
+                <span className="text-xs text-slate-500">Présence</span>
               </div>
             </div>
 
             {/* Légende */}
-            <dl className="legend-grid">
+            <dl className="grid w-full grid-cols-3 gap-3">
               {legend.map((item) => (
                 <div key={item.label}>
-                  <dt className="legend-dt">
-                    <span className={`legend-dot ${item.dotClass}`} aria-hidden="true" />
+                  <dt className="flex items-center gap-2 text-xs text-slate-500">
+                    <span className={`h-2.5 w-2.5 rounded-full ${item.dotClass === 'dot-orange' ? 'bg-orange-500' : item.dotClass === 'dot-slate' ? 'bg-slate-500' : 'bg-slate-300'}`} aria-hidden="true" />
                     {item.label}
                   </dt>
-                  <dd className="legend-dd">
+                  <dd className="mt-1 text-lg font-bold">
                     {item.value}
                   </dd>
                 </div>
@@ -191,7 +190,7 @@ export default function ApprenantPlanning() {
 
       {/* Filtres */}
       {!loading && seances.length > 0 && (
-        <div className="planning-filters-bar" role="tablist" aria-label="Filtrer les séances">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtrer les séances">
           {FILTERS.map((tab) => {
             const active = filter === tab.id;
             return (
@@ -200,10 +199,10 @@ export default function ApprenantPlanning() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setFilter(tab.id)}
-                className={`filter-pill ${active ? 'active' : ''}`}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${active ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600'}`}
               >
                 {tab.label}
-                <span className={`filter-badge ${active ? 'active' : ''}`}>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${active ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {counts[tab.id]}
                 </span>
               </button>
@@ -214,18 +213,18 @@ export default function ApprenantPlanning() {
 
       {/* Contenu */}
       {loading ? (
-        <div className="planning-skeleton-list" aria-busy="true">
+        <div className="grid gap-3" aria-busy="true">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="planning-skeleton-item" />
+            <div key={n} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
           ))}
         </div>
       ) : filteredSeances.length === 0 ? (
-        <div className="planning-empty-box">
-          <CalendarDays size={30} className="empty-icon" />
-          <p className="empty-title">
+        <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
+          <CalendarDays size={30} className="mb-3 text-orange-500" />
+          <p className="font-bold text-slate-900">
             {filter !== 'ALL' ? 'Aucune séance dans cette catégorie' : 'Aucune séance planifiée'}
           </p>
-          <p className="empty-subtitle">
+          <p className="mt-2 text-sm text-slate-500">
             {filter !== 'ALL'
               ? 'Choisissez un autre filtre pour voir vos séances.'
               : 'Vos prochaines séances apparaîtront ici.'}
@@ -233,14 +232,14 @@ export default function ApprenantPlanning() {
           {filter !== 'ALL' && (
             <button
               onClick={() => setFilter('ALL')}
-              className="empty-reset-btn"
+              className="mt-5 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white"
             >
               Voir toutes les séances
             </button>
           )}
         </div>
       ) : (
-        <ul className="planning-seances-list">
+        <ul className="grid gap-3">
           {filteredSeances.map((s) => {
             const today = isToday(s.date_seance);
             const date = new Date(s.date_seance);
@@ -248,31 +247,31 @@ export default function ApprenantPlanning() {
             return (
               <li
                 key={s.id_seance}
-                className={`seance-item ${today ? 'today' : ''}`}
+                className={`flex gap-4 rounded-2xl border bg-white p-4 shadow-sm ${today ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-200'}`}
               >
                 {/* Bloc date */}
-                <div className={`seance-date-box ${today ? 'today' : ''}`}>
-                  <span className="seance-day">{date.getDate()}</span>
-                  <span className="seance-month">
+                <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl ${today ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                  <span className="text-xl font-bold">{date.getDate()}</span>
+                  <span className="text-xs uppercase">
                     {date.toLocaleDateString('fr-FR', { month: 'short' })}
                   </span>
                 </div>
 
                 {/* Infos */}
-                <div className="seance-content">
-                  <div className="seance-header-row">
-                    <div className="seance-titles">
-                      <p className="seance-formation-tag">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-orange-500">
                         {s.titre_formation}
                         {s.type_seance ? ` · ${s.type_seance}` : ''}
                       </p>
-                      <h3 className="seance-name">
+                      <h3 className="mt-1 text-lg font-bold">
                         {s.titre}
                       </h3>
                     </div>
-                    <div className="seance-badges-row">
+                    <div className="flex shrink-0 items-center gap-2">
                       {today && (
-                        <span className="badge-today">
+                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
                           Aujourd'hui
                         </span>
                       )}
@@ -281,14 +280,14 @@ export default function ApprenantPlanning() {
                   </div>
 
                   {s.description && (
-                    <p className="seance-desc">
+                    <p className="mt-3 text-sm leading-6 text-slate-600">
                       {s.description}
                     </p>
                   )}
 
-                  <div className="seance-meta-row">
-                    <span className="meta-item">
-                      <CalendarDays size={14} className="meta-icon" />
+                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays size={14} />
                       {date.toLocaleDateString('fr-FR', {
                         weekday: 'long',
                         day: 'numeric',
@@ -296,12 +295,12 @@ export default function ApprenantPlanning() {
                         year: 'numeric',
                       })}
                     </span>
-                    <span className="meta-item">
-                      <Clock3 size={14} className="meta-icon" />
+                    <span className="flex items-center gap-1.5">
+                      <Clock3 size={14} />
                       {s.heure_debut?.substring(0, 5)} – {s.heure_fin?.substring(0, 5)}
                     </span>
-                    <span className="meta-item">
-                      <MapPin size={14} className="meta-icon" />
+                    <span className="flex items-center gap-1.5">
+                      <MapPin size={14} />
                       {s.salle || 'En ligne'}
                     </span>
                   </div>

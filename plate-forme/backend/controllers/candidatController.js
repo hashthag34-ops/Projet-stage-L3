@@ -1,5 +1,7 @@
 // backend/controllers/candidatController.js
 const db = require('../config/db');
+const candidat = require('../Models/candidatModel');
+
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const getFrontendBaseUrl = require('../utils/frontendUrl');
@@ -21,16 +23,7 @@ const getEditToken = (id_inscription, email) => jwt.sign(
 
 const getEditableCandidature = async (id_inscription, email) => {
   const result = await db.query(
-    `SELECT i.id_inscription, i.id_formation, i.statut, i.motivation, i.objectif,
-            i.projet_apres_formation, i.source_information, i.a_deja_suivi_formation,
-            i.formation_precedente, i.retour_suggestion, i.conditions_acceptees,
-            c.email, c.nom, c.prenom, c.age, c.genre, c.telephone,
-            c.niveau_etude, c.situation_professionnelle, c.etablissement, c.filiere,
-            f.titre AS formation_titre, f.date_limite_inscription
-     FROM inscription i
-     JOIN candidat c ON c.id_candidat = i.id_candidat
-     JOIN formation f ON f.id_formation = i.id_formation
-     WHERE i.id_inscription = $1 AND LOWER(c.email) = LOWER($2)`,
+    candidat.SQL_14,
     [id_inscription, email]
   );
   return result.rows[0];
@@ -64,7 +57,7 @@ exports.postuler = async (req, res) => {
     // Infos Candidat
     email, nom, prenom, age, genre, telephone, niveau_etude, situation_professionnelle, etablissement, filiere,
     // Infos Inscription
-    id_formation, motivation, objectif, projet_apres_formation, source_information, a_deja_suivi_formation, formation_precedente, retour_suggestion, conditions_acceptees
+    id_formation, motivation, objectif, projet_apres_formation,     source_information, a_deja_suivi_formation, formation_precedente, retour_suggestion, conditions_acceptees, normalizedEmail
   } = req.body;
 
   if (!conditions_acceptees) {
@@ -73,86 +66,73 @@ exports.postuler = async (req, res) => {
 
   try {
     const frontendBaseUrl = getFrontendBaseUrl(req);
-    await db.query('BEGIN');
+    await db.query(candidat.SQL_5);
 
     const formationRes = await db.query(
-      `SELECT titre, date_limite_inscription FROM formation
-       WHERE id_formation = $1 AND statut = 'OUVERTE'`,
+      candidat.SQL_13,
       [id_formation]
     );
     if (formationRes.rows.length === 0 || new Date(formationRes.rows[0].date_limite_inscription) < new Date()) {
-      await db.query('ROLLBACK');
+      await db.query(candidat.SQL_1);
       return res.status(400).json({ message: "Les inscriptions pour cette formation sont fermées." });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    // Vérifier le doublon avant de créer un nouveau dossier candidat.
+    const checkInscription = await db.query(
+      candidat.SQL_10,
+      [id_formation, normalizedEmail]
+    );
+    if (checkInscription.rows.length > 0) {
+      await db.query(candidat.SQL_1);
+      return res.status(400).json({ message: "Vous avez déjà postulé à cette formation." });
+    }
+
     // Chaque candidature possède son propre dossier candidat, même avec un email déjà utilisé.
     let ownerUserId = req.user?.id_utilisateur || req.user?.id || null;
     if (ownerUserId) {
       const ownerRes = await db.query(
-        'SELECT id_utilisateur FROM utilisateur WHERE id_utilisateur = $1 AND LOWER(email) = LOWER($2)',
+        candidat.SQL_12,
         [ownerUserId, normalizedEmail]
       );
       if (ownerRes.rows.length === 0) ownerUserId = null;
     }
 
     const newCandidat = await db.query(
-      `INSERT INTO candidat (
-         id_utilisateur, email, nom, prenom, age, genre, telephone,
-         niveau_etude, situation_professionnelle, etablissement, filiere
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id_candidat`,
+      candidat.SQL_11,
       [ownerUserId, normalizedEmail, nom, prenom, age || null, genre || null, telephone || null,
         niveau_etude || null, situation_professionnelle || null, etablissement || null, filiere || null]
     );
     const id_candidat = newCandidat.rows[0].id_candidat;
 
-    // 2. Vérifier si une inscription existe déjà pour cette formation
-    const checkInscription = await db.query(
-      `SELECT i.id_inscription
-       FROM inscription i
-       JOIN candidat c ON c.id_candidat = i.id_candidat
-       WHERE i.id_formation = $1 AND LOWER(c.email) = LOWER($2)
-       LIMIT 1`,
-      [id_formation, normalizedEmail]
-    );
-
-    if (checkInscription.rows.length > 0) {
-      await db.query('ROLLBACK');
-      return res.status(400).json({ message: "Vous avez déjà postulé à cette formation." });
-    }
-
-    // 3. Créer l'inscription
+    // 2. Créer l'inscription
     const historyRes = await db.query(
-      'SELECT EXISTS (SELECT 1 FROM inscription WHERE id_candidat = $1) AS deja_suivi',
+      candidat.SQL_9,
       [id_candidat]
     );
     const hasAlreadyFollowedFormation = historyRes.rows[0]?.deja_suivi === true;
     const newInscription = await db.query(
-      `INSERT INTO inscription (
-        id_candidat, id_formation, motivation, objectif, projet_apres_formation, 
-        source_information, a_deja_suivi_formation, formation_precedente, retour_suggestion, conditions_acceptees
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      candidat.SQL_8,
       [
         id_candidat, id_formation, motivation, objectif, projet_apres_formation, 
-        source_information, a_deja_suivi_formation || hasAlreadyFollowedFormation, formation_precedente, retour_suggestion, conditions_acceptees
+        source_information, a_deja_suivi_formation || hasAlreadyFollowedFormation, formation_precedente, retour_suggestion, conditions_acceptees, normalizedEmail
       ]
     );
-
-    await db.query('COMMIT');
-    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
-      id_formation: Number(id_formation)
-    });
 
     const candidature = await getEditableCandidature(newInscription.rows[0].id_inscription, normalizedEmail);
     const editToken = getEditToken(candidature.id_inscription, normalizedEmail);
     try {
       await sendReceiptEmail(candidature, editToken, frontendBaseUrl);
     } catch (emailError) {
-      console.error("Erreur d'envoi de l'email de réception :", emailError);
+      emailError.code = 'EMAIL_RECEIPT_FAILED';
+      throw emailError;
     }
+
+    await db.query(candidat.SQL_2);
+    emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
+      id_formation: Number(id_formation)
+    });
 
     res.status(201).json({
       message: "Candidature envoyée avec succès ! Un email de confirmation vous a été envoyé.",
@@ -160,8 +140,14 @@ exports.postuler = async (req, res) => {
       editToken
     });
   } catch (error) {
-    await db.query('ROLLBACK');
+    await db.query(candidat.SQL_1);
     console.error("Erreur postuler :", error);
+    if (error.code === '23505') {
+      return res.status(400).json({ message: "Vous avez déjà postulé à cette formation avec cette adresse e-mail." });
+    }
+    if (error.code === 'EMAIL_RECEIPT_FAILED') {
+      return res.status(503).json({ message: "La candidature n'a pas été enregistrée : l'envoi de l'e-mail de confirmation a échoué." });
+    }
     res.status(500).json({ message: "Erreur lors de la soumission de votre candidature" });
   }
 };
@@ -172,11 +158,7 @@ exports.getCandidateByEmail = async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT nom, prenom, age, genre, telephone, niveau_etude,
-              situation_professionnelle, etablissement, filiere
-       FROM candidat WHERE LOWER(email) = LOWER($1)
-       ORDER BY date_creation DESC
-       LIMIT 1`,
+      candidat.SQL_7,
       [email]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'Aucun profil existant.' });
@@ -207,16 +189,7 @@ exports.cancelCandidature = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE inscription i
-       SET statut = 'ANNULEE', date_decision = CURRENT_TIMESTAMP
-       FROM candidat c, formation f
-       WHERE i.id_candidat = c.id_candidat
-         AND i.id_formation = f.id_formation
-         AND i.id_inscription = $1
-         AND LOWER(c.email) = LOWER($2)
-         AND i.statut IN ('EN_ATTENTE', 'PRESELECTIONNEE')
-         AND f.date_limite_inscription >= CURRENT_DATE
-       RETURNING i.id_inscription, i.id_formation`,
+      candidat.SQL_6,
       [payload.id_inscription, payload.email]
     );
 
@@ -247,24 +220,22 @@ exports.updateCandidature = async (req, res) => {
     const { nom, prenom, age, genre, telephone, niveau_etude, situation_professionnelle, etablissement, filiere,
       motivation, objectif, projet_apres_formation, source_information, a_deja_suivi_formation, formation_precedente,
       retour_suggestion } = req.body;
-    await db.query('BEGIN');
+    await db.query(candidat.SQL_5);
     await db.query(
-      `UPDATE candidat SET nom=$1, prenom=$2, age=$3, genre=$4, telephone=$5, niveau_etude=$6,
-       situation_professionnelle=$7, etablissement=$8, filiere=$9 WHERE id_candidat = (SELECT id_candidat FROM inscription WHERE id_inscription = $10)`,
+      candidat.SQL_4,
       [nom, prenom, age || null, genre || null, telephone || null, niveau_etude || null, situation_professionnelle || null, etablissement || null, filiere || null, payload.id_inscription]
     );
     await db.query(
-      `UPDATE inscription SET motivation=$1, objectif=$2, projet_apres_formation=$3, source_information=$4,
-       a_deja_suivi_formation=$5, formation_precedente=$6, retour_suggestion=$7 WHERE id_inscription=$8`,
+      candidat.SQL_3,
       [motivation, objectif || null, projet_apres_formation || null, source_information || null, a_deja_suivi_formation || false, formation_precedente || null, retour_suggestion || null, payload.id_inscription]
     );
-    await db.query('COMMIT');
+    await db.query(candidat.SQL_2);
     emitToRoles(['RESPONSABLE', 'ADMINISTRATEUR'], 'candidatures:changed', {
       id_formation: Number(candidature.id_formation)
     });
     res.json({ message: 'Votre candidature a été mise à jour.' });
   } catch (err) {
-    await db.query('ROLLBACK');
+    await db.query(candidat.SQL_1);
     console.error('Erreur modification candidature :', err);
     res.status(500).json({ message: 'Erreur lors de la modification de la candidature.' });
   }
