@@ -6,9 +6,9 @@ import API from '../services/api';
 const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
 const inputClass =
-  'w-full rounded-2xl border border-slate-200 bg-slate-50 dark:bg-zinc-950 py-2.5 pl-10 pr-10 text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-colors';
+  'w-full rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 py-3 pl-10 pr-10 text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-colors';
 
-const labelClass = 'mb-1 block text-xs text-slate-600 dark:text-zinc-400';
+const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600 dark:text-zinc-400';
 
 const iconClass = 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 text-xs';
 
@@ -78,7 +78,7 @@ export default function SetupAccount() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 font-sans text-slate-800 transition-colors duration-300 dark:bg-black dark:text-zinc-100">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8 font-sans text-slate-800 transition-colors duration-300 dark:bg-black dark:text-zinc-100 sm:px-6">
       
       {/* Toast Notification Flottante */}
       {toast.text && (
@@ -98,17 +98,17 @@ export default function SetupAccount() {
       )}
 
       {/* Conteneur de carte principal */}
-      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl">
         
         {/* En-tête */}
         <div className="border-b border-slate-100 bg-slate-50/50 p-6 dark:border-zinc-800/80 dark:bg-zinc-900/30 sm:p-8">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-orange-600 dark:text-orange-400">
             Dernière étape
           </div>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Configurez votre compte
           </h1>
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-zinc-400">
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
             {token
               ? 'Vérifiez votre adresse e-mail en finalisant la configuration de votre compte.'
               : 'Personnalisez votre profil et sécurisez votre accès à la plateforme.'}
@@ -116,12 +116,12 @@ export default function SetupAccount() {
         </div>
 
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="space-y-4 p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8">
           
-          {/* Avatar / Photo de profil (Design identique à Profil.jsx) */}
+          {/* Avatar / Photo de profil */}
           <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 p-4">
             <div className="relative shrink-0">
-              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-orange-500/10 text-lg text-orange-600 dark:text-orange-400 ring-2 ring-orange-500/20">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-orange-500/10 text-base font-bold text-orange-600 dark:text-orange-400 ring-2 ring-orange-500/20">
                 {preview ? (
                   <img src={preview} alt="Aperçu du profil" className="h-full w-full object-cover" />
                 ) : (
@@ -199,18 +199,18 @@ export default function SetupAccount() {
             </div>
           )}
 
-          {/* Boutón de validation */}
+          {/* Bouton de validation */}
           <button 
             type="submit" 
             disabled={loading}
-            className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 hover:bg-orange-600 px-5 py-2.5 text-xs text-white transition disabled:opacity-50 shadow-sm ${focusRing}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 hover:bg-orange-600 px-5 py-3 text-xs font-bold text-white transition disabled:opacity-50 shadow-md shadow-orange-500/20 ${focusRing}`}
           >
             {loading ? (
               <i className="bi bi-arrow-repeat animate-spin text-sm"></i>
             ) : (
               <i className="bi bi-check2-circle text-sm"></i>
             )}
-            {loading ? 'Configuration...' : 'Finaliser mon inscription'}
+            {loading ? 'Configuration en cours...' : 'Finaliser mon inscription'}
           </button>
 
         </form>

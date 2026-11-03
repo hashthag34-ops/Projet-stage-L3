@@ -178,7 +178,7 @@ export default function MainLayout() {
   const initials = user ? `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase() : '';
 
   return (
-    <div className={`flex h-dvh w-full overflow-hidden bg-zinc-100 p-2.5 text-zinc-900 sm:p-3 dark:bg-zinc-950 dark:text-zinc-100 ${darkMode ? 'dark' : ''}`}>
+    <div className={`flex h-dvh w-full overflow-hidden bg-zinc-100 p-2.5 text-zinc-900 md:p-0 dark:bg-zinc-950 dark:text-zinc-100 ${darkMode ? 'dark' : ''}`}>
       {currentPendingReview && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
@@ -253,7 +253,7 @@ export default function MainLayout() {
       
       {/* SIDEBAR DESKTOP */}
       {isAuthenticated && (
-        <aside className={`hidden md:m-1 md:flex md:h-[calc(100%-0.5rem)] md:flex-col md:justify-between md:rounded-[20px] md:border md:border-zinc-200 md:bg-white md:p-2 md:shadow-[0_4px_20px_rgba(0,0,0,0.05)] md:transition-[width] md:duration-300 dark:md:border-zinc-800 dark:md:bg-zinc-900 ${isExpanded ? 'md:w-60' : 'md:w-[72px]'}`}>
+        <aside className={`hidden md:my-1 md:flex md:h-[calc(100%-0.5rem)] md:flex-col md:justify-between md:rounded-l-none md:rounded-r-[20px] md:border-y md:border-r md:border-l-0 md:border-zinc-200 md:bg-white md:p-2 md:shadow-[0_4px_20px_rgba(0,0,0,0.05)] md:transition-[width] md:duration-300 dark:md:border-zinc-800 dark:md:bg-zinc-900 ${isExpanded ? 'md:w-60' : 'md:w-[72px]'}`}>
           <div className="flex flex-col gap-4">
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
@@ -283,7 +283,7 @@ export default function MainLayout() {
                     title={!isExpanded ? link.label : ''}
                     className={`relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors ${isExpanded ? '' : 'justify-center'} ${isActive ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'}`}
                   >
-                    {isActive && <span className="absolute left-0 h-5 w-1 rounded-r-full bg-orange-500"></span>}
+                    {isActive && <span className="absolute right-0 h-5 w-1 rounded-l-full bg-orange-500"></span>}
                     <i className={`${link.icon} text-lg`}></i>
                     {isExpanded && <span className="truncate font-medium">{link.label}</span>}
                   </Link>

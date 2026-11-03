@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, Check, CheckCircle, ChevronRight, Eye, Filter, GraduationCap,
-  Mail, Search, Send, Users, UserRound, X
+  ArrowLeft, Check, CheckCircle, ChevronRight, Eye, FileSpreadsheet, Filter, GraduationCap,
+  Mail, Printer, Search, Send, Users, UserRound, X, AlertCircle
 } from 'lucide-react';
 import API from '../../services/api';
 import { getRealtimeSocket } from '../../services/realtime';
@@ -45,6 +45,14 @@ const getCandidateStatusLabel = (status) => ({
   REFUSEE: 'Refusée',
   ANNULEE: 'Annulée',
 }[status] || status || 'Sans statut');
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+})[character]);
 
 function CandidateDetailsModal({ candidate, onClose }) {
   if (!candidate) return null;
@@ -188,11 +196,13 @@ export default function Candidatures() {
   }), [formationCandidates, candidateSearch, filters]);
 
   const capacity = Number(selectedFormation?.capacite_max) || 0;
-  const acceptedCount = formationCandidates.filter((candidate) => candidate.statut === 'ACCEPTEE').length;
+  const acceptedCandidates = useMemo(() => formationCandidates.filter((candidate) => candidate.statut === 'ACCEPTEE'), [formationCandidates]);
+  const acceptedCount = acceptedCandidates.length;
   const refusedCount = formationCandidates.filter((candidate) => candidate.statut === 'REFUSEE').length;
   const cancelledCount = formationCandidates.filter((candidate) => candidate.statut === 'ANNULEE').length;
   const preselectedCount = formationCandidates.filter((candidate) => candidate.statut === 'PRESELECTIONNEE').length;
   const remainingPlaces = Math.max(0, capacity - acceptedCount - preselectedCount);
+  const isCapacityReached = capacity > 0 && (remainingPlaces === 0 || acceptedCount >= capacity);
   const selectedCandidates = formationCandidates.filter((candidate) => selectedCandidateIds.has(String(candidate.id_inscription)));
 
   const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
@@ -273,6 +283,98 @@ export default function Candidatures() {
     }
   };
 
+  // --- FONCTIONNALITÉS D'EXPORTATION ET D'IMPRESSION ---
+  const handleExportAccepted = () => {
+    if (acceptedCandidates.length === 0) {
+      window.alert('Aucun candidat accepté à exporter.');
+      return;
+    }
+    const headers = ['Nom', 'Prénom', 'Contact Email', 'Téléphone', 'Genre'];
+    const escapeCsv = (value) => {
+      const text = String(value ?? '');
+      const safeText = /^[\t\r ]*[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replace(/"/g, '""')}"`;
+    };
+
+    const rows = acceptedCandidates.map((c) => [
+      c.nom || '',
+      c.prenom || '',
+      c.email || '',
+      c.telephone || '',
+      c.genre || 'Non renseigné'
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map(escapeCsv).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob(['\uFEFF', csvContent], { type: 'text/csv;charset=utf-8;' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `candidats-acceptes-${selectedFormation.titre.replaceAll(' ', '_')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+  };
+
+  const handlePrintAccepted = () => {
+    if (acceptedCandidates.length === 0) {
+      window.alert('Aucun candidat accepté à imprimer.');
+      return;
+    }
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.alert("Autorisez l'ouverture de la fenêtre d'impression pour continuer.");
+      return;
+    }
+
+    const headers = ['Nom', 'Prénom', 'Contact Email', 'Téléphone', 'Genre'];
+    const tableRows = acceptedCandidates.map((c) => (
+      `<tr>
+        <td>${escapeHtml(c.nom || '')}</td>
+        <td>${escapeHtml(c.prenom || '')}</td>
+        <td>${escapeHtml(c.email || '')}</td>
+        <td>${escapeHtml(c.telephone || '')}</td>
+        <td>${escapeHtml(c.genre || 'Non renseigné')}</td>
+      </tr>`
+    )).join('');
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8">
+          <title>Liste des candidats acceptés - ${escapeHtml(selectedFormation.titre)}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; color: #09090b; margin: 24px; }
+            header { border-bottom: 2px solid #f97316; padding-bottom: 12px; margin-bottom: 20px; }
+            h1 { font-size: 20px; font-weight: 800; margin: 0; color: #09090b; }
+            p { color: #71717a; font-size: 12px; margin: 4px 0 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+            th, td { border: 1px solid #e4e4e7; padding: 10px; text-align: left; }
+            th { background: #18181b; color: #ffffff; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+            tr:nth-child(even) { background: #fafafa; }
+            @media print { body { margin: 10mm; } tr { break-inside: avoid; } }
+          </style>
+        </head>
+        <body>
+          <header>
+            <h1>Liste des candidats acceptés</h1>
+            <p>Formation : <strong>${escapeHtml(selectedFormation.titre)}</strong> — ${acceptedCandidates.length} candidat(s) accepté(s)</p>
+          </header>
+          <table>
+            <thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   if (loading && formations.length === 0 && candidatures.length === 0) {
     return <div className="mx-auto max-w-7xl p-8 text-center text-sm text-zinc-500">Chargement des candidatures…</div>;
   }
@@ -309,7 +411,7 @@ export default function Candidatures() {
             </div>
           </section>
 
-          {error && <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300">{error}</p>}
+          {error && <p role="alert" className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{error}</p>}
           {formationsFiltrees.length === 0 ? (
             <div className={`${cardClass} p-10 text-center text-xs text-zinc-500 dark:text-zinc-400`}>
               {formations.length === 0 ? 'Aucune formation disponible.' : 'Aucune formation ne correspond aux filtres.'}
@@ -325,11 +427,11 @@ export default function Candidatures() {
                       setSelectedFormationId(String(formation.id_formation));
                       setSelectedCandidateIds(new Set());
                     }}
-                    className={`${cardClass} group p-5 text-left transition hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md dark:hover:border-orange-500`}
+                    className={`${cardClass} group p-5 text-left transition hover:-translate-y-0.5 hover:border-orange-500 hover:shadow-md dark:hover:border-orange-500`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <span className="rounded-2xl bg-orange-500/10 p-3 text-orange-600 dark:text-orange-400"><GraduationCap size={22} /></span>
-                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                         {formation.statut || 'Sans statut'}
                       </span>
                     </div>
@@ -357,23 +459,67 @@ export default function Candidatures() {
             >
               <ArrowLeft size={16} /> Toutes les formations
             </button>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Candidatures de la formation</p>
                 <h1 className="mt-1 text-xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-2xl">{selectedFormation.titre}</h1>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{selectedFormation.statut || 'Formation'} · {capacity} places au total</p>
               </div>
+
+              {/* Action globale d'export et d'impression des candidats acceptés */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handlePrintAccepted}
+                  disabled={acceptedCount === 0}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
+                  title="Imprimer la liste des candidats acceptés"
+                >
+                  <Printer size={15} /> Imprimer les acceptés
+                </button>
+                <button
+                  onClick={handleExportAccepted}
+                  disabled={acceptedCount === 0}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-black text-zinc-950 transition hover:bg-orange-400 disabled:opacity-40"
+                  title="Exporter la liste des candidats acceptés en CSV/Excel"
+                >
+                  <FileSpreadsheet size={15} /> Exporter les acceptés
+                </button>
+              </div>
             </div>
           </header>
 
-          {error && <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300">{error}</p>}
+          {/* ALERTE LORSQUE LA CAPACITÉ MAXIMALE EST ATTEINTE */}
+          {isCapacityReached && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-xs dark:border-orange-500/20">
+              <div className="flex items-center gap-2.5 font-bold text-zinc-900 dark:text-white">
+                <AlertCircle size={18} className="text-orange-500 shrink-0" />
+                <span>La capacité maximale de cette formation ({capacity} places) est atteinte.</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handlePrintAccepted}
+                  className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-900 shadow-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                >
+                  <Printer size={13} /> Imprimer
+                </button>
+                <button
+                  onClick={handleExportAccepted}
+                  className="inline-flex items-center gap-1 rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-black text-zinc-950 shadow-xs hover:bg-orange-400"
+                >
+                  <FileSpreadsheet size={13} /> Exporter CSV
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error && <p role="alert" className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{error}</p>}
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {[
               { label: 'Candidatures reçues', value: formationCandidates.length, icon: Users, color: 'text-zinc-900 bg-zinc-100 dark:bg-zinc-800 dark:text-white' },
-              { label: 'Candidatures acceptées', value: acceptedCount, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-500/10 dark:text-emerald-400' },
-              { label: 'Candidatures refusées', value: refusedCount, icon: X, color: 'text-rose-600 bg-rose-500/10 dark:text-rose-400' },
-              { label: 'Candidatures annulées', value: cancelledCount, icon: X, color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300' },
+              { label: 'Candidatures acceptées', value: acceptedCount, icon: CheckCircle, color: 'text-zinc-900 bg-orange-500/10 dark:text-white' },
+              { label: 'Candidatures refusées', value: refusedCount, icon: X, color: 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400' },
+              { label: 'Candidatures annulées', value: cancelledCount, icon: X, color: 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400' },
               { label: 'Places restantes', value: remainingPlaces, icon: GraduationCap, color: 'text-orange-600 bg-orange-500/10 dark:text-orange-400' },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className={`${cardClass} flex items-center gap-4 p-4`}>
@@ -470,41 +616,41 @@ export default function Candidatures() {
                           <td className="px-4 py-4">
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
                               candidate.statut === 'ACCEPTEE'
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
                                 : candidate.statut === 'REFUSEE'
-                                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400'
+                                  ? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
                                   : candidate.statut === 'ANNULEE'
-                                    ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                    : 'bg-orange-500/10 text-orange-700 dark:text-orange-400'
+                                    ? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                                    : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                             }`}>
                               {getCandidateStatusLabel(candidate.statut)}
                             </span>
                           </td>
                           <td className="px-4 py-4 font-medium text-zinc-600 dark:text-zinc-300">{candidate.genre || 'Non renseigné'}</td>
                           <td className="px-4 py-4">
-                            <button onClick={() => setCandidateDetailsToShow(candidate)} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:border-orange-400 hover:text-orange-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-orange-400">
+                            <button onClick={() => setCandidateDetailsToShow(candidate)} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:border-orange-500 hover:text-orange-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-orange-400">
                               <Eye size={14} /> Voir le dossier
                             </button>
                           </td>
                           <td className="px-4 py-4">
                             {candidate.est_apprenant ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400"><Check size={13} /> Configuré</span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"><Check size={13} /> Configuré</span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-400">À configurer</span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-400">À configurer</span>
                             )}
                           </td>
                           <td className="px-4 py-4 text-right">
                             {candidate.statut === 'ACCEPTEE' ? (
-                              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Acceptée</span>
+                              <span className="text-xs font-bold text-zinc-900 dark:text-white">Acceptée</span>
                             ) : candidate.statut === 'REFUSEE' ? (
-                              <span className="text-xs font-bold text-rose-700 dark:text-rose-400">Refusée</span>
+                              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500">Refusée</span>
                             ) : candidate.statut === 'ANNULEE' ? (
-                              <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">Annulée par le candidat</span>
+                              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500">Annulée</span>
                             ) : (
                               <button
                                 onClick={() => handleDecision(candidate, 'REFUSEE')}
                                 disabled={processingId === candidate.id_inscription}
-                                className="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
+                                className="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-white"
                               >
                                 Refuser
                               </button>

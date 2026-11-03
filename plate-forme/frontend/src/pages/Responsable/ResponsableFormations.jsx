@@ -2,8 +2,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { 
   Calendar, 
-  ChevronLeft, 
-  ChevronRight, 
   GraduationCap, 
   Info, 
   Plus, 
@@ -41,40 +39,53 @@ const getStatusBadgeClass = (statut) => {
   }
 };
 
-// --- COMPOSANT MODAL DETAILS FORMATION ---
-function FormationDetailsModal({ formation, onClose }) {
+// --- PANNEAU LATÉRAL : DÉTAILS DE LA FORMATION ---
+function FormationDetailsDrawer({ formation, onClose }) {
+  const [isClosing, setIsClosing] = useState(false);
+
   if (!formation) return null;
 
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={onClose}>
-      <div className={`${cardClass} w-full max-w-lg overflow-hidden`} onClick={(e) => e.stopPropagation()}>
-        
+    <div 
+      className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+      onClick={handleClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white p-6 shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900 overflow-y-auto ${isClosing ? 'translate-x-full' : 'translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Fiche de la formation</span>
+          <button onClick={handleClose} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
+            <X size={18} />
+          </button>
+        </div>
+
         {/* Bannière Image */}
-        <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-800">
+        <div className="relative mt-5 h-48 w-full overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800">
           {formation.image_url ? (
             <img 
               src={getFormationImageUrl(formation.image_url)}
               alt={formation.titre} 
               className="h-full w-full object-cover"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              onLoad={(e) => { e.currentTarget.style.display = ''; }}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-400 dark:text-zinc-500">
               <ImageIcon size={48} strokeWidth={1.5} />
             </div>
           )}
-          <button 
-            onClick={onClose}
-            className="absolute right-3 top-3 rounded-xl bg-black/60 p-1.5 text-white backdrop-blur-md transition hover:bg-black/80"
-            aria-label="Fermer"
-          >
-            <X size={18} />
-          </button>
         </div>
 
-        {/* Corps du contenu */}
-        <div className="space-y-4 p-5 sm:p-6">
+        <div className="my-5 space-y-4 flex-1">
           <div>
             <span className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-extrabold uppercase ${getStatusBadgeClass(formation.statut)}`}>
               <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
@@ -89,17 +100,16 @@ function FormationDetailsModal({ formation, onClose }) {
             {formation.description || "Aucune description fournie."}
           </p>
 
-          {/* Grille d'infos */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Période</span>
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Période</span>
               <p className="mt-1 text-xs font-bold text-zinc-800 dark:text-zinc-200">
                 {formation.date_debut ? new Date(formation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {formation.date_fin ? new Date(formation.date_fin).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
 
             <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Limite inscription</span>
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Limite inscription</span>
               <p className="mt-1 text-xs font-bold text-zinc-800 dark:text-zinc-200">
                 {formation.date_limite_inscription ? new Date(formation.date_limite_inscription).toLocaleDateString('fr-FR') : 'Non spécifiée'}
               </p>
@@ -114,27 +124,27 @@ function FormationDetailsModal({ formation, onClose }) {
               </div>
             </div>
           </div>
-
-          <button 
-            onClick={onClose}
-            className="w-full rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
-          >
-            Fermer
-          </button>
         </div>
 
+        <button 
+          onClick={handleClose}
+          className="w-full rounded-2xl bg-zinc-900 py-3 text-xs font-black text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+        >
+          Fermer
+        </button>
       </div>
     </div>
   );
 }
 
-// --- COMPOSANT MODAL ASSIGNATION FORMATEURS ---
-function FormateurAssignModal({ formation, onClose }) {
+// --- PANNEAU LATÉRAL : ASSIGNATION FORMATEURS ---
+function FormateurAssignDrawer({ formation, onClose }) {
   const [assignedFormateurs, setAssignedFormateurs] = useState([]);
   const [allFormateurs, setAllFormateurs] = useState([]);
   const [selectedFormateur, setSelectedFormateur] = useState('');
   const [role, setRole] = useState('Formateur Principal');
   const [loading, setLoading] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
 
   const loadData = async () => {
     if (!formation?.id_formation) return;
@@ -156,6 +166,14 @@ function FormateurAssignModal({ formation, onClose }) {
   useEffect(() => {
     loadData();
   }, [formation]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300);
+  };
 
   const handleAssign = async (e) => {
     e.preventDefault();
@@ -183,68 +201,70 @@ function FormateurAssignModal({ formation, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={onClose}>
-      <div className={`${cardClass} w-full max-w-lg overflow-hidden`} onClick={(e) => e.stopPropagation()}>
-        
-        <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
+    <div 
+      className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+      onClick={handleClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white p-6 shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900 overflow-y-auto ${isClosing ? 'translate-x-full' : 'translate-x-0'}`}
+      >
+        <div className="flex items-start justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
           <div>
             <h2 className="text-base font-black text-zinc-900 dark:text-white">Gestion des intervenants</h2>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
               Formation : <span className="font-bold text-zinc-800 dark:text-zinc-200">{formation?.titre}</span>
             </p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-          >
+          <button onClick={handleClose} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
             <X size={18} />
           </button>
         </div>
 
-        <div className="p-5">
-          <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
-            Formateurs actuellement assignés
-          </h3>
-          {loading ? (
-            <div className="py-4 text-center text-xs text-zinc-500">Chargement...</div>
-          ) : assignedFormateurs.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-800/40">
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Aucun formateur affecté pour le moment.</p>
-            </div>
-          ) : (
-            <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-              {assignedFormateurs.map((f) => (
-                <div key={f.id_formateur} className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-xs font-black text-orange-600 dark:text-orange-400">
-                      {f.prenom?.[0]}{f.nom?.[0]}
+        <div className="my-5 flex-1 space-y-6">
+          <div>
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-3">
+              Formateurs actuellement assignés
+            </h3>
+            {loading ? (
+              <div className="py-4 text-center text-xs text-zinc-500">Chargement...</div>
+            ) : assignedFormateurs.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-800/40">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Aucun formateur affecté pour le moment.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {assignedFormateurs.map((f) => (
+                  <div key={f.id_formateur} className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-xs font-black text-orange-600 dark:text-orange-400">
+                        {f.prenom?.[0]}{f.nom?.[0]}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white">{f.nom} {f.prenom}</p>
+                        <span className="mt-0.5 inline-block rounded-md bg-zinc-200/60 px-2 py-0.5 text-[10px] font-extrabold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                          {f.role_formateur || 'Intervenant'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-zinc-900 dark:text-white">{f.nom} {f.prenom}</p>
-                      <span className="mt-0.5 inline-block rounded-md bg-zinc-200/60 px-2 py-0.5 text-[10px] font-extrabold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
-                        {f.role_formateur || 'Intervenant'}
-                      </span>
-                    </div>
+                    <button 
+                      onClick={() => handleRemove(f.id_formateur)}
+                      className="rounded-xl p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+                      title="Retirer"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleRemove(f.id_formateur)}
-                    className="rounded-xl p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
-                    title="Retirer"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        <form onSubmit={handleAssign} className="border-t border-zinc-100 p-5 dark:border-zinc-800">
-          <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
-            Assigner un nouvel intervenant
-          </h3>
-          
-          <div className="space-y-3 mb-4">
+          <form onSubmit={handleAssign} className="border-t border-zinc-100 pt-5 dark:border-zinc-800 space-y-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+              Assigner un nouvel intervenant
+            </h3>
+            
             <div>
               <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Sélectionner un formateur</label>
               <select 
@@ -272,17 +292,16 @@ function FormateurAssignModal({ formation, onClose }) {
                 className={inputClass}
               />
             </div>
-          </div>
 
-          <button 
-            type="submit" 
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
-          >
-            <UserPlus size={16} />
-            <span>Affecter à la formation</span>
-          </button>
-        </form>
-
+            <button 
+              type="submit" 
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
+            >
+              <UserPlus size={16} />
+              <span>Affecter à la formation</span>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -293,6 +312,7 @@ export default function ResponsableFormations() {
   const [formations, setFormations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isClosingModal, setIsClosingModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedFormationForFormateurs, setSelectedFormationForFormateurs] = useState(null);
   const [selectedFormationForDetails, setSelectedFormationForDetails] = useState(null);
@@ -345,6 +365,14 @@ export default function ResponsableFormations() {
       setSelectedFile(file);
       setImagePreviewUrl(URL.createObjectURL(file));
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsClosingModal(true);
+    setTimeout(() => {
+      setShowModal(false);
+      setIsClosingModal(false);
+    }, 300);
   };
 
   const handleOpenCreate = () => {
@@ -433,7 +461,7 @@ export default function ResponsableFormations() {
         await API.post('/formations', payload);
       }
 
-      setShowModal(false);
+      handleCloseModal();
       if (imagePreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imagePreviewUrl);
       }
@@ -558,7 +586,7 @@ export default function ResponsableFormations() {
         </div>
       </div>
 
-      {/* Contenu */}
+      {/* Grille des Formations */}
       {loading ? (
         <div className={`${cardClass} flex h-64 items-center justify-center p-10 text-center text-xs font-semibold text-zinc-500`}>
           Chargement des formations...
@@ -570,195 +598,111 @@ export default function ResponsableFormations() {
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
         </div>
       ) : (
-        <>
-          {/* Vue Desktop (Tableau complet) */}
-          <div className={`${cardClass} hidden overflow-hidden md:block`}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-zinc-100 bg-zinc-50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
-                  <tr>
-                    <th className="p-4 pl-5">Formation</th>
-                    <th className="p-4">Statut</th>
-                    <th className="p-4">Période</th>
-                    <th className="p-4">Capacité</th>
-                    <th className="p-4 pr-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {filteredFormations.map((f) => (
-                    <tr key={f.id_formation} className="transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30">
-                      <td className="p-4 pl-5">
-                        <div className="flex items-center gap-3">
-                          {f.image_url ? (
-                            <img 
-                              src={getFormationImageUrl(f.image_url)}
-                              alt="" 
-                              className="h-10 w-10 rounded-2xl object-cover ring-1 ring-zinc-200 dark:ring-zinc-700" 
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              onLoad={(e) => { e.currentTarget.style.display = ''; }}
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                              <GraduationCap size={18} />
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-bold text-zinc-900 dark:text-white">{f.titre}</p>
-                            {f.description && (
-                              <p className="mt-0.5 max-w-xs truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                                {f.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${getStatusBadgeClass(f.statut)}`}>
-                          {f.statut}
-                        </span>
-                      </td>
-                      <td className="p-4 whitespace-nowrap text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        {f.date_debut ? new Date(f.date_debut).toLocaleDateString('fr-FR') : '-'} 
-                        <span className="mx-1 text-zinc-400">➔</span> 
-                        {f.date_fin ? new Date(f.date_fin).toLocaleDateString('fr-FR') : '-'}
-                      </td>
-                      <td className="p-4 whitespace-nowrap font-medium text-zinc-600 dark:text-zinc-400">
-                        <span className="font-bold text-zinc-900 dark:text-white">{f.capacite_max}</span> places
-                      </td>
-                      <td className="p-4 pr-5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button 
-                            onClick={() => setSelectedFormationForDetails(f)}
-                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                            title="Fiche détaillée"
-                          >
-                            <Info size={16} />
-                          </button>
-
-                          <button 
-                            onClick={() => setSelectedFormationForFormateurs(f)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                          >
-                            <Users size={14} />
-                            <span>Formateurs</span>
-                          </button>
-
-                          <button 
-                            onClick={() => handleOpenEdit(f)} 
-                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                            title="Modifier"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-
-                          <button 
-                            onClick={() => handleDelete(f)} 
-                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
-                            title="Supprimer ou archiver"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Vue Mobile & Tablette en Grille Compacte */}
-          <div className="grid grid-cols-2 gap-3 md:hidden">
-            {filteredFormations.map((f) => (
-              <div 
-                key={f.id_formation}
-                className={`${cardClass} flex flex-col justify-between p-4`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1 mb-2">
-                    <span className={`inline-flex rounded-md px-2 py-0.5 text-[9px] font-extrabold uppercase ${getStatusBadgeClass(f.statut)}`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredFormations.map((f) => (
+            <div 
+              key={f.id_formation}
+              onClick={() => setSelectedFormationForDetails(f)}
+              className={`${cardClass} group flex flex-col justify-between overflow-hidden transition-all duration-200 hover:border-orange-500 hover:shadow-md cursor-pointer`}
+            >
+              <div>
+                {/* Image de couverture de la formation */}
+                <div className="relative h-44 w-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                  {f.image_url ? (
+                    <img 
+                      src={getFormationImageUrl(f.image_url)}
+                      alt={f.titre}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-zinc-400 dark:text-zinc-500">
+                      <GraduationCap size={40} strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3">
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 shadow-xs ${getStatusBadgeClass(f.statut)}`}>
                       {f.statut}
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-400">{f.capacite_max} max</span>
                   </div>
-
-                  <div className="flex items-center gap-2.5 mb-2">
-                    {f.image_url ? (
-                      <img 
-                        src={getFormationImageUrl(f.image_url)}
-                        alt="" 
-                        className="h-9 w-9 rounded-xl object-cover shrink-0" 
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        onLoad={(e) => { e.currentTarget.style.display = ''; }}
-                      />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 shrink-0">
-                        <GraduationCap size={16} />
-                      </div>
-                    )}
-                    <h3 className="text-xs font-bold text-zinc-900 dark:text-white line-clamp-2">
-                      {f.titre}
-                    </h3>
-                  </div>
-
-                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-1 mb-3">
-                    {f.description || 'Aucune description'}
-                  </p>
                 </div>
 
-                <div className="border-t border-zinc-100 pt-2.5 dark:border-zinc-800 flex items-center justify-between gap-1">
+                <div className="p-4 sm:p-5 space-y-2">
+                  <h3 className="text-sm font-black text-zinc-900 dark:text-white line-clamp-1 group-hover:text-orange-500 transition-colors">
+                    {f.titre}
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                    {f.description || 'Aucune description fournie.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 space-y-3">
+                <div className="flex items-center justify-between text-[11px] font-medium text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800/80 pt-3">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={13} className="text-orange-500" />
+                    {f.date_debut ? new Date(f.date_debut).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'Flexible'}
+                  </span>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                    {f.capacite_max || 0} places max
+                  </span>
+                </div>
+
+                {/* Boutons d'actions rapides (Arrêt de propagation pour éviter l'ouverture du drawer de détails) */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
                   <button 
-                    onClick={() => setSelectedFormationForDetails(f)} 
-                    className="flex-1 rounded-xl bg-zinc-100 py-1.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  >
-                    Détails
-                  </button>
-                  <button 
-                    onClick={() => setSelectedFormationForFormateurs(f)} 
-                    className="rounded-xl border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    onClick={() => setSelectedFormationForFormateurs(f)}
+                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 py-2 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:bg-zinc-700"
                     title="Formateurs"
                   >
-                    <Users size={14} />
+                    <Users size={13} />
+                    <span>Équipe</span>
                   </button>
+
                   <button 
                     onClick={() => handleOpenEdit(f)} 
-                    className="rounded-xl border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 py-2 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:bg-zinc-700"
                     title="Modifier"
                   >
-                    <Edit3 size={14} />
+                    <Edit3 size={13} />
+                    <span>Éditer</span>
                   </button>
+
                   <button 
                     onClick={() => handleDelete(f)} 
-                    className="rounded-xl border border-zinc-200 p-1.5 text-rose-600 hover:bg-rose-500/10 dark:border-zinc-700 dark:bg-zinc-800 dark:text-rose-400"
-                    title="Supprimer ou archiver"
+                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-rose-500/20 bg-rose-500/10 py-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-500/20 dark:text-rose-400"
+                    title="Supprimer / Archiver"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
+                    <span>Retirer</span>
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+          ))}
+        </div>
       )}
 
-      {/* Modal Création & Édition Formation */}
+      {/* PANNEAU LATÉRAL : MODAL CRÉATION / ÉDITION DE FORMATION */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={() => setShowModal(false)}>
-          <div className={`${cardClass} max-h-[90vh] w-full max-w-lg overflow-y-auto p-5 sm:p-6`} onClick={(e) => e.stopPropagation()}>
-            
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <div 
+          className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${isClosingModal ? 'opacity-0' : 'opacity-100'}`}
+          onClick={handleCloseModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white p-6 shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900 overflow-y-auto ${isClosingModal ? 'translate-x-full' : 'translate-x-0'}`}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
               <h2 className="text-base font-black text-zinc-900 dark:text-white">
                 {editingId ? "Modifier la formation" : "Nouvelle formation"}
               </h2>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-              >
+              <button onClick={handleCloseModal} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <form onSubmit={handleSubmit} className="my-5 space-y-4 flex-1">
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Titre de la formation</label>
                 <input 
@@ -800,7 +744,7 @@ export default function ResponsableFormations() {
                         setImagePreviewUrl('');
                         setImageInputType('url');
                       }}
-                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500'}`}
                     >
                       <LinkIcon size={12} />
                       <span>URL</span>
@@ -808,7 +752,7 @@ export default function ResponsableFormations() {
                     <button
                       type="button"
                       onClick={() => setImageInputType('file')}
-                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500'}`}
                     >
                       <Upload size={12} />
                       <span>Fichier</span>
@@ -834,17 +778,16 @@ export default function ResponsableFormations() {
                   />
                 )}
 
-                {imagePreviewUrl || formData.image_url ? (
+                {(imagePreviewUrl || formData.image_url) && (
                   <div className="relative mt-2.5 h-24 w-full overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
                     <img
                       src={getFormationImageUrl(imagePreviewUrl || formData.image_url)}
                       alt="Aperçu"
                       className="h-full w-full object-cover"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      onLoad={(e) => { e.currentTarget.style.display = ''; }}
                     />
                   </div>
-                ) : null}
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -921,7 +864,7 @@ export default function ResponsableFormations() {
               <button 
                 type="submit" 
                 disabled={uploadingImage}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400 disabled:opacity-50"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400 disabled:opacity-50"
               >
                 {uploadingImage && <RefreshCw size={15} className="animate-spin" />}
                 <span>{uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}</span>
@@ -931,15 +874,15 @@ export default function ResponsableFormations() {
         </div>
       )}
 
-      {/* Modal Fiche Détaillée */}
-      <FormationDetailsModal 
+      {/* Panneau latétal Détaillé */}
+      <FormationDetailsDrawer 
         formation={selectedFormationForDetails}
         onClose={() => setSelectedFormationForDetails(null)}
       />
 
-      {/* Modal Gestion des Formateurs */}
+      {/* Panneau latéral Formateurs */}
       {selectedFormationForFormateurs && (
-        <FormateurAssignModal 
+        <FormateurAssignDrawer 
           formation={selectedFormationForFormateurs}
           onClose={() => setSelectedFormationForFormateurs(null)}
         />

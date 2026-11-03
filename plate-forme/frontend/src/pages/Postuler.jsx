@@ -12,7 +12,8 @@ import {
   X, 
   AlertCircle,
   ClipboardCheck,
-  Trash2
+  Trash2,
+  Mail
 } from 'lucide-react';
 import API from '../services/api';
 
@@ -81,7 +82,6 @@ export default function Postuler() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [conditionsOpen, setConditionsOpen] = useState(false);
-  const [conditionsConfirmed, setConditionsConfirmed] = useState(false);
   const [notice, setNotice] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -98,7 +98,6 @@ export default function Postuler() {
         }));
         setSituationChoice(choice);
         setSituationAutre(choice === 'Other' ? candidature.situation_professionnelle || '' : '');
-        setConditionsConfirmed(true);
       })
       .catch((err) => setNotice({ type: 'error', text: err.response?.data?.message || 'Ce lien de modification est invalide.' }));
   }, [editToken]);
@@ -424,24 +423,36 @@ export default function Postuler() {
             </div>
           </section>
 
-          {/* Validation & Conditions */}
+          {/* Validation & Conditions (Cochage direct dans le formulaire) */}
           <div className="space-y-6 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-            <div className="flex items-start gap-3">
-              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${formData.conditions_acceptees ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-300 text-transparent dark:border-zinc-700'}`}>
-                <CheckCircle2 size={14} />
-              </span>
-              <div className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                <p>{formData.conditions_acceptees ? 'Vous avez accepté les engagements de candidature.' : 'La lecture et l’acceptation des engagements sont requises pour envoyer votre candidature.'}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConditionsConfirmed(formData.conditions_acceptees);
-                    setConditionsOpen(true);
-                  }}
-                  className="mt-1 font-bold text-orange-600 underline decoration-orange-500/40 underline-offset-2 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
-                >
-                  {formData.conditions_acceptees ? 'Consulter les conditions' : 'Lire et accepter les conditions'}
-                </button>
+            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="conditions_acceptees"
+                  checked={formData.conditions_acceptees}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 h-4 w-4 rounded border-zinc-300 accent-orange-500 focus:ring-orange-500"
+                />
+                <div className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                  <span className="font-semibold">J'accepte les engagements de candidature</span> (assiduité, respect des chartes de communication et exactitude des informations).{' '}
+                  <button
+                    type="button"
+                    onClick={() => setConditionsOpen(true)}
+                    className="font-bold text-orange-600 underline decoration-orange-500/40 underline-offset-2 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                  >
+                    Lire le détail des conditions
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            {/* Note d'information de rassurance juste au-dessus du bouton de soumission */}
+            <div className="flex items-start gap-3 rounded-2xl border border-orange-500/20 bg-orange-500/[0.04] p-4 text-xs leading-relaxed text-zinc-600 dark:border-orange-500/20 dark:bg-orange-500/[0.06] dark:text-zinc-300">
+              <Mail size={18} className="mt-0.5 shrink-0 text-orange-500" />
+              <div>
+                <span className="font-bold text-zinc-900 dark:text-white">Important :</span> Un e-mail de confirmation vous sera envoyé immédiatement après la soumission pour vous notifier de la bonne réception de votre dossier. Pensez à rester joignable, car un e-mail de félicitations et d'instruction vous sera par la suite adressé si votre candidature est retenue.
               </div>
             </div>
 
@@ -477,6 +488,7 @@ export default function Postuler() {
         </form>
       </div>
 
+      {/* Pop-up de lecture détaillée des conditions (accessible si le candidat souhaite les consulter) */}
       {conditionsOpen && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
@@ -490,7 +502,7 @@ export default function Postuler() {
                   <ClipboardCheck size={14} /> Engagements du candidat
                 </span>
                 <h2 id="conditions-title" className="mt-3 text-xl font-black">Conditions de candidature</h2>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Merci de lire attentivement ces engagements avant de les accepter.</p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Détail des engagements requis pour valider votre formation.</p>
               </div>
               <button type="button" onClick={() => setConditionsOpen(false)} aria-label="Fermer les conditions" className="rounded-lg p-2 text-zinc-500 transition hover:bg-black/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white">
                 <X size={19} />
@@ -508,25 +520,15 @@ export default function Postuler() {
                   ))}
                 </ol>
               </div>
-              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-orange-500/20 bg-orange-500/[0.05] p-4">
-                <input
-                  type="checkbox"
-                  checked={conditionsConfirmed}
-                  onChange={(event) => setConditionsConfirmed(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-orange-500"
-                />
-                <span className="text-sm font-semibold leading-relaxed">Je reconnais avoir pris connaissance de ces engagements et les accepter.</span>
-              </label>
               <button
                 type="button"
-                disabled={!conditionsConfirmed}
                 onClick={() => {
                   setFormData((current) => ({ ...current, conditions_acceptees: true }));
                   setConditionsOpen(false);
                 }}
-                className="mt-5 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-45"
+                className="mt-6 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-black transition hover:bg-orange-400"
               >
-                J’accepte les conditions
+                J’ai compris et je ferme
               </button>
             </div>
           </section>

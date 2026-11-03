@@ -12,15 +12,16 @@ const getImageUrl = (value) => {
 
 const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40';
 
+// Champs épurés avec bordure inférieure uniquement
 const inputClass =
-  'w-full rounded-2xl border border-slate-200 bg-slate-50 dark:bg-zinc-950 py-2.5 pl-10 pr-3 text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-colors';
+  'w-full border-b border-slate-200 dark:border-zinc-800 bg-transparent py-2 pl-9 pr-3 text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-colors';
 
 const disabledInputClass =
-  'w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 dark:bg-zinc-950/40 py-2.5 pl-10 pr-3 text-xs text-slate-400 dark:border-zinc-800 dark:text-zinc-500 outline-none';
+  'w-full cursor-not-allowed border-b border-slate-200 dark:border-zinc-800/40 bg-transparent py-2 pl-9 pr-3 text-xs text-slate-400 dark:text-zinc-500 outline-none';
 
-const labelClass = 'mb-1 block text-xs text-slate-600 dark:text-zinc-400';
+const labelClass = 'mb-1 block text-[11px] font-medium text-slate-500 dark:text-zinc-400';
 
-const iconClass = 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 text-xs';
+const iconClass = 'pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 text-xs';
 
 export default function Profil() {
   const [profile, setProfile] = useState({
@@ -37,9 +38,11 @@ export default function Profil() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false); // État pour la pop-up du mot de passe
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  
   const [passwordMethod, setPasswordMethod] = useState('current');
   const [currentPassword, setCurrentPassword] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -151,6 +154,7 @@ export default function Profil() {
       setNewPassword('');
       setPasswordConfirmation('');
       setMessage({ type: 'success', text: response.data.message });
+      setShowPasswordModal(false); // Fermer la pop-up après succès
     } catch (err) {
       setMessage({
         type: 'error',
@@ -216,8 +220,8 @@ export default function Profil() {
 
       <div className="space-y-6">
 
-        {/* En-tête / Carte d'identité du profil (Inspiré des maquettes PC & Mobile) */}
-        <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        {/* En-tête / Carte d'identité du profil */}
+        <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
 
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-4">
@@ -243,12 +247,12 @@ export default function Profil() {
 
               {/* Identité */}
               <div className="min-w-0">
-                <h1 className="truncate text-base text-slate-900 dark:text-white">
+                <h1 className="truncate text-base font-bold text-slate-900 dark:text-white">
                   {profile.prenom} {profile.nom}
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-400">{profile.email}</p>
                 <div className="mt-2 flex items-center justify-center sm:justify-start gap-1.5">
-                  <span className="rounded-full bg-orange-500/10 px-2.5 py-0.5 text-[10px] text-orange-600 dark:text-orange-400">
+                  <span className="rounded-full bg-orange-500/10 px-2.5 py-0.5 text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
                     <i className="bi bi-shield-check me-1"></i>
                     {(profile.role || 'Utilisateur').toLowerCase()}
                   </span>
@@ -261,31 +265,42 @@ export default function Profil() {
               </div>
             </div>
 
-            {/* Badge QR Action */}
-            {profile.qr_code && (
+            {/* Boutons d'actions rapides (Badge QR & Sécurité) */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowQrModal(true)}
+                onClick={() => setShowPasswordModal(true)}
                 className={`flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-4 py-2.5 text-xs text-slate-700 dark:text-zinc-300 transition hover:border-orange-500 hover:text-orange-600 ${focusRing}`}
               >
-                <i className="bi bi-qr-code text-sm"></i>
-                Mon badge QR
+                <i className="bi bi-shield-lock text-sm"></i>
+                Sécurité & Mot de passe
               </button>
-            )}
+
+              {profile.qr_code && (
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className={`flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-4 py-2.5 text-xs text-slate-700 dark:text-zinc-300 transition hover:border-orange-500 hover:text-orange-600 ${focusRing}`}
+                >
+                  <i className="bi bi-qr-code text-sm"></i>
+                  Mon badge QR
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
-        {/* Formulaire des informations personnelles */}
+        {/* Formulaire des informations personnelles (Champs épurés sans blocs massifs) */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4"
+          className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-xs space-y-5"
         >
           <div>
-            <h2 className="text-xs uppercase tracking-wider text-slate-400">Informations personnelles</h2>
+            <h2 className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Informations personnelles</h2>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Mettez à jour vos coordonnées et informations de compte.</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="prenom" className={labelClass}>Prénom</label>
               <div className="relative">
@@ -322,7 +337,7 @@ export default function Profil() {
 
             <div className="sm:col-span-2">
               <label htmlFor="email" className={labelClass}>
-                Adresse e-mail <span className="text-slate-400">(non modifiable)</span>
+                Adresse e-mail <span className="text-slate-400 font-normal">(non modifiable)</span>
               </label>
               <div className="relative">
                 <i className={`bi bi-envelope ${iconClass}`}></i>
@@ -376,135 +391,163 @@ export default function Profil() {
             <button
               type="submit"
               disabled={saving}
-              className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 hover:bg-orange-600 px-5 py-2.5 text-xs text-white transition disabled:opacity-50 shadow-sm sm:w-auto ${focusRing}`}
+              className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 hover:bg-orange-600 px-5 py-2.5 text-xs font-semibold text-white transition disabled:opacity-50 shadow-sm sm:w-auto ${focusRing}`}
             >
               {saving ? <i className="bi bi-arrow-repeat animate-spin text-sm"></i> : <i className="bi bi-save text-sm"></i>}
               {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
           </div>
         </form>
+      </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="mb-4">
-            <h2 className="text-xs uppercase tracking-wider text-slate-400">Sécurité</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">Choisissez comment confirmer le changement de mot de passe.</p>
-          </div>
-
-          <div className="mb-5 grid gap-2 sm:grid-cols-2">
+      {/* Pop-up Sécurité / Changement de mot de passe */}
+      {showPasswordModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setShowPasswordModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sécurité et mot de passe"
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl"
+          >
             <button
               type="button"
-              onClick={() => setPasswordMethod('current')}
-              aria-pressed={passwordMethod === 'current'}
-              className={`rounded-xl border px-3 py-3 text-left text-xs transition ${
-                passwordMethod === 'current'
-                  ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-                  : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
-              }`}
+              aria-label="Fermer"
+              onClick={() => setShowPasswordModal(false)}
+              className={`absolute right-4 top-4 rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 ${focusRing}`}
             >
-              Confirmer avec l’ancien mot de passe
+              <i className="bi bi-x text-base"></i>
             </button>
-            <button
-              type="button"
-              onClick={() => setPasswordMethod('code')}
-              aria-pressed={passwordMethod === 'code'}
-              className={`rounded-xl border px-3 py-3 text-left text-xs transition ${
-                passwordMethod === 'code'
-                  ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-                  : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
-              }`}
-            >
-              Confirmer avec un code par e-mail
-            </button>
-          </div>
 
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            {passwordMethod === 'current' ? (
-              <div>
-                <label htmlFor="current-password" className={labelClass}>Ancien mot de passe</label>
-                <input
-                  id="current-password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
-                  Un code à 8 chiffres sera envoyé à {profile.email}.
-                </p>
-                <button
-                  type="button"
-                  onClick={requestPasswordCode}
-                  disabled={codeRequestLoading}
-                  className="rounded-xl border border-orange-500/40 px-4 py-2.5 text-xs font-medium text-orange-700 transition hover:bg-orange-500/10 disabled:opacity-50 dark:text-orange-300"
-                >
-                  {codeRequestLoading ? 'Envoi en cours…' : 'Envoyer un code par e-mail'}
-                </button>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sécurité & Changement de mot de passe</h3>
+            <p className="mt-0.5 text-xs text-slate-400 mb-4">Choisissez comment confirmer le changement de votre mot de passe.</p>
+
+            <div className="mb-5 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setPasswordMethod('current')}
+                aria-pressed={passwordMethod === 'current'}
+                className={`rounded-xl border px-3 py-2.5 text-left text-xs transition ${
+                  passwordMethod === 'current'
+                    ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
+                    : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
+                }`}
+              >
+                Ancien mot de passe
+              </button>
+              <button
+                type="button"
+                onClick={() => setPasswordMethod('code')}
+                aria-pressed={passwordMethod === 'code'}
+                className={`rounded-xl border px-3 py-2.5 text-left text-xs transition ${
+                  passwordMethod === 'code'
+                    ? 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
+                    : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-zinc-300'
+                }`}
+              >
+                Code par e-mail
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              {passwordMethod === 'current' ? (
                 <div>
-                  <label htmlFor="password-verification-code" className={labelClass}>Code de vérification</label>
+                  <label htmlFor="current-password" className={labelClass}>Ancien mot de passe</label>
                   <input
-                    id="password-verification-code"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]{8}"
-                    maxLength={8}
+                    id="current-password"
+                    type="password"
+                    autoComplete="current-password"
                     required
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Un code à 8 chiffres sera envoyé à <strong className="text-slate-800 dark:text-zinc-200">{profile.email}</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={requestPasswordCode}
+                    disabled={codeRequestLoading}
+                    className="rounded-xl border border-orange-500/40 px-4 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-500/10 disabled:opacity-50 dark:text-orange-300"
+                  >
+                    {codeRequestLoading ? 'Envoi en cours…' : 'Envoyer un code par e-mail'}
+                  </button>
+                  <div>
+                    <label htmlFor="password-verification-code" className={labelClass}>Code de vérification</label>
+                    <input
+                      id="password-verification-code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]{8}"
+                      maxLength={8}
+                      required
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="new-password" className={labelClass}>Nouveau mot de passe</label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    maxLength={72}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="new-password-confirmation" className={labelClass}>Confirmer le mot de passe</label>
+                  <input
+                    id="new-password-confirmation"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    maxLength={72}
+                    required
+                    value={passwordConfirmation}
+                    onChange={(e) => setPasswordConfirmation(e.target.value)}
+                    className={inputClass}
                   />
                 </div>
               </div>
-            )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="new-password" className={labelClass}>Nouveau mot de passe</label>
-                <input
-                  id="new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={72}
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                />
+              <div className="flex border-t border-slate-100 pt-4 sm:justify-end dark:border-zinc-800 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="rounded-2xl border border-slate-200 dark:border-zinc-800 px-4 py-2.5 text-xs text-slate-600 dark:text-zinc-400 transition hover:bg-slate-100 dark:hover:bg-zinc-800"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className={`flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50 ${focusRing}`}
+                >
+                  {passwordLoading ? 'Modification…' : 'Mettre à jour le mot de passe'}
+                </button>
               </div>
-              <div>
-                <label htmlFor="new-password-confirmation" className={labelClass}>Confirmer le nouveau mot de passe</label>
-                <input
-                  id="new-password-confirmation"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={72}
-                  required
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                />
-              </div>
-            </div>
-
-            <div className="flex border-t border-slate-100 pt-4 sm:justify-end dark:border-zinc-800">
-              <button
-                type="submit"
-                disabled={passwordLoading}
-                className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-xs text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50 sm:w-auto ${focusRing}`}
-              >
-                {passwordLoading ? 'Modification…' : 'Changer le mot de passe'}
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal badge QR */}
       {showQrModal && (
@@ -528,7 +571,7 @@ export default function Profil() {
               <i className="bi bi-x text-base"></i>
             </button>
 
-            <h3 className="text-sm text-slate-900 dark:text-white">Badge d'accès</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Badge d'accès</h3>
             <p className="mt-0.5 text-xs text-slate-400">Présentez ce QR code pour confirmer votre présence.</p>
 
             <div className="mx-auto my-4 w-fit rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white p-3">
@@ -540,7 +583,7 @@ export default function Profil() {
             </div>
 
             <div className="mb-4">
-              <p className="text-xs text-slate-900 dark:text-white">
+              <p className="text-xs font-bold text-slate-900 dark:text-white">
                 {profile.prenom} {profile.nom}
               </p>
               <p className="break-all text-[11px] text-slate-400">{profile.email}</p>
@@ -550,14 +593,14 @@ export default function Profil() {
               <a
                 href={profile.qr_code}
                 download={`QR_Badge_${profile.prenom}_${profile.nom}.png`}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 py-2.5 text-xs text-slate-700 dark:text-zinc-300 transition hover:border-orange-500 hover:text-orange-600 ${focusRing}`}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 py-2.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 transition hover:border-orange-500 hover:text-orange-600 ${focusRing}`}
               >
                 <i className="bi bi-download"></i> Télécharger
               </a>
               <button
                 type="button"
                 onClick={() => setShowQrModal(false)}
-                className={`flex-1 rounded-2xl bg-orange-500 hover:bg-orange-600 py-2.5 text-xs text-white transition ${focusRing}`}
+                className={`flex-1 rounded-2xl bg-orange-500 hover:bg-orange-600 py-2.5 text-xs font-semibold text-white transition ${focusRing}`}
               >
                 Fermer
               </button>
