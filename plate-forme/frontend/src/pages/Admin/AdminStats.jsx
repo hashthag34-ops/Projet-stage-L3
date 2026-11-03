@@ -30,7 +30,6 @@ import {
 } from 'recharts';
 import API from '../../services/api';
 
-
 const ORANGE_PALETTE = [
   '#f97316', // Orange principal ODC
   '#fb923c', // Orange clair
@@ -48,13 +47,13 @@ const monthName = (month) =>
 const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="custom-tooltip [border-radius:16px] [border:1px_solid_var(--border-color)] [background-color:var(--tooltip-bg)] [padding:14px] [box-shadow:0_10px_25px_var(--shadow-color)] [backdrop-filter:blur(12px)]">
-        {label && <p className="tooltip-label [margin:0_0_6px_0] [font-size:12px] [font-weight:700] [color:var(--text-primary)]">{label}</p>}
+      <div className="rounded-2xl border border-zinc-200 bg-white/95 p-3.5 shadow-xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95">
+        {label && <p className="mb-1.5 text-xs font-bold text-zinc-900 dark:text-white">{label}</p>}
         {payload.map((entry, index) => (
-          <div key={`item-${index}`} className="tooltip-item [display:flex] [align-items:center] [gap:8px] [font-size:12px] [font-weight:600] [margin-top:4px]">
-            <span className="tooltip-dot [height:8px] [width:8px] [border-radius:50%]" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
-            <span className="tooltip-name [color:var(--text-secondary)]">{entry.name}:</span>
-            <span className="tooltip-value [font-weight:800] [color:var(--orange-primary)]">
+          <div key={`item-${index}`} className="flex items-center gap-2 text-xs font-semibold mt-1">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
+            <span className="text-zinc-500 dark:text-zinc-400">{entry.name}:</span>
+            <span className="font-extrabold text-orange-600 dark:text-orange-400">
               {entry.value} {suffix}
             </span>
           </div>
@@ -67,34 +66,34 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }) => {
 
 function StatCard({ label, value, detail, icon: Icon }) {
   return (
-    <article className="stat-card [display:flex] [flex-direction:column] [justify-content:space-between] [overflow:hidden] [border-radius:24px] [background-color:var(--panel-bg)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [border:1px_solid_var(--border-color)] [transition:all_0.3s] [&:hover]:[box-shadow:0_10px_25px_var(--shadow-color)]">
-      <div className="stat-card-header [display:flex] [align-items:flex-start] [justify-content:space-between] [gap:12px]">
+    <article className="flex flex-col justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="stat-card-label [font-size:12px] [font-weight:700] [color:var(--text-secondary)] [margin:0]">{label}</p>
-          <p className="stat-card-value [margin-top:8px] [font-size:24px] [font-weight:900] [color:var(--text-primary)] [font-variant-numeric:tabular-nums]">{value ?? 0}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">{label}</p>
+          <p className="mt-2 text-2xl font-black text-zinc-900 dark:text-white tabular-nums">{value ?? 0}</p>
         </div>
-        <div className="stat-card-icon-wrapper [display:flex] [height:36px] [width:36px] [flex-shrink:0] [align-items:center] [justify-content:center] [border-radius:14px] [background-color:var(--orange-bg-light)] [color:var(--orange-primary)]">
-          <Icon size={18} />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
+          <Icon size={20} />
         </div>
       </div>
-      <p className="stat-card-detail [margin-top:12px] [font-size:11px] [font-weight:600] [color:var(--text-secondary)]">{detail}</p>
+      <p className="mt-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400">{detail}</p>
     </article>
   );
 }
 
 function ChartPanel({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="chart-panel [display:flex] [flex-direction:column] [border-radius:24px] [background-color:var(--panel-bg)] [padding:24px] [box-shadow:0_1px_3px_var(--shadow-color)] [border:1px_solid_var(--border-color)] [transition:all_0.3s]">
-      <div className="chart-panel-header [display:flex] [align-items:flex-start] [justify-content:space-between] [gap:16px] [margin-bottom:24px]">
+    <section className="flex flex-col rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs transition dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+      <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="chart-panel-title [display:flex] [align-items:center] [gap:8px] [font-size:14px] [font-weight:700] [color:var(--text-primary)] [margin:0]">
-            {Icon && <Icon size={16} className="chart-title-icon [color:var(--orange-primary)]" />}
+          <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-white">
+            {Icon && <Icon size={16} className="text-orange-500" />}
             {title}
           </h2>
-          <p className="chart-panel-subtitle [margin-top:2px] [font-size:11px] [color:var(--text-secondary)]">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</p>
         </div>
       </div>
-      <div className="chart-panel-body [flex:1]">{children}</div>
+      <div className="flex-1">{children}</div>
     </section>
   );
 }
@@ -164,15 +163,15 @@ export default function AdminStats() {
   const evaluationRanking = statistics?.evaluationRanking || [];
 
   return (
-    <div className="admin-stats-container [display:flex] [flex-direction:column] [gap:32px] [padding:8px_16px] [font-family:inherit] [color:var(--text-primary)] [background-color:var(--stats-bg)] [transition:background-color_0.3s_ease,_color_0.3s_ease] [box-sizing:border-box]">
+    <div className="mx-auto min-h-screen max-w-7xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
       
       {/* En-tête principal */}
-      <header className="admin-stats-header [display:flex] [flex-direction:column] [justify-content:space-between] [gap:16px]">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="admin-badge [display:inline-flex] [align-items:center] [gap:8px] [padding:4px_12px] [border-radius:9999px] [background-color:var(--orange-bg-light)] [font-size:12px] [font-weight:700] [color:var(--orange-primary)]">
-            <Sparkles size={13} /> Panneau Administration
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-600 dark:text-orange-400">
+            <Sparkles size={14} /> Panneau Administration
           </div>
-          <h1 className="admin-title [margin-top:8px] [font-size:24px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--text-primary)]">Vue statistique globale</h1>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Vue statistique globale</h1>
         </div>
 
         <button
@@ -181,37 +180,37 @@ export default function AdminStats() {
           disabled={loading}
           aria-label="Actualiser les statistiques"
           title="Actualiser"
-          className="refresh-btn [display:inline-flex] [align-items:center] [gap:8px] [padding:10px_16px] [border-radius:16px] [background-color:var(--panel-bg)] [color:var(--text-primary)] [border:1px_solid_var(--border-color)] [font-size:12px] [font-weight:700] [box-shadow:0_1px_2px_var(--shadow-color)] [cursor:pointer] [transition:all_0.2s] [&:hover]:[background-color:var(--hover-bg)]"
+          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-800 shadow-xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
-          <RefreshCw size={15} className={`refresh-icon ${loading ? 'spinning' : ''}`} />
+          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           <span>Actualiser</span>
         </button>
       </header>
 
       {/* Message d'erreur */}
       {error && (
-        <div role="alert" className="error-banner [padding:16px] [border-radius:16px] [background-color:rgba(239,_68,_68,_0.1)] [color:\#ef4444] [font-size:12px] [font-weight:700] [border:1px_solid_rgba(239,_68,_68,_0.2)]">
+        <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
 
       {/* Skeletons / Chargement */}
       {loading && !statistics ? (
-        <div className="stats-skeleton-wrapper [display:flex] [flex-direction:column] [gap:24px]">
-          <div className="stats-grid-4 [display:grid] [gap:16px] [grid-template-columns:1fr]">
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton-card [height:112px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
+              <div key={i} className="h-28 animate-pulse rounded-3xl bg-zinc-200 dark:bg-zinc-800" />
             ))}
           </div>
-          <div className="stats-grid-2 [display:grid] [gap:24px] [grid-template-columns:1fr]">
-            <div className="skeleton-chart [height:320px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
-            <div className="skeleton-chart [height:320px] [animation:pulse_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] [border-radius:24px] [background-color:var(--skeleton-bg)]" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="h-80 animate-pulse rounded-3xl bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-80 animate-pulse rounded-3xl bg-zinc-200 dark:bg-zinc-800" />
           </div>
         </div>
       ) : statistics && (
         <>
           {/* Cartes KPI */}
-          <section className="stats-grid-4 [display:grid] [gap:16px] [grid-template-columns:1fr]">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Comptes Utilisateurs"
               value={overview.utilisateurs}
@@ -243,13 +242,13 @@ export default function AdminStats() {
             <StatCard
               label="Formations"
               value={overview.formations}
-              detail={`${overview.formations_archivees || 0} formation(s) archivée(s) incluse(s)`}
+              detail={`${overview.formations_archivees || 0} archivée(s)`}
               icon={BookOpen}
             />
           </section>
 
           {/* Grille de Graphiques Fluides */}
-          <div className="stats-grid-2 [display:grid] [gap:24px] [grid-template-columns:1fr]">
+          <div className="grid gap-6 lg:grid-cols-2">
             
             {/* 1. AreaChart : Formations créées */}
             <ChartPanel
@@ -257,7 +256,7 @@ export default function AdminStats() {
               subtitle="Évolution chronologique sur les 12 derniers mois"
               icon={TrendingUp}
             >
-              <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
+              <div className="h-64 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                     <defs>
@@ -266,18 +265,18 @@ export default function AdminStats() {
                         <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#71717a" opacity={0.15} />
                     <XAxis
                       dataKey="libelle"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
+                      tick={{ fontSize: 11, fill: '#71717a' }}
                     />
                     <YAxis
                       allowDecimals={false}
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
+                      tick={{ fontSize: 11, fill: '#71717a' }}
                     />
                     <Tooltip content={<CustomTooltip suffix="formation(s)" />} />
                     <Area
@@ -303,9 +302,9 @@ export default function AdminStats() {
               icon={PieChartIcon}
             >
               {applicationData.length === 0 ? (
-                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucune donnée disponible.</div>
+                <div className="flex h-64 items-center justify-center text-xs text-zinc-500">Aucune donnée disponible.</div>
               ) : (
-                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
+                <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -335,7 +334,7 @@ export default function AdminStats() {
                         align="center"
                         iconType="circle"
                         formatter={(value) => (
-                          <span className="legend-text [font-size:10px] [font-weight:600] [color:var(--text-secondary)]">
+                          <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
                             {value.length > 18 ? `${value.substring(0, 18)}…` : value}
                           </span>
                         )}
@@ -353,9 +352,9 @@ export default function AdminStats() {
               icon={CheckCircle2}
             >
               {successData.length === 0 ? (
-                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucune évaluation terminée.</div>
+                <div className="flex h-64 items-center justify-center text-xs text-zinc-500">Aucune évaluation terminée.</div>
               ) : (
-                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
+                <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={successData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                       <defs>
@@ -364,12 +363,12 @@ export default function AdminStats() {
                           <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#71717a" opacity={0.15} />
                       <XAxis
                         dataKey="titre"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 11, fill: '#71717a' }}
                         interval={0}
                         tickFormatter={(v) => (v.length > 10 ? `${v.substring(0, 8)}...` : v)}
                       />
@@ -378,7 +377,7 @@ export default function AdminStats() {
                         tickFormatter={(v) => `${v}%`}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 11, fill: '#71717a' }}
                       />
                       <Tooltip content={<CustomTooltip suffix="%" />} />
                       <Area
@@ -405,24 +404,24 @@ export default function AdminStats() {
               icon={Star}
             >
               {averageRating.length === 0 ? (
-                <div className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun avis publié pour le moment.</div>
+                <div className="flex h-64 items-center justify-center text-xs text-zinc-500">Aucun avis publié pour le moment.</div>
               ) : (
-                <div className="chart-container [height:256px] [width:100%] [padding-top:8px]">
+                <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={averageRating} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#27272a" opacity={0.15} />
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#71717a" opacity={0.15} />
                       <XAxis
                         dataKey="titre"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 11, fill: '#71717a' }}
                         tickFormatter={(v) => (v.length > 10 ? `${v.substring(0, 8)}…` : v)}
                       />
                       <YAxis
                         domain={[0, 5]}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 11, fill: '#71717a' }}
                       />
                       <Tooltip content={<CustomTooltip suffix="/ 5" />} />
                       <Line
@@ -444,23 +443,23 @@ export default function AdminStats() {
 
           </div>
 
-          <section className="admin-ranking-section [display:flex] [flex-direction:column] [gap:16px]">
-            <div className="admin-ranking-header">
-              <h2><Award size={17} /> Classements des apprenants</h2>
-              <p>Classement selon les résultats enregistrés.</p>
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Award size={18} className="text-orange-500" />
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Classements des apprenants</h2>
             </div>
-            <div className="admin-ranking-grid [display:grid] [gap:16px]">
+            <div className="grid gap-6 lg:grid-cols-2">
               <ChartPanel title="Classement par formation" subtitle="Moyenne générale des notes des apprenants">
-                <div className="admin-ranking-list [max-height:420px] [overflow-y:auto]">
+                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                   {formationRanking.map((formation) => (
-                    <div className="admin-ranking-group [border-radius:14px] [background:var(--stat-subbox)] [padding:14px] [margin-bottom:12px]" key={formation.id_formation}>
-                      <h3>{formation.titre || formation.formation_titre}</h3>
+                    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40" key={formation.id_formation}>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-white mb-2">{formation.titre || formation.formation_titre}</h3>
                       {formation.apprenants.length === 0 ? (
-                        <p className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun résultat disponible.</p>
+                        <p className="py-2 text-xs text-zinc-500">Aucun résultat disponible.</p>
                       ) : formation.apprenants.map((learner, index) => (
-                        <div className="admin-ranking-row [display:flex] [align-items:center] [justify-content:space-between] [gap:12px] [border-bottom:1px_solid_var(--stat-border)] [padding:9px_0] [font-size:12px]" key={learner.id_apprenant}>
-                          <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
-                          <strong>{Number(learner.moyenne).toFixed(2)} / 20</strong>
+                        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 py-2 last:border-b-0 text-xs dark:border-zinc-700/50" key={learner.id_apprenant}>
+                          <span className="font-medium text-zinc-700 dark:text-zinc-300"><strong className="text-orange-600 dark:text-orange-400 mr-1.5">#{index + 1}</strong> {learner.prenom} {learner.nom}</span>
+                          <strong className="font-black text-zinc-900 dark:text-white">{Number(learner.moyenne).toFixed(2)} / 20</strong>
                         </div>
                       ))}
                     </div>
@@ -469,17 +468,17 @@ export default function AdminStats() {
               </ChartPanel>
 
               <ChartPanel title="Classement par évaluation" subtitle="Meilleure note obtenue par apprenant">
-                <div className="admin-ranking-list [max-height:420px] [overflow-y:auto]">
+                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                   {evaluationRanking.map((evaluation) => (
-                    <div className="admin-ranking-group [border-radius:14px] [background:var(--stat-subbox)] [padding:14px] [margin-bottom:12px]" key={evaluation.id_evaluation_sujet}>
-                      <h3>{evaluation.evaluation_titre}</h3>
-                      <small>{evaluation.formation_titre}</small>
+                    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40" key={evaluation.id_evaluation_sujet}>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-white">{evaluation.evaluation_titre}</h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-2">{evaluation.formation_titre}</p>
                       {evaluation.apprenants.length === 0 ? (
-                        <p className="chart-empty [display:flex] [height:256px] [align-items:center] [justify-content:center] [font-size:12px] [color:var(--text-secondary)]">Aucun résultat disponible.</p>
+                        <p className="py-2 text-xs text-zinc-500">Aucun résultat disponible.</p>
                       ) : evaluation.apprenants.map((learner, index) => (
-                        <div className="admin-ranking-row [display:flex] [align-items:center] [justify-content:space-between] [gap:12px] [border-bottom:1px_solid_var(--stat-border)] [padding:9px_0] [font-size:12px]" key={learner.id_tentative}>
-                          <span><b>{index + 1}</b> {learner.prenom} {learner.nom}</span>
-                          <strong>{Number(learner.note).toFixed(2)} / 20</strong>
+                        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/60 py-2 last:border-b-0 text-xs dark:border-zinc-700/50" key={learner.id_tentative}>
+                          <span className="font-medium text-zinc-700 dark:text-zinc-300"><strong className="text-orange-600 dark:text-orange-400 mr-1.5">#{index + 1}</strong> {learner.prenom} {learner.nom}</span>
+                          <strong className="font-black text-zinc-900 dark:text-white">{Number(learner.note).toFixed(2)} / 20</strong>
                         </div>
                       ))}
                     </div>

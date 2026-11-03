@@ -18,6 +18,8 @@ const FILTERS = [
   { id: 'ABSENT', label: 'Absences et retards' },
 ];
 
+const cardClass = 'rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6';
+
 export default function ApprenantPlanning() {
   const [seances, setSeances] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,15 +46,15 @@ export default function ApprenantPlanning() {
   const chartData = useMemo(() => {
     return [
       { name: 'Présent', value: stats.presents, color: '#f97316' },
-      { name: 'Absent', value: stats.absents, color: '#64748b' },
-      { name: 'À venir', value: stats.aVenir, color: '#cbd5e1' },
+      { name: 'Absent', value: stats.absents, color: '#71717a' },
+      { name: 'À venir', value: stats.aVenir, color: '#e4e4e7' },
     ].filter((item) => item.value > 0);
   }, [stats]);
 
   const legend = [
-    { label: 'Présent', value: stats.presents, dotClass: 'dot-orange' },
-    { label: 'Absent', value: stats.absents, dotClass: 'dot-slate' },
-    { label: 'À venir', value: stats.aVenir, dotClass: 'dot-light' },
+    { label: 'Présent', value: stats.presents, dotClass: 'bg-orange-500' },
+    { label: 'Absent', value: stats.absents, dotClass: 'bg-zinc-500' },
+    { label: 'À venir', value: stats.aVenir, dotClass: 'bg-zinc-300 dark:bg-zinc-700' },
   ];
 
   const isToday = (dateStr) => {
@@ -86,42 +88,40 @@ export default function ApprenantPlanning() {
     switch (statut) {
       case 'PRESENT':
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700">
-            <CheckCircle2 size={12} /> Présent
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 size={13} /> Présent
           </span>
         );
       case 'ABSENT':
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700">
-            <CircleDashed size={12} /> Absent
+          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-bold text-rose-700 dark:text-rose-400">
+            <CircleDashed size={13} /> Absent
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-            <Clock3 size={12} /> À venir
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-400">
+            <Clock3 size={13} /> À venir
           </span>
         );
     }
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-8 text-slate-900">
+    <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:space-y-6 sm:px-6 sm:py-6">
 
       {/* En-tête */}
-      <header className="flex flex-col justify-between gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-6 shadow-sm md:flex-row md:items-center md:px-8">
+      <header className="flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-950 p-5 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 md:text-3xl">
-            Mon planning
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Retrouvez vos séances et suivez votre assiduité.
-          </p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 sm:text-xs">Calendrier</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Mon planning</h1>
+          <p className="mt-1 text-xs text-zinc-300 sm:text-sm">Retrouvez vos séances et suivez votre assiduité.</p>
         </div>
         {!loading && (
-          <p className="text-sm font-semibold text-slate-500">
+          <div className="inline-flex items-center gap-2 self-start rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-2 text-xs font-bold text-orange-400">
+            <CalendarDays size={15} />
             {seances.length} séance{seances.length > 1 ? 's' : ''} au programme
-          </p>
+          </div>
         )}
       </header>
 
@@ -129,7 +129,7 @@ export default function ApprenantPlanning() {
       {!loading && seances.length > 0 && (
         <section
           aria-label="Bilan de présence"
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          className={cardClass}
         >
           <div className="flex flex-col items-center gap-6 sm:flex-row">
             {/* Donut */}
@@ -152,33 +152,33 @@ export default function ApprenantPlanning() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      borderRadius: '10px',
-                      border: '1px solid var(--plan-border)',
-                      backgroundColor: 'var(--plan-panel)',
-                      color: 'var(--plan-text)',
-                      boxShadow: 'none',
+                      borderRadius: '16px',
+                      border: '1px solid #e4e4e7',
+                      backgroundColor: '#18181b',
+                      color: '#fff',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
                       fontSize: '12px',
                     }}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-slate-950">
+                <span className="text-xl font-black text-zinc-950 dark:text-white">
                   {stats.tauxPresence}%
                 </span>
-                <span className="text-xs text-slate-500">Présence</span>
+                <span className="text-[11px] font-bold text-zinc-400">Présence</span>
               </div>
             </div>
 
             {/* Légende */}
             <dl className="grid w-full grid-cols-3 gap-3">
               {legend.map((item) => (
-                <div key={item.label}>
-                  <dt className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className={`h-2.5 w-2.5 rounded-full ${item.dotClass === 'dot-orange' ? 'bg-orange-500' : item.dotClass === 'dot-slate' ? 'bg-slate-500' : 'bg-slate-300'}`} aria-hidden="true" />
+                <div key={item.label} className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 text-center dark:border-zinc-800 dark:bg-zinc-800/40">
+                  <dt className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+                    <span className={`h-2.5 w-2.5 rounded-full ${item.dotClass}`} aria-hidden="true" />
                     {item.label}
                   </dt>
-                  <dd className="mt-1 text-lg font-bold">
+                  <dd className="mt-1.5 text-xl font-black text-zinc-900 dark:text-white">
                     {item.value}
                   </dd>
                 </div>
@@ -199,10 +199,10 @@ export default function ApprenantPlanning() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setFilter(tab.id)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${active ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600'}`}
+                className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${active ? 'bg-orange-500 text-zinc-950 shadow-sm' : 'border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'}`}
               >
                 {tab.label}
-                <span className={`rounded-full px-2 py-0.5 text-xs ${active ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${active ? 'bg-zinc-950/10 text-zinc-950' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                   {counts[tab.id]}
                 </span>
               </button>
@@ -215,16 +215,18 @@ export default function ApprenantPlanning() {
       {loading ? (
         <div className="grid gap-3" aria-busy="true">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+            <div key={n} className="h-28 animate-pulse rounded-3xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40" />
           ))}
         </div>
       ) : filteredSeances.length === 0 ? (
-        <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
-          <CalendarDays size={30} className="mb-3 text-orange-500" />
-          <p className="font-bold text-slate-900">
+        <div className={`${cardClass} flex flex-col items-center border-dashed p-12 text-center`}>
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
+            <CalendarDays size={30} />
+          </div>
+          <p className="mt-4 text-sm font-bold text-zinc-900 dark:text-white">
             {filter !== 'ALL' ? 'Aucune séance dans cette catégorie' : 'Aucune séance planifiée'}
           </p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-1 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
             {filter !== 'ALL'
               ? 'Choisissez un autre filtre pour voir vos séances.'
               : 'Vos prochaines séances apparaîtront ici.'}
@@ -232,7 +234,7 @@ export default function ApprenantPlanning() {
           {filter !== 'ALL' && (
             <button
               onClick={() => setFilter('ALL')}
-              className="mt-5 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white"
+              className="mt-5 rounded-2xl bg-orange-500 px-4 py-2.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
             >
               Voir toutes les séances
             </button>
@@ -247,31 +249,31 @@ export default function ApprenantPlanning() {
             return (
               <li
                 key={s.id_seance}
-                className={`flex gap-4 rounded-2xl border bg-white p-4 shadow-sm ${today ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-200'}`}
+                className={`${cardClass} flex flex-col gap-4 sm:flex-row sm:items-center`}
               >
                 {/* Bloc date */}
-                <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl ${today ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
-                  <span className="text-xl font-bold">{date.getDate()}</span>
-                  <span className="text-xs uppercase">
+                <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${today ? 'bg-orange-500 text-zinc-950 font-black shadow-md' : 'border border-zinc-200 bg-zinc-50 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-200'}`}>
+                  <span className="text-xl font-black">{date.getDate()}</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider">
                     {date.toLocaleDateString('fr-FR', { month: 'short' })}
                   </span>
                 </div>
 
                 {/* Infos */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row">
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-orange-500">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
                         {s.titre_formation}
                         {s.type_seance ? ` · ${s.type_seance}` : ''}
                       </p>
-                      <h3 className="mt-1 text-lg font-bold">
+                      <h3 className="mt-1 text-base font-black text-zinc-900 dark:text-white sm:text-lg">
                         {s.titre}
                       </h3>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {today && (
-                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
+                        <span className="rounded-full bg-orange-500 px-3 py-1 text-[11px] font-black text-zinc-950 shadow-xs">
                           Aujourd'hui
                         </span>
                       )}
@@ -280,14 +282,14 @@ export default function ApprenantPlanning() {
                   </div>
 
                   {s.description && (
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-sm">
                       {s.description}
                     </p>
                   )}
 
-                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     <span className="flex items-center gap-1.5">
-                      <CalendarDays size={14} />
+                      <CalendarDays size={14} className="text-orange-500 shrink-0" />
                       {date.toLocaleDateString('fr-FR', {
                         weekday: 'long',
                         day: 'numeric',
@@ -296,11 +298,11 @@ export default function ApprenantPlanning() {
                       })}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <Clock3 size={14} />
+                      <Clock3 size={14} className="text-orange-500 shrink-0" />
                       {s.heure_debut?.substring(0, 5)} – {s.heure_fin?.substring(0, 5)}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <MapPin size={14} />
+                      <MapPin size={14} className="text-orange-500 shrink-0" />
                       {s.salle || 'En ligne'}
                     </span>
                   </div>

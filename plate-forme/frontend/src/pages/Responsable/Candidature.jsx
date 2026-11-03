@@ -6,8 +6,8 @@ import {
 import API from '../../services/api';
 import { getRealtimeSocket } from '../../services/realtime';
 
-const inputClass = 'rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200';
-const cardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900';
+const inputClass = 'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-orange-500';
+const cardClass = 'rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900';
 const emptyCandidates = [];
 
 const formatDate = (value) => {
@@ -51,7 +51,7 @@ function CandidateDetailsModal({ candidate, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
       onClick={onClose}
     >
       <section
@@ -61,14 +61,14 @@ function CandidateDetailsModal({ candidate, onClose }) {
         className={`${cardClass} max-h-[90vh] w-full max-w-2xl overflow-y-auto`}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="sticky top-0 flex items-start justify-between border-b border-slate-100 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <header className="sticky top-0 flex items-start justify-between border-b border-zinc-100 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Dossier candidat</p>
-            <h2 id="candidate-details-title" className="mt-1 text-xl font-bold text-slate-900 dark:text-white">
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Dossier candidat</p>
+            <h2 id="candidate-details-title" className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">
               {candidate.prenom} {candidate.nom}
             </h2>
           </div>
-          <button onClick={onClose} aria-label="Fermer" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800">
+          <button onClick={onClose} aria-label="Fermer" className="rounded-xl p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             <X size={18} />
           </button>
         </header>
@@ -78,8 +78,8 @@ function CandidateDetailsModal({ candidate, onClose }) {
             if (value == null || value === '') return null;
             return (
               <div key={label} className="min-w-0">
-                <dt className="text-xs font-medium text-slate-500 dark:text-zinc-400">{label}</dt>
-                <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-slate-900 dark:text-zinc-100">{value}</dd>
+                <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</dt>
+                <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">{value}</dd>
               </div>
             );
           })}
@@ -274,25 +274,25 @@ export default function Candidatures() {
   };
 
   if (loading && formations.length === 0 && candidatures.length === 0) {
-    return <div className="mx-auto max-w-7xl p-8 text-center text-sm text-slate-500">Chargement des formations…</div>;
+    return <div className="mx-auto max-w-7xl p-8 text-center text-sm text-zinc-500">Chargement des candidatures…</div>;
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-28 font-sans text-slate-800 dark:text-zinc-100 sm:px-6">
+    <main className="mx-auto max-w-7xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
       {!selectedFormation ? (
         <>
           <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Espace responsable</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Gestion des candidatures</h1>
-              <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Choisissez une formation pour consulter et traiter ses dossiers.</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Espace responsable</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Gestion des candidatures</h1>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Choisissez une formation pour consulter et traiter ses dossiers.</p>
             </div>
           </header>
 
-          <section className={`${cardClass} p-4`}>
-            <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
+          <section className={`${cardClass} p-4 sm:p-5`}>
+            <div className="grid gap-3 sm:grid-cols-[1fr_240px]">
               <label className="relative">
-                <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   value={formationSearch}
                   onChange={(event) => setFormationSearch(event.target.value)}
@@ -309,9 +309,9 @@ export default function Candidatures() {
             </div>
           </section>
 
-          {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
+          {error && <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300">{error}</p>}
           {formationsFiltrees.length === 0 ? (
-            <div className={`${cardClass} p-10 text-center text-sm text-slate-500 dark:text-zinc-400`}>
+            <div className={`${cardClass} p-10 text-center text-xs text-zinc-500 dark:text-zinc-400`}>
               {formations.length === 0 ? 'Aucune formation disponible.' : 'Aucune formation ne correspond aux filtres.'}
             </div>
           ) : (
@@ -325,19 +325,19 @@ export default function Candidatures() {
                       setSelectedFormationId(String(formation.id_formation));
                       setSelectedCandidateIds(new Set());
                     }}
-                    className={`${cardClass} group p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700`}
+                    className={`${cardClass} group p-5 text-left transition hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-md dark:hover:border-orange-500`}
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <span className="rounded-xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"><GraduationCap size={22} /></span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      <span className="rounded-2xl bg-orange-500/10 p-3 text-orange-600 dark:text-orange-400"><GraduationCap size={22} /></span>
+                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                         {formation.statut || 'Sans statut'}
                       </span>
                     </div>
-                    <h2 className="mt-4 line-clamp-2 text-lg font-bold text-slate-900 dark:text-white">{formation.titre}</h2>
-                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-slate-500 dark:text-zinc-400">{formation.description || 'Aucune description renseignée.'}</p>
-                    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm dark:border-zinc-800">
-                      <span className="inline-flex items-center gap-2 text-slate-600 dark:text-zinc-300"><Users size={16} /> {count} candidature{count !== 1 ? 's' : ''}</span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-blue-600 group-hover:gap-2 dark:text-blue-400">Voir les dossiers <ChevronRight size={16} /></span>
+                    <h2 className="mt-4 line-clamp-2 text-base font-bold text-zinc-900 dark:text-white sm:text-lg">{formation.titre}</h2>
+                    <p className="mt-2 line-clamp-2 min-h-10 text-xs text-zinc-500 dark:text-zinc-400">{formation.description || 'Aucune description renseignée.'}</p>
+                    <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4 text-xs dark:border-zinc-800">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-600 dark:text-zinc-300"><Users size={15} /> {count} candidature{count !== 1 ? 's' : ''}</span>
+                      <span className="inline-flex items-center gap-1 font-bold text-orange-600 group-hover:gap-2 dark:text-orange-400">Voir les dossiers <ChevronRight size={15} /></span>
                     </div>
                   </button>
                 );
@@ -347,50 +347,50 @@ export default function Candidatures() {
         </>
       ) : (
         <>
-          <header className="space-y-5">
+          <header className="space-y-4">
             <button
               onClick={() => {
                 setSelectedFormationId('');
                 setSelectedCandidateIds(new Set());
               }}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
+              className="inline-flex items-center gap-2 text-xs font-bold text-zinc-500 transition hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400"
             >
-              <ArrowLeft size={17} /> Toutes les formations
+              <ArrowLeft size={16} /> Toutes les formations
             </button>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Candidatures de la formation</p>
-                <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{selectedFormation.titre}</h1>
-                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{selectedFormation.statut || 'Formation'} · {capacity} places au total</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Candidatures de la formation</p>
+                <h1 className="mt-1 text-xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-2xl">{selectedFormation.titre}</h1>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{selectedFormation.statut || 'Formation'} · {capacity} places au total</p>
               </div>
             </div>
           </header>
 
-          {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
+          {error && <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300">{error}</p>}
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {[
-              { label: 'Candidatures reçues', value: formationCandidates.length, icon: Users, color: 'text-blue-600 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400' },
-              { label: 'Candidatures acceptées', value: acceptedCount, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400' },
-              { label: 'Candidatures refusées', value: refusedCount, icon: X, color: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400' },
-              { label: 'Candidatures annulées', value: cancelledCount, icon: X, color: 'text-slate-600 bg-slate-100 dark:bg-zinc-800 dark:text-zinc-300' },
-              { label: 'Places restantes', value: remainingPlaces, icon: GraduationCap, color: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400' },
+              { label: 'Candidatures reçues', value: formationCandidates.length, icon: Users, color: 'text-zinc-900 bg-zinc-100 dark:bg-zinc-800 dark:text-white' },
+              { label: 'Candidatures acceptées', value: acceptedCount, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-500/10 dark:text-emerald-400' },
+              { label: 'Candidatures refusées', value: refusedCount, icon: X, color: 'text-rose-600 bg-rose-500/10 dark:text-rose-400' },
+              { label: 'Candidatures annulées', value: cancelledCount, icon: X, color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300' },
+              { label: 'Places restantes', value: remainingPlaces, icon: GraduationCap, color: 'text-orange-600 bg-orange-500/10 dark:text-orange-400' },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className={`${cardClass} flex items-center gap-4 p-4`}>
                 <span className={`rounded-xl p-3 ${color}`}><Icon size={20} /></span>
-                <div><p className="text-sm text-slate-500 dark:text-zinc-400">{label}</p><p className="mt-0.5 text-2xl font-bold text-slate-900 dark:text-white">{value}</p></div>
+                <div><p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{label}</p><p className="mt-0.5 text-xl font-black text-zinc-900 dark:text-white">{value}</p></div>
               </div>
             ))}
           </section>
 
-          <section className={`${cardClass} space-y-4 p-4`}>
+          <section className={`${cardClass} space-y-4 p-4 sm:p-5`}>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Candidats</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400">{filteredCandidates.length} résultat{filteredCandidates.length !== 1 ? 's' : ''}</p>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-white">Candidats</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">{filteredCandidates.length} résultat{filteredCandidates.length !== 1 ? 's' : ''}</p>
               </div>
               <label className="relative w-full lg:max-w-sm">
-                <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   value={candidateSearch}
                   onChange={(event) => setCandidateSearch(event.target.value)}
@@ -400,7 +400,7 @@ export default function Candidatures() {
               </label>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500"><Filter size={15} /> Filtres</div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500"><Filter size={14} /> Filtres</div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               {[
                 ['etablissement', 'Tous les établissements', 'Établissement'],
@@ -421,13 +421,13 @@ export default function Candidatures() {
 
           <section className={`${cardClass} overflow-hidden`}>
             {loading ? (
-              <div className="p-10 text-center text-sm text-slate-500">Actualisation des candidatures…</div>
+              <div className="p-10 text-center text-xs text-zinc-500">Actualisation des candidatures…</div>
             ) : filteredCandidates.length === 0 ? (
-              <div className="p-10 text-center text-sm text-slate-500 dark:text-zinc-400">Aucun candidat ne correspond à ces filtres.</div>
+              <div className="p-10 text-center text-xs text-zinc-500 dark:text-zinc-400">Aucun candidat ne correspond à ces filtres.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1150px] text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+                <table className="w-full min-w-[1150px] text-left text-xs">
+                  <thead className="bg-zinc-50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
                     <tr>
                       <th className="w-12 px-4 py-3"><span className="sr-only">Sélection</span></th>
                       <th className="px-4 py-3">Candidat</th>
@@ -440,14 +440,14 @@ export default function Candidatures() {
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {filteredCandidates.map((candidate) => {
                       const isAlreadyPreselected = candidate.statut === 'PRESELECTIONNEE';
                       const canSelect = ['EN_ATTENTE', 'PRESELECTIONNEE'].includes(candidate.statut)
                         && (isAlreadyPreselected || remainingPlaces > 0);
                       const checked = selectedCandidateIds.has(String(candidate.id_inscription));
                       return (
-                        <tr key={candidate.id_inscription} className={`transition hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 ${checked ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`}>
+                        <tr key={candidate.id_inscription} className={`transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30 ${checked ? 'bg-orange-500/5 dark:bg-orange-500/10' : ''}`}>
                           <td className="px-4 py-4">
                             <input
                               type="checkbox"
@@ -455,56 +455,56 @@ export default function Candidatures() {
                               checked={checked}
                               disabled={!canSelect}
                               onChange={() => toggleCandidate(candidate)}
-                              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600"
+                              className="h-4 w-4 rounded border-zinc-300 text-orange-500 focus:ring-orange-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600"
                             />
                           </td>
                           <td className="px-4 py-4">
-                            <div className="font-semibold text-slate-900 dark:text-white">{candidate.prenom} {candidate.nom}</div>
-                            <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                            <div className="font-bold text-zinc-900 dark:text-white">{candidate.prenom} {candidate.nom}</div>
+                            <div className="mt-1 space-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                               <div className="inline-flex items-center gap-1.5"><UserRound size={13} />{candidate.telephone || 'Téléphone non renseigné'}</div>
                               <div className="inline-flex items-center gap-1.5"><Mail size={13} />{candidate.email}</div>
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-slate-600 dark:text-zinc-300">{candidate.situation_professionnelle || 'Non renseignée'}</td>
-                          <td className="whitespace-nowrap px-4 py-4 text-slate-600 dark:text-zinc-300">{formatDate(candidate.date_inscription)}</td>
+                          <td className="px-4 py-4 font-medium text-zinc-600 dark:text-zinc-300">{candidate.situation_professionnelle || 'Non renseignée'}</td>
+                          <td className="whitespace-nowrap px-4 py-4 font-medium text-zinc-600 dark:text-zinc-300">{formatDate(candidate.date_inscription)}</td>
                           <td className="px-4 py-4">
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
                               candidate.statut === 'ACCEPTEE'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                                 : candidate.statut === 'REFUSEE'
-                                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400'
                                   : candidate.statut === 'ANNULEE'
-                                    ? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                    : 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                                    ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                                    : 'bg-orange-500/10 text-orange-700 dark:text-orange-400'
                             }`}>
                               {getCandidateStatusLabel(candidate.statut)}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-slate-600 dark:text-zinc-300">{candidate.genre || 'Non renseigné'}</td>
+                          <td className="px-4 py-4 font-medium text-zinc-600 dark:text-zinc-300">{candidate.genre || 'Non renseigné'}</td>
                           <td className="px-4 py-4">
-                            <button onClick={() => setCandidateDetailsToShow(candidate)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-blue-400">
+                            <button onClick={() => setCandidateDetailsToShow(candidate)} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:border-orange-400 hover:text-orange-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:text-orange-400">
                               <Eye size={14} /> Voir le dossier
                             </button>
                           </td>
                           <td className="px-4 py-4">
                             {candidate.est_apprenant ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"><Check size={13} /> Configuré</span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400"><Check size={13} /> Configuré</span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">À configurer</span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-400">À configurer</span>
                             )}
                           </td>
                           <td className="px-4 py-4 text-right">
                             {candidate.statut === 'ACCEPTEE' ? (
-                              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Acceptée</span>
+                              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Acceptée</span>
                             ) : candidate.statut === 'REFUSEE' ? (
-                              <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">Refusée</span>
+                              <span className="text-xs font-bold text-rose-700 dark:text-rose-400">Refusée</span>
                             ) : candidate.statut === 'ANNULEE' ? (
-                              <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300">Annulée par le candidat</span>
+                              <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">Annulée par le candidat</span>
                             ) : (
                               <button
                                 onClick={() => handleDecision(candidate, 'REFUSEE')}
                                 disabled={processingId === candidate.id_inscription}
-                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-rose-200 hover:text-rose-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
+                                className="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
                               >
                                 Refuser
                               </button>
@@ -522,14 +522,14 @@ export default function Candidatures() {
       )}
 
       {selectedFormation && selectedCandidates.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-2xl border border-blue-200 bg-white p-3 shadow-xl dark:border-blue-900 dark:bg-zinc-900">
-          <span className="px-1 text-sm font-semibold text-slate-700 dark:text-zinc-200">{selectedCandidates.length} sélectionné{selectedCandidates.length > 1 ? 's' : ''}</span>
+        <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-2xl border border-orange-500/30 bg-white p-3 shadow-2xl dark:border-orange-500/30 dark:bg-zinc-900">
+          <span className="px-1 text-xs font-bold text-zinc-700 dark:text-zinc-200">{selectedCandidates.length} sélectionné{selectedCandidates.length > 1 ? 's' : ''}</span>
           <button
             onClick={handleValidatePromotion}
             disabled={loading || selectedCandidates.length > Math.max(0, capacity - acceptedCount)}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-black text-zinc-950 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Send size={16} /> Valider la promotion
+            <Send size={15} /> Valider la promotion
           </button>
         </div>
       )}

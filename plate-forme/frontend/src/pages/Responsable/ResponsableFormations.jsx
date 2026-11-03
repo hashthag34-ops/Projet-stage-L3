@@ -22,20 +22,22 @@ import {
 } from 'lucide-react';
 import API, { getFormationImageUrl } from '../../services/api';
 
+const inputClass = 'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500';
+const cardClass = 'rounded-3xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900';
 
 const getStatusBadgeClass = (statut) => {
   switch (statut?.toUpperCase()) {
     case 'OUVERTE':
-      return 'badge-ouverte';
+      return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400';
     case 'EN_COURS':
-      return 'badge-en-cours';
+      return 'bg-blue-500/10 text-blue-600 border border-blue-500/20 dark:text-blue-400';
     case 'BROUILLON':
-      return 'badge-brouillon';
+      return 'bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-400';
     case 'TERMINEE':
-      return 'badge-terminee';
+      return 'bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700';
     case 'ARCHIVEE':
     default:
-      return 'badge-archivee';
+      return 'bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-400';
   }
 };
 
@@ -44,27 +46,27 @@ function FormationDetailsModal({ formation, onClose }) {
   if (!formation) return null;
 
   return (
-    <div className="rf-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={onClose}>
-      <div className="rf-modal-card [width:100%] [max-width:480px] [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [overflow:hidden] [box-sizing:border-box]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={onClose}>
+      <div className={`${cardClass} w-full max-w-lg overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         
         {/* Bannière Image */}
-        <div className="rf-modal-banner [position:relative] [height:180px] [width:100%] [background-color:var(--rf-subbox)]">
+        <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-800">
           {formation.image_url ? (
             <img 
               src={getFormationImageUrl(formation.image_url)}
               alt={formation.titre} 
-              className="rf-modal-banner-img [height:100%] [width:100%] [object-fit:cover]"
+              className="h-full w-full object-cover"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
               onLoad={(e) => { e.currentTarget.style.display = ''; }}
             />
           ) : (
-            <div className="rf-modal-banner-placeholder [display:flex] [height:100%] [width:100%] [align-items:center] [justify-content:center] [color:var(--rf-muted)]">
+            <div className="flex h-full w-full items-center justify-center text-zinc-400 dark:text-zinc-500">
               <ImageIcon size={48} strokeWidth={1.5} />
             </div>
           )}
           <button 
             onClick={onClose}
-            className="rf-modal-close-abs [position:absolute] [right:12px] [top:12px] [border-radius:12px] [background-color:rgba(0,_0,_0,_0.6)] [padding:6px] [color:\#ffffff] [border:none] [cursor:pointer] [backdrop-filter:blur(4px)]"
+            className="absolute right-3 top-3 rounded-xl bg-black/60 p-1.5 text-white backdrop-blur-md transition hover:bg-black/80"
             aria-label="Fermer"
           >
             <X size={18} />
@@ -72,41 +74,41 @@ function FormationDetailsModal({ formation, onClose }) {
         </div>
 
         {/* Corps du contenu */}
-        <div className="rf-modal-body [padding:20px] [display:flex] [flex-direction:column] [gap:16px] [box-sizing:border-box]">
+        <div className="space-y-4 p-5 sm:p-6">
           <div>
-            <span className={`rf-status-badge ${getStatusBadgeClass(formation.statut)}`}>
-              <span className="rf-status-dot [height:6px] [width:6px] [border-radius:50%] [background-color:currentColor]"></span>
+            <span className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-extrabold uppercase ${getStatusBadgeClass(formation.statut)}`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
               {formation.statut}
             </span>
-            <h2 className="rf-modal-title [margin:6px_0_0_0] [font-size:18px] [font-weight:900] [color:var(--rf-text)]">
+            <h2 className="mt-2 text-lg font-black text-zinc-900 dark:text-white sm:text-xl">
               {formation.titre}
             </h2>
           </div>
 
-          <p className="rf-modal-desc [margin:0] [font-size:12px] [color:var(--rf-muted)] [line-height:1.5]">
+          <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
             {formation.description || "Aucune description fournie."}
           </p>
 
           {/* Grille d'infos */}
-          <div className="rf-modal-info-grid [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:12px]">
-            <div className="rf-info-box [border-radius:16px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px]">
-              <span className="rf-info-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [color:var(--rf-muted)]">Période</span>
-              <p className="rf-info-value [margin:4px_0_0_0] [font-size:12px] [font-weight:800] [color:var(--rf-text)]">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Période</span>
+              <p className="mt-1 text-xs font-bold text-zinc-800 dark:text-zinc-200">
                 {formation.date_debut ? new Date(formation.date_debut).toLocaleDateString('fr-FR') : '-'} ➔ {formation.date_fin ? new Date(formation.date_fin).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
 
-            <div className="rf-info-box [border-radius:16px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px]">
-              <span className="rf-info-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [color:var(--rf-muted)]">Limite d'inscription</span>
-              <p className="rf-info-value [margin:4px_0_0_0] [font-size:12px] [font-weight:800] [color:var(--rf-text)]">
+            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Limite inscription</span>
+              <p className="mt-1 text-xs font-bold text-zinc-800 dark:text-zinc-200">
                 {formation.date_limite_inscription ? new Date(formation.date_limite_inscription).toLocaleDateString('fr-FR') : 'Non spécifiée'}
               </p>
             </div>
 
-            <div className="rf-info-box [border-radius:16px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px] full">
-              <div className="rf-capacity-row [display:flex] [align-items:center] [justify-content:space-between]">
-                <span className="rf-info-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [color:var(--rf-muted)]">Capacité d'accueil</span>
-                <span className="rf-capacity-badge [border-radius:8px] [background-color:var(--rf-hover)] [padding:4px_10px] [font-size:11px] [font-weight:800] [color:var(--rf-text)]">
+            <div className="col-span-2 rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Capacité d'accueil</span>
+                <span className="rounded-xl bg-zinc-200/60 px-2.5 py-1 text-xs font-black text-zinc-900 dark:bg-zinc-700 dark:text-white">
                   {formation.capacite_max || 0} places max
                 </span>
               </div>
@@ -115,7 +117,7 @@ function FormationDetailsModal({ formation, onClose }) {
 
           <button 
             onClick={onClose}
-            className="rf-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [box-sizing:border-box] [&:hover]:[opacity:0.9]"
+            className="w-full rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
           >
             Fermer
           </button>
@@ -181,52 +183,52 @@ function FormateurAssignModal({ formation, onClose }) {
   };
 
   return (
-    <div className="rf-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={onClose}>
-      <div className="rf-modal-card [width:100%] [max-width:480px] [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [overflow:hidden] [box-sizing:border-box] max-w-lg" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={onClose}>
+      <div className={`${cardClass} w-full max-w-lg overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         
-        <div className="rf-modal-header [display:flex] [align-items:flex-start] [justify-content:space-between] [border-bottom:1px_solid_var(--rf-border)] [padding:20px] [box-sizing:border-box]">
+        <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
           <div>
-            <h2 className="rf-modal-heading [margin:0] [font-size:16px] [font-weight:900] [color:var(--rf-text)]">Gestion des intervenants</h2>
-            <p className="rf-modal-subheading [margin:4px_0_0_0] [font-size:11px] [color:var(--rf-muted)]">
-              Formation : <span className="highlight">{formation?.titre}</span>
+            <h2 className="text-base font-black text-zinc-900 dark:text-white">Gestion des intervenants</h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Formation : <span className="font-bold text-zinc-800 dark:text-zinc-200">{formation?.titre}</span>
             </p>
           </div>
           <button 
             onClick={onClose} 
-            className="rf-modal-close-btn [border-radius:10px] [padding:6px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [&:hover]:[color:var(--rf-text)] [&:hover]:[background-color:var(--rf-hover)]"
+            className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="rf-section-space [padding:16px_20px_0_20px]">
-          <h3 className="rf-section-title [margin:0_0_10px_0] [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--rf-muted)]">
+        <div className="p-5">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
             Formateurs actuellement assignés
           </h3>
           {loading ? (
-            <div className="rf-loading-text [padding:16px] [text-align:center] [font-size:12px] [color:var(--rf-muted)]">Chargement...</div>
+            <div className="py-4 text-center text-xs text-zinc-500">Chargement...</div>
           ) : assignedFormateurs.length === 0 ? (
-            <div className="rf-empty-box [border-radius:16px] [border:1px_dashed_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:16px] [text-align:center]">
-              <p className="rf-empty-text [padding:16px] [text-align:center] [font-size:12px] [color:var(--rf-muted)]">Aucun formateur affecté pour le moment.</p>
+            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-800/40">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Aucun formateur affecté pour le moment.</p>
             </div>
           ) : (
-            <div className="rf-assigned-list [max-height:180px] [overflow-y:auto] [display:flex] [flex-direction:column] [gap:8px] [padding-right:4px]">
+            <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
               {assignedFormateurs.map((f) => (
-                <div key={f.id_formateur} className="rf-assigned-item [display:flex] [align-items:center] [justify-content:space-between] [border-radius:16px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px]">
-                  <div className="rf-assigned-left [display:flex] [align-items:center] [gap:12px]">
-                    <div className="rf-avatar-initials [display:flex] [height:32px] [width:32px] [align-items:center] [justify-content:center] [border-radius:10px] [background-color:var(--rf-border)] [font-size:11px] [font-weight:900] [color:var(--rf-text)]">
+                <div key={f.id_formateur} className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-xs font-black text-orange-600 dark:text-orange-400">
                       {f.prenom?.[0]}{f.nom?.[0]}
                     </div>
                     <div>
-                      <p className="rf-assigned-name [margin:0] [font-size:12px] [font-weight:800] [color:var(--rf-text)]">{f.nom} {f.prenom}</p>
-                      <span className="rf-role-tag [display:inline-block] [margin-top:2px] [border-radius:6px] [background-color:var(--rf-hover)] [padding:2px_6px] [font-size:10px] [font-weight:700] [color:var(--rf-muted)]">
+                      <p className="text-xs font-bold text-zinc-900 dark:text-white">{f.nom} {f.prenom}</p>
+                      <span className="mt-0.5 inline-block rounded-md bg-zinc-200/60 px-2 py-0.5 text-[10px] font-extrabold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
                         {f.role_formateur || 'Intervenant'}
                       </span>
                     </div>
                   </div>
                   <button 
                     onClick={() => handleRemove(f.id_formateur)}
-                    className="rf-remove-btn [border-radius:10px] [padding:6px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [transition:color_0.2s] [&:hover]:[color:\#e11d48]"
+                    className="rounded-xl p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
                     title="Retirer"
                   >
                     <Trash2 size={15} />
@@ -237,18 +239,18 @@ function FormateurAssignModal({ formation, onClose }) {
           )}
         </div>
 
-        <form onSubmit={handleAssign} className="rf-assign-form [border-top:1px_solid_var(--rf-border)] [margin-top:16px] [padding:16px_20px_20px_20px] [box-sizing:border-box]">
-          <h3 className="rf-section-title [margin:0_0_10px_0] [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--rf-muted)]">
+        <form onSubmit={handleAssign} className="border-t border-zinc-100 p-5 dark:border-zinc-800">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
             Assigner un nouvel intervenant
           </h3>
           
-          <div className="rf-form-fields [display:flex] [flex-direction:column] [gap:12px] [margin-bottom:16px]">
+          <div className="space-y-3 mb-4">
             <div>
-              <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Sélectionner un formateur</label>
+              <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Sélectionner un formateur</label>
               <select 
                 value={selectedFormateur || ''} 
                 onChange={(e) => setSelectedFormateur(e.target.value)}
-                className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                className={inputClass}
                 required
               >
                 <option value="">-- Choisir dans la liste --</option>
@@ -261,22 +263,22 @@ function FormateurAssignModal({ formation, onClose }) {
             </div>
 
             <div>
-              <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Rôle attribué</label>
+              <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Rôle attribué</label>
               <input 
                 type="text" 
                 placeholder="Ex: Formateur Principal, Intervenant..." 
                 value={role || ''}
                 onChange={(e) => setRole(e.target.value)}
-                className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                className={inputClass}
               />
             </div>
           </div>
 
           <button 
             type="submit" 
-            className="rf-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [box-sizing:border-box] [&:hover]:[opacity:0.9] icon"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
           >
-            <UserPlus size={15} />
+            <UserPlus size={16} />
             <span>Affecter à la formation</span>
           </button>
         </form>
@@ -480,26 +482,26 @@ export default function ResponsableFormations() {
   }, [formations, searchTerm, sort]);
 
   return (
-    <div className="rf-container [margin:0_auto] [min-height:100vh] [max-width:1280px] [background-color:var(--rf-bg)] [padding:12px_12px_48px_12px] [color:var(--rf-text)] [font-family:inherit] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
+    <div className="mx-auto min-h-screen max-w-7xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
       
       {/* En-tête */}
-      <header className="rf-header [display:flex] [flex-direction:column] [gap:16px] [margin-bottom:24px]">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="rf-header-tag [display:flex] [align-items:center] [gap:8px] [font-size:11px] [font-weight:700] [color:var(--rf-muted)]">
-            <Sparkles size={14} className="text-orange-500" />
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+            <Sparkles size={15} />
             <span>Espace responsable</span>
           </div>
-          <h1 className="rf-title [margin:6px_0_0_0] [font-size:24px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--rf-text)]">
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
             Gestion des formations
           </h1>
-          <p className="rf-subtitle [margin:4px_0_0_0] [font-size:12px] [color:var(--rf-muted)]">
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             Planifiez, administrez et affectez les formateurs à vos programmes d'apprentissage.
           </p>
         </div>
 
         <button 
           onClick={handleOpenCreate} 
-          className="rf-create-btn [display:inline-flex] [align-items:center] [justify-content:center] [gap:8px] [border-radius:16px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:10px_18px] [font-size:12px] [font-weight:800] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [box-sizing:border-box] [&:hover]:[opacity:0.9]"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-2.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
         >
           <Plus size={16} />
           <span>Nouvelle formation</span>
@@ -507,125 +509,127 @@ export default function ResponsableFormations() {
       </header>
 
       {/* Cartes KPI */}
-      <div className="rf-kpi-grid [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:12px] [margin-bottom:24px]">
-        <div className="rf-kpi-card [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [padding:16px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-          <span className="rf-kpi-label [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [text-transform:uppercase] [letter-spacing:0.05em]">Total Formations</span>
-          <p className="rf-kpi-value [margin:8px_0_0_0] [font-size:22px] [font-weight:900] [color:var(--rf-text)]">{formations.length}</p>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className={`${cardClass} p-4`}>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Total Formations</span>
+          <p className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">{formations.length}</p>
         </div>
 
-        <div className="rf-kpi-card [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [padding:16px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-          <span className="rf-kpi-label [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [text-transform:uppercase] [letter-spacing:0.05em]">Ouvertes</span>
-          <p className="rf-kpi-value [margin:8px_0_0_0] [font-size:22px] [font-weight:900] [color:var(--rf-text)] ouverte">{formations.filter(f => f.statut === 'OUVERTE').length}</p>
+        <div className={`${cardClass} p-4`}>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Ouvertes</span>
+          <p className="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">{formations.filter(f => f.statut === 'OUVERTE').length}</p>
         </div>
 
-        <div className="rf-kpi-card [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [padding:16px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-          <span className="rf-kpi-label [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [text-transform:uppercase] [letter-spacing:0.05em]">En Cours</span>
-          <p className="rf-kpi-value [margin:8px_0_0_0] [font-size:22px] [font-weight:900] [color:var(--rf-text)] encours">{formations.filter(f => f.statut === 'EN_COURS').length}</p>
+        <div className={`${cardClass} p-4`}>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">En Cours</span>
+          <p className="mt-1 text-2xl font-black text-blue-600 dark:text-blue-400">{formations.filter(f => f.statut === 'EN_COURS').length}</p>
         </div>
 
-        <div className="rf-kpi-card [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [padding:16px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-          <span className="rf-kpi-label [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [text-transform:uppercase] [letter-spacing:0.05em]">Brouillons</span>
-          <p className="rf-kpi-value [margin:8px_0_0_0] [font-size:22px] [font-weight:900] [color:var(--rf-text)] brouillon">{formations.filter(f => f.statut === 'BROUILLON').length}</p>
+        <div className={`${cardClass} p-4`}>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Brouillons</span>
+          <p className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{formations.filter(f => f.statut === 'BROUILLON').length}</p>
         </div>
       </div>
 
       {/* Filtres & Recherche */}
-      <div className="rf-filters-bar [display:flex] [flex-direction:column] [gap:12px] [margin-bottom:24px]">
-        <div className="rf-search-wrapper [position:relative] [flex:1]">
-          <Search size={15} className="rf-search-icon [position:absolute] [left:14px] [top:50%] [transform:translateY(-50%)] [color:var(--rf-muted)]" />
-          <input 
-            value={searchTerm || ''} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            placeholder="Rechercher par titre, description ou statut..." 
-            className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s] pl-10" 
-          />
-        </div>
-        <div className="rf-sort-wrapper [position:relative] [width:100%]">
-          <select 
-            value={sort || 'recent'} 
-            onChange={(e) => setSort(e.target.value)} 
-            className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s] cursor-pointer appearance-none pr-8"
-          >
-            <option value="recent">Tri : Plus récentes</option>
-            <option value="title">Tri : Titre A-Z</option>
-            <option value="status">Tri : Par statut</option>
-          </select>
-          <ArrowUpDown size={14} className="rf-sort-icon [pointer-events:none] [position:absolute] [right:14px] [top:50%] [transform:translateY(-50%)] [color:var(--rf-muted)]" />
+      <div className={`${cardClass} p-4 sm:p-5`}>
+        <div className="grid gap-3 sm:grid-cols-[1fr_240px]">
+          <div className="relative">
+            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input 
+              value={searchTerm || ''} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              placeholder="Rechercher par titre, description ou statut..." 
+              className={`${inputClass} w-full pl-10`} 
+            />
+          </div>
+          <div className="relative">
+            <select 
+              value={sort || 'recent'} 
+              onChange={(e) => setSort(e.target.value)} 
+              className={`${inputClass} cursor-pointer appearance-none pr-8`}
+            >
+              <option value="recent">Tri : Plus récentes</option>
+              <option value="title">Tri : Titre A-Z</option>
+              <option value="status">Tri : Par statut</option>
+            </select>
+            <ArrowUpDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          </div>
         </div>
       </div>
 
       {/* Contenu */}
       {loading ? (
-        <div className="rf-loading-panel [display:flex] [height:250px] [align-items:center] [justify-content:center] [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)]">
-          <p className="rf-loading-label [font-size:12px] [font-weight:600] [color:var(--rf-muted)]">Chargement des formations...</p>
+        <div className={`${cardClass} flex h-64 items-center justify-center p-10 text-center text-xs font-semibold text-zinc-500`}>
+          Chargement des formations...
         </div>
       ) : filteredFormations.length === 0 ? (
-        <div className="rf-empty-panel [display:flex] [flex-direction:column] [align-items:center] [justify-content:center] [border-radius:24px] [border:2px_dashed_var(--rf-border)] [background-color:var(--rf-panel)] [padding:48px_24px] [text-align:center] [box-sizing:border-box]">
-          <GraduationCap size={32} className="text-slate-300 dark:text-zinc-600" />
-          <p className="rf-empty-title [margin:12px_0_4px_0] [font-size:14px] [font-weight:800] [color:var(--rf-text)]">Aucune formation trouvée</p>
-          <p className="rf-empty-desc [margin:0] [font-size:12px] [color:var(--rf-muted)]">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
+        <div className={`${cardClass} flex flex-col items-center justify-center border-dashed p-12 text-center`}>
+          <GraduationCap size={36} className="text-zinc-400" />
+          <p className="mt-3 text-sm font-bold text-zinc-800 dark:text-zinc-200">Aucune formation trouvée</p>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Ajustez vos mots clés de recherche ou ajoutez un nouveau programme.</p>
         </div>
       ) : (
         <>
           {/* Vue Desktop (Tableau complet) */}
-          <div className="rf-desktop-table-container [display:none] [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [box-shadow:0_1px_3px_var(--shadow-color)] [overflow:hidden]">
+          <div className={`${cardClass} hidden overflow-hidden md:block`}>
             <div className="overflow-x-auto">
-              <table className="rf-table [width:100%] [text-align:left] [font-size:12px] [border-collapse:collapse]">
-                <thead>
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-zinc-100 bg-zinc-50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
                   <tr>
-                    <th className="pl-5">Formation</th>
-                    <th>Statut</th>
-                    <th>Période</th>
-                    <th>Capacité</th>
-                    <th className="pr-5 text-right">Actions</th>
+                    <th className="p-4 pl-5">Formation</th>
+                    <th className="p-4">Statut</th>
+                    <th className="p-4">Période</th>
+                    <th className="p-4">Capacité</th>
+                    <th className="p-4 pr-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {filteredFormations.map((f) => (
-                    <tr key={f.id_formation} className="rf-tr [transition:background-color_0.2s] [border-bottom:1px_solid_var(--rf-border)] [&:hover]:[background-color:var(--rf-hover)]">
-                      <td className="pl-5">
-                        <div className="rf-td-title-group [display:flex] [align-items:center] [gap:12px]">
+                    <tr key={f.id_formation} className="transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30">
+                      <td className="p-4 pl-5">
+                        <div className="flex items-center gap-3">
                           {f.image_url ? (
                             <img 
                               src={getFormationImageUrl(f.image_url)}
                               alt="" 
-                              className="rf-td-img [height:40px] [width:40px] [border-radius:12px] [object-fit:cover] [border:1px_solid_var(--rf-border)] [flex-shrink:0]" 
+                              className="h-10 w-10 rounded-2xl object-cover ring-1 ring-zinc-200 dark:ring-zinc-700" 
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
                               onLoad={(e) => { e.currentTarget.style.display = ''; }}
                             />
                           ) : (
-                            <div className="rf-td-icon [display:flex] [height:40px] [width:40px] [align-items:center] [justify-content:center] [border-radius:12px] [background-color:var(--rf-subbox)] [font-weight:800] [color:var(--rf-text)] [flex-shrink:0]">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                               <GraduationCap size={18} />
                             </div>
                           )}
                           <div>
-                            <p className="rf-td-name [margin:0] [font-weight:800] [color:var(--rf-text)]">{f.titre}</p>
+                            <p className="font-bold text-zinc-900 dark:text-white">{f.titre}</p>
                             {f.description && (
-                              <p className="rf-td-desc [margin:2px_0_0_0] [max-width:240px] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis] [font-size:11px] [color:var(--rf-muted)]">
+                              <p className="mt-0.5 max-w-xs truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                                 {f.description}
                               </p>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap">
-                        <span className={`rf-table-status-badge ${getStatusBadgeClass(f.statut)}`}>
+                      <td className="p-4 whitespace-nowrap">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${getStatusBadgeClass(f.statut)}`}>
                           {f.statut}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap rf-td-date [font-size:11px] [font-weight:700] [color:var(--rf-text)]">
+                      <td className="p-4 whitespace-nowrap text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                         {f.date_debut ? new Date(f.date_debut).toLocaleDateString('fr-FR') : '-'} 
-                        <span className="separator">➔</span> 
+                        <span className="mx-1 text-zinc-400">➔</span> 
                         {f.date_fin ? new Date(f.date_fin).toLocaleDateString('fr-FR') : '-'}
                       </td>
-                      <td className="whitespace-nowrap rf-td-capacity [font-weight:600] [color:var(--rf-muted)]">
-                        <span className="bold">{f.capacite_max}</span> places
+                      <td className="p-4 whitespace-nowrap font-medium text-zinc-600 dark:text-zinc-400">
+                        <span className="font-bold text-zinc-900 dark:text-white">{f.capacite_max}</span> places
                       </td>
-                      <td className="pr-5 text-right whitespace-nowrap">
-                        <div className="rf-actions-group [display:flex] [align-items:center] [justify-content:flex-end] [gap:6px]">
+                      <td className="p-4 pr-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button 
                             onClick={() => setSelectedFormationForDetails(f)}
-                            className="rf-action-icon-btn [border-radius:10px] [padding:8px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--rf-hover)] [&:hover]:[color:var(--rf-text)]"
+                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                             title="Fiche détaillée"
                           >
                             <Info size={16} />
@@ -633,26 +637,26 @@ export default function ResponsableFormations() {
 
                           <button 
                             onClick={() => setSelectedFormationForFormateurs(f)}
-                            className="rf-action-pill-btn [display:inline-flex] [align-items:center] [gap:6px] [border-radius:10px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:6px_10px] [font-size:11px] [font-weight:800] [color:var(--rf-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--rf-hover)]"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                           >
-                            <Users size={13} />
+                            <Users size={14} />
                             <span>Formateurs</span>
                           </button>
 
                           <button 
                             onClick={() => handleOpenEdit(f)} 
-                            className="rf-action-icon-btn [border-radius:10px] [padding:8px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--rf-hover)] [&:hover]:[color:var(--rf-text)]"
+                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                             title="Modifier"
                           >
-                            <Edit3 size={15} />
+                            <Edit3 size={16} />
                           </button>
 
                           <button 
                             onClick={() => handleDelete(f)} 
-                            className="rf-action-icon-btn [border-radius:10px] [padding:8px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--rf-hover)] [&:hover]:[color:var(--rf-text)] danger"
+                            className="rounded-xl p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
                             title="Supprimer ou archiver"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -664,65 +668,68 @@ export default function ResponsableFormations() {
           </div>
 
           {/* Vue Mobile & Tablette en Grille Compacte */}
-          <div className="rf-mobile-grid [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:12px]">
+          <div className="grid grid-cols-2 gap-3 md:hidden">
             {filteredFormations.map((f) => (
-              <div key={f.id_formation} className="rf-mobile-card [display:flex] [flex-direction:column] [justify-content:space-between] [border-radius:20px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [padding:14px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
+              <div 
+                key={f.id_formation}
+                className={`${cardClass} flex flex-col justify-between p-4`}
+              >
                 <div>
-                  <div className="rf-mobile-card-top [display:flex] [align-items:center] [justify-content:space-between] [margin-bottom:8px]">
-                    <span className={`rf-status-badge ${getStatusBadgeClass(f.statut)}`}>
+                  <div className="flex items-center justify-between gap-1 mb-2">
+                    <span className={`inline-flex rounded-md px-2 py-0.5 text-[9px] font-extrabold uppercase ${getStatusBadgeClass(f.statut)}`}>
                       {f.statut}
                     </span>
-                    <span className="rf-mobile-capacity [font-size:10px] [font-weight:700] [color:var(--rf-muted)]">{f.capacite_max} max</span>
+                    <span className="text-[10px] font-bold text-zinc-400">{f.capacite_max} max</span>
                   </div>
 
-                  <div className="rf-mobile-title-group [display:flex] [align-items:center] [gap:8px] [margin-bottom:8px]">
+                  <div className="flex items-center gap-2.5 mb-2">
                     {f.image_url ? (
                       <img 
                         src={getFormationImageUrl(f.image_url)}
                         alt="" 
-                        className="rf-mobile-img [height:36px] [width:36px] [border-radius:10px] [object-fit:cover] [flex-shrink:0] [border:1px_solid_var(--rf-border)]" 
+                        className="h-9 w-9 rounded-xl object-cover shrink-0" 
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         onLoad={(e) => { e.currentTarget.style.display = ''; }}
                       />
                     ) : (
-                      <div className="rf-mobile-icon [display:flex] [height:36px] [width:36px] [align-items:center] [justify-content:center] [border-radius:10px] [background-color:var(--rf-subbox)] [font-weight:800] [color:var(--rf-text)] [flex-shrink:0]">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 shrink-0">
                         <GraduationCap size={16} />
                       </div>
                     )}
-                    <h3 className="rf-mobile-name [margin:0] [font-size:12px] [font-weight:800] [color:var(--rf-text)] [display:-webkit-box] [-webkit-line-clamp:2] [line-clamp:2] [-webkit-box-orient:vertical] [overflow:hidden]">
+                    <h3 className="text-xs font-bold text-zinc-900 dark:text-white line-clamp-2">
                       {f.titre}
                     </h3>
                   </div>
 
-                  <p className="rf-mobile-description [margin:0_0_12px_0] [font-size:10px] [color:var(--rf-muted)] [display:-webkit-box] [-webkit-line-clamp:1] [line-clamp:1] [-webkit-box-orient:vertical] [overflow:hidden]">
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-1 mb-3">
                     {f.description || 'Aucune description'}
                   </p>
                 </div>
 
-                <div className="rf-mobile-footer [border-top:1px_solid_var(--rf-border)] [padding-top:8px] [display:flex] [align-items:center] [justify-content:space-between] [gap:4px]">
+                <div className="border-t border-zinc-100 pt-2.5 dark:border-zinc-800 flex items-center justify-between gap-1">
                   <button 
                     onClick={() => setSelectedFormationForDetails(f)} 
-                    className="rf-mobile-details-btn [flex:1] [border-radius:10px] [background-color:var(--rf-subbox)] [padding:6px_0] [font-size:10px] [font-weight:800] [color:var(--rf-text)] [border:none] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--rf-hover)]"
+                    className="flex-1 rounded-xl bg-zinc-100 py-1.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                   >
                     Détails
                   </button>
                   <button 
                     onClick={() => setSelectedFormationForFormateurs(f)} 
-                    className="rf-mobile-icon-action [border-radius:10px] [border:1px_solid_var(--rf-border)] [padding:6px] [background-color:var(--rf-subbox)] [color:var(--rf-text)] [cursor:pointer] [display:flex] [align-items:center] [justify-content:center]"
+                    className="rounded-xl border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     title="Formateurs"
                   >
                     <Users size={14} />
                   </button>
                   <button 
                     onClick={() => handleOpenEdit(f)} 
-                    className="rf-mobile-icon-action [border-radius:10px] [border:1px_solid_var(--rf-border)] [padding:6px] [background-color:var(--rf-subbox)] [color:var(--rf-text)] [cursor:pointer] [display:flex] [align-items:center] [justify-content:center]"
+                    className="rounded-xl border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     title="Modifier"
                   >
                     <Edit3 size={14} />
                   </button>
                   <button 
                     onClick={() => handleDelete(f)} 
-                    className="rf-mobile-icon-action [border-radius:10px] [border:1px_solid_var(--rf-border)] [padding:6px] [background-color:var(--rf-subbox)] [color:var(--rf-text)] [cursor:pointer] [display:flex] [align-items:center] [justify-content:center] danger"
+                    className="rounded-xl border border-zinc-200 p-1.5 text-rose-600 hover:bg-rose-500/10 dark:border-zinc-700 dark:bg-zinc-800 dark:text-rose-400"
                     title="Supprimer ou archiver"
                   >
                     <Trash2 size={14} />
@@ -736,24 +743,24 @@ export default function ResponsableFormations() {
 
       {/* Modal Création & Édition Formation */}
       {showModal && (
-        <div className="rf-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={() => setShowModal(false)}>
-          <div className="rf-modal-card [width:100%] [max-width:480px] [border-radius:24px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-panel)] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [overflow:hidden] [box-sizing:border-box] max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" onClick={() => setShowModal(false)}>
+          <div className={`${cardClass} max-h-[90vh] w-full max-w-lg overflow-y-auto p-5 sm:p-6`} onClick={(e) => e.stopPropagation()}>
             
-            <div className="rf-modal-header [display:flex] [align-items:flex-start] [justify-content:space-between] [border-bottom:1px_solid_var(--rf-border)] [padding:20px] [box-sizing:border-box]">
-              <h2 className="rf-modal-heading [margin:0] [font-size:16px] [font-weight:900] [color:var(--rf-text)]">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+              <h2 className="text-base font-black text-zinc-900 dark:text-white">
                 {editingId ? "Modifier la formation" : "Nouvelle formation"}
               </h2>
               <button 
                 onClick={() => setShowModal(false)}
-                className="rf-modal-close-btn [border-radius:10px] [padding:6px] [background:none] [border:none] [cursor:pointer] [color:var(--rf-muted)] [&:hover]:[color:var(--rf-text)] [&:hover]:[background-color:var(--rf-hover)]"
+                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="rf-form-space [padding:20px] [display:flex] [flex-direction:column] [gap:12px] [box-sizing:border-box]">
+            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div>
-                <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Titre de la formation</label>
+                <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Titre de la formation</label>
                 <input 
                   type="text" 
                   name="titre" 
@@ -761,12 +768,12 @@ export default function ResponsableFormations() {
                   value={formData.titre ?? ''} 
                   onChange={handleChange}
                   placeholder="Ex: Devenir Développeur Full-Stack"
-                  className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                  className={inputClass} 
                 />
               </div>
 
               <div>
-                <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Description</label>
+                <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Description</label>
                 <textarea 
                   name="description" 
                   required 
@@ -774,15 +781,15 @@ export default function ResponsableFormations() {
                   value={formData.description ?? ''} 
                   onChange={handleChange}
                   placeholder="Présentation générale des objectifs..."
-                  className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s] resize-none" 
+                  className={`${inputClass} resize-none`} 
                 />
               </div>
 
               {/* Section Image (Fichier ou URL) */}
-              <div className="rf-image-section [border-radius:16px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px]">
-                <div className="rf-image-header [display:flex] [align-items:center] [justify-content:space-between] [margin-bottom:8px]">
-                  <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px] mb-0">Image de couverture</label>
-                  <div className="rf-toggle-tabs [display:flex] [gap:4px] [border-radius:10px] [background-color:var(--rf-border)] [padding:2px]">
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800/80 dark:bg-zinc-800/40">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-zinc-600 dark:text-zinc-300">Image de couverture</label>
+                  <div className="flex gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-700">
                     <button
                       type="button"
                       onClick={() => {
@@ -793,7 +800,7 @@ export default function ResponsableFormations() {
                         setImagePreviewUrl('');
                         setImageInputType('url');
                       }}
-                      className={`rf-toggle-tab ${imageInputType === 'url' ? 'active' : ''}`}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'url' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
                     >
                       <LinkIcon size={12} />
                       <span>URL</span>
@@ -801,7 +808,7 @@ export default function ResponsableFormations() {
                     <button
                       type="button"
                       onClick={() => setImageInputType('file')}
-                      className={`rf-toggle-tab ${imageInputType === 'file' ? 'active' : ''}`}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${imageInputType === 'file' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
                     >
                       <Upload size={12} />
                       <span>Fichier</span>
@@ -816,23 +823,23 @@ export default function ResponsableFormations() {
                     value={formData.image_url ?? ''} 
                     onChange={handleChange}
                     placeholder="https://images.unsplash.com/photo-..."
-                    className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                    className={inputClass} 
                   />
                 ) : (
                   <input 
                     type="file" 
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="rf-file-input [width:100%] [font-size:11px] [color:var(--rf-muted)]" 
+                    className="w-full text-xs text-zinc-500 file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-200 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-zinc-700 hover:file:bg-zinc-300 dark:text-zinc-400 dark:file:bg-zinc-700 dark:file:text-zinc-200" 
                   />
                 )}
 
                 {imagePreviewUrl || formData.image_url ? (
-                  <div className="rf-preview-box [margin-top:8px] [height:96px] [width:100%] [overflow:hidden] [border-radius:12px] [border:1px_solid_var(--rf-border)]">
+                  <div className="relative mt-2.5 h-24 w-full overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
                     <img
                       src={getFormationImageUrl(imagePreviewUrl || formData.image_url)}
                       alt="Aperçu"
-                      className="rf-preview-img [height:100%] [width:100%] [object-fit:cover]"
+                      className="h-full w-full object-cover"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       onLoad={(e) => { e.currentTarget.style.display = ''; }}
                     />
@@ -840,9 +847,9 @@ export default function ResponsableFormations() {
                 ) : null}
               </div>
 
-              <div className="rf-form-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Date de début</label>
+                  <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Date de début</label>
                   <input 
                     type="date" 
                     name="date_debut" 
@@ -850,11 +857,11 @@ export default function ResponsableFormations() {
                     value={formData.date_debut ?? ''} 
                     onChange={handleChange}
                     disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
-                    className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                    className={inputClass} 
                   />
                 </div>
                 <div>
-                  <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Date de fin</label>
+                  <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Date de fin</label>
                   <input 
                     type="date" 
                     name="date_fin" 
@@ -862,14 +869,14 @@ export default function ResponsableFormations() {
                     value={formData.date_fin ?? ''} 
                     onChange={handleChange}
                     disabled={editingId && ['TERMINEE', 'ARCHIVEE'].includes(editingStatus)}
-                    className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                    className={inputClass} 
                   />
                 </div>
               </div>
 
-              <div className="rf-form-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Limite candidature</label>
+                  <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Limite candidature</label>
                   <input 
                     type="date" 
                     name="date_limite_inscription" 
@@ -877,11 +884,11 @@ export default function ResponsableFormations() {
                     value={formData.date_limite_inscription ?? ''} 
                     onChange={handleChange}
                     disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
-                    className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                    className={inputClass} 
                   />
                 </div>
                 <div>
-                  <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Capacité Max</label>
+                  <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Capacité Max</label>
                   <input 
                     type="number" 
                     name="capacite_max" 
@@ -889,19 +896,19 @@ export default function ResponsableFormations() {
                     value={formData.capacite_max ?? 20} 
                     onChange={handleChange}
                     disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
-                    className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]" 
+                    className={inputClass} 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="rf-field-label [display:block] [font-size:11px] [font-weight:700] [color:var(--rf-muted)] [margin-bottom:4px]">Statut</label>
+                <label className="mb-1 block text-xs font-bold text-zinc-600 dark:text-zinc-300">Statut</label>
                 <select 
                   name="statut" 
                   value={formData.statut ?? 'BROUILLON'} 
                   onChange={handleChange}
                   disabled={editingId && !['BROUILLON', 'OUVERTE'].includes(editingStatus)}
-                  className="rf-input [width:100%] [border-radius:14px] [border:1px_solid_var(--rf-border)] [background-color:var(--rf-subbox)] [padding:12px_14px] [font-size:12px] [font-weight:600] [color:var(--rf-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                  className={inputClass}
                 >
                   <option value="BROUILLON">BROUILLON</option>
                   <option value="OUVERTE">OUVERTE</option>
@@ -914,9 +921,9 @@ export default function ResponsableFormations() {
               <button 
                 type="submit" 
                 disabled={uploadingImage}
-                className="rf-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [box-sizing:border-box] [&:hover]:[opacity:0.9] icon mt-2"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400 disabled:opacity-50"
               >
-                {uploadingImage && <RefreshCw size={14} className="animate-spin" />}
+                {uploadingImage && <RefreshCw size={15} className="animate-spin" />}
                 <span>{uploadingImage ? "Téléversement..." : editingId ? "Mettre à jour" : "Créer la formation"}</span>
               </button>
             </form>

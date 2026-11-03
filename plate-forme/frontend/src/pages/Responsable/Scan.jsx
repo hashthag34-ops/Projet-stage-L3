@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, QrCode, RefreshCw, XCircle } from 'lucide-react';
 import API from '../../services/api';
+
+const inputClass = 'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500';
+const cardClass = 'rounded-3xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900';
+
 const toLocalDate = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -121,52 +125,90 @@ export default function Scan() {
   const pendingLearners = learners.filter((learner) => !['PRESENT', 'ABSENT'].includes(learner.statut_presence));
 
   return (
-    <div className="fs-container [margin:0_auto] [min-height:100vh] [max-width:680px] [background-color:var(--fs-bg)] [padding:16px_12px_48px_12px] [color:var(--fs-text)] [font-family:inherit] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
-      <style>{`#reader button { background:#f97316!important;color:#18181b!important;border:0!important;border-radius:12px!important;padding:8px 16px!important } #reader img[alt="Info icon"]{display:none!important}`}</style>
-      <div className="fs-header-card [margin-bottom:20px] [display:flex] [align-items:center] [gap:14px] [border-radius:20px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-        <div className="fs-header-icon-wrap [display:flex] [height:48px] [width:48px] [flex-shrink:0] [align-items:center] [justify-content:center] [border-radius:16px] [background-color:var(--orange-primary)] [color:\#18181b] [box-shadow:0_4px_12px_rgba(249,_115,_22,_0.3)]"><QrCode size={26} /></div>
-        <div><h1 className="fs-title [margin:0] [font-size:18px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--fs-text)]">Gestion des présences</h1><p className="fs-subtitle [margin:4px_0_0_0] [font-size:11px] [color:var(--fs-muted)]">Sélectionnez une séance pour effectuer ou consulter l’émargement</p></div>
+    <div className="mx-auto min-h-screen max-w-2xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
+      <style>{`#reader button { background:#f97316!important;color:#09090b!important;border:0!important;border-radius:12px!important;padding:8px 16px!important;font-weight:800!important;cursor:pointer!important; } #reader img[alt="Info icon"]{display:none!important}`}</style>
+      
+      {/* En-tête */}
+      <div className={`${cardClass} flex items-center gap-4 p-5 sm:p-6`}>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-zinc-950 shadow-md shadow-orange-500/20">
+          <QrCode size={26} />
+        </div>
+        <div>
+          <h1 className="text-lg font-black tracking-tight text-zinc-900 dark:text-white sm:text-xl">Gestion des présences</h1>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Sélectionnez une séance pour effectuer ou consulter l’émargement</p>
+        </div>
       </div>
 
       {!selectedSeance ? (
-        <div className="fs-main-panel [border-radius:24px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_10px_30px_var(--shadow-color)] [box-sizing:border-box]">
-          <div className="fs-select-header [display:flex] [align-items:center] [justify-content:space-between] [margin-bottom:8px]"><label className="fs-label [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fs-muted)]"><Calendar size={14} /> Toutes les séances</label></div>
-          {loading ? <div className="fs-loading-box [border-radius:14px] [border:1px_solid_var(--fs-border)] [padding:12px] [text-align:center] [font-size:12px] [color:var(--fs-muted)] [background-color:var(--fs-subbox)]">Chargement des séances...</div> : (
-            <div className="fs-seance-list [display:grid] [gap:10px]">
+        <div className={`${cardClass} p-5 sm:p-6`}>
+          <div className="mb-4 flex items-center justify-between">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              <Calendar size={15} /> Toutes les séances
+            </label>
+          </div>
+          {loading ? (
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40">
+              Chargement des séances...
+            </div>
+          ) : (
+            <div className="grid gap-3">
               {seances.map((seance) => (
-                <button key={seance.id_seance} type="button" className="fs-seance-card [width:100%] [display:grid] [grid-template-columns:minmax(0,_1fr)_auto_18px] [align-items:center] [gap:12px] [border:1px_solid_var(--fs-border)] [border-radius:14px] [background:var(--fs-subbox)] [padding:14px] [color:var(--fs-text)] [text-align:left] [cursor:pointer] [&:hover]:[border-color:var(--orange-primary)]" onClick={() => openSeance(seance)}>
-                  <span className="fs-seance-main [display:flex] [flex-direction:column] [gap:3px]">
-                    <strong>{seance.titre || `Séance #${seance.id_seance}`}</strong>
-                    <small>{seance.formation_titre}</small>
+                <button 
+                  key={seance.id_seance} 
+                  type="button" 
+                  className="group grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left text-zinc-900 transition hover:border-orange-500 hover:bg-white dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:hover:border-orange-500" 
+                  onClick={() => openSeance(seance)}
+                >
+                  <span className="flex flex-col gap-1 min-w-0">
+                    <strong className="truncate text-xs font-bold text-zinc-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400">{seance.titre || `Séance #${seance.id_seance}`}</strong>
+                    <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">{seance.formation_titre}</span>
                   </span>
-                  <span className="fs-seance-meta [display:flex] [flex-direction:column] [gap:3px] [color:var(--fs-muted)] [font-size:11px]">
-                    {toLocalDate(seance.date_seance) === today && <span className="fs-today-badge [width:fit-content] [border-radius:999px] [background:var(--orange-primary)] [padding:2px_8px] [color:\#18181b] [font-weight:800]">Aujourd’hui</span>}
+                  <span className="flex flex-col items-end gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 shrink-0">
+                    {toLocalDate(seance.date_seance) === today && <span className="rounded-full bg-orange-500 px-2.5 py-0.5 text-[10px] font-black text-zinc-950">Aujourd’hui</span>}
                     <span>{formatDate(seance.date_seance)}</span>
-                    <span><Clock size={13} /> {seance.heure_debut?.slice(0, 5)} - {seance.heure_fin?.slice(0, 5)}</span>
+                    <span className="flex items-center gap-1 font-semibold"><Clock size={12} /> {seance.heure_debut?.slice(0, 5)} - {seance.heure_fin?.slice(0, 5)}</span>
                   </span>
-                  <span className="fs-seance-arrow [font-size:28px] [color:var(--orange-primary)]">›</span>
+                  <span className="text-lg font-black text-orange-500">›</span>
                 </button>
               ))}
-              {!seances.length && <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Aucune séance programmée.</p>}
+              {!seances.length && <p className="p-8 text-center text-xs text-zinc-500">Aucune séance programmée.</p>}
             </div>
           )}
         </div>
       ) : (
-        <div className="fs-main-panel [border-radius:24px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-panel)] [padding:20px] [box-shadow:0_10px_30px_var(--shadow-color)] [box-sizing:border-box]">
-          <button type="button" className="fs-filter-toggle [font-size:11px] [font-weight:700] [color:var(--orange-primary)] [background:none] [border:none] [cursor:pointer] [&:hover]:[text-decoration:underline]" onClick={() => setSelectedSeance(null)}>← Retour aux séances</button>
-          <div className="fs-details-banner [margin-bottom:20px] [display:flex] [flex-wrap:wrap] [align-items:center] [justify-content:space-between] [gap:12px] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)] [padding:14px_16px] [box-sizing:border-box]">
-            <div><span className="fs-details-badge [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:2px_8px] [font-size:10px] [font-weight:800] [color:var(--orange-primary)] [flex-shrink:0]">{selectedSeance.type_seance || 'Séance'}</span><strong>{selectedSeance.titre || selectedSeance.formation_titre}</strong></div>
-            <div className="fs-details-right [display:flex] [align-items:center] [gap:12px] [font-size:11px] [color:var(--fs-muted)] [flex-shrink:0]"><span><Calendar size={13} /> {formatDate(selectedSeance.date_seance)}</span><span><Clock size={13} /> {selectedSeance.heure_debut?.slice(0, 5)} - {selectedSeance.heure_fin?.slice(0, 5)}</span>{selectedSeance.salle && <span><MapPin size={13} /> {selectedSeance.salle}</span>}</div>
+        <div className={`${cardClass} space-y-5 p-5 sm:p-6`}>
+          <button 
+            type="button" 
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 transition hover:underline dark:text-orange-400" 
+            onClick={() => setSelectedSeance(null)}
+          >
+            ← Retour aux séances
+          </button>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+            <div className="flex items-center gap-2.5">
+              <span className="rounded-lg bg-orange-500/10 px-2.5 py-1 text-[10px] font-black uppercase text-orange-600 dark:text-orange-400">{selectedSeance.type_seance || 'Séance'}</span>
+              <strong className="text-xs font-bold text-zinc-900 dark:text-white">{selectedSeance.titre || selectedSeance.formation_titre}</strong>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <span className="flex items-center gap-1"><Calendar size={13} /> {formatDate(selectedSeance.date_seance)}</span>
+              <span className="flex items-center gap-1"><Clock size={13} /> {selectedSeance.heure_debut?.slice(0, 5)} - {selectedSeance.heure_fin?.slice(0, 5)}</span>
+              {selectedSeance.salle && <span className="flex items-center gap-1"><MapPin size={13} /> {selectedSeance.salle}</span>}
+            </div>
           </div>
 
           {closed ? (
-            <div className="fs-manual-container [display:flex] [flex-direction:column] [gap:12px]">
-              <h2 className="fs-label [font-size:11px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fs-muted)]">Présences clôturées</h2>
-              <div className="fs-manual-scroll [max-height:320px] [overflow-y:auto] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)]">
+            <div className="space-y-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Présences clôturées</h2>
+              <div className="max-h-80 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/40 divide-y divide-zinc-200 dark:divide-zinc-800">
                 {learners.map((learner) => (
-                  <div key={learner.id_apprenant} className="fs-learner-row [display:flex] [cursor:pointer] [align-items:center] [gap:12px] [border-bottom:1px_solid_var(--fs-border)] [padding:12px_16px] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fs-hover)] fs-closed-row [justify-content:space-between]">
-                    <span className="fs-learner-name [min-width:0] [flex:1] [font-size:12px] [font-weight:700] [color:var(--fs-text)]">{learner.prenom} {learner.nom}</span>
-                    <select value={learner.statut_presence || 'ABSENT'} onChange={(event) => updateClosedStatus(learner.id_apprenant, event.target.value)}>
+                  <div key={learner.id_apprenant} className="flex items-center justify-between gap-3 p-3.5 transition hover:bg-zinc-100 dark:hover:bg-zinc-800/60">
+                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{learner.prenom} {learner.nom}</span>
+                    <select 
+                      value={learner.statut_presence || 'ABSENT'} 
+                      onChange={(event) => updateClosedStatus(learner.id_apprenant, event.target.value)}
+                      className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    >
                       <option value="PRESENT">Présent</option>
                       <option value="ABSENT">Absent</option>
                     </select>
@@ -176,34 +218,79 @@ export default function Scan() {
             </div>
           ) : (
             <>
-              <div className="fs-mode-tabs [margin-bottom:16px] [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:4px] [border-radius:14px] [background-color:var(--fs-subbox)] [padding:4px] [border:1px_solid_var(--fs-border)]">
-                <button type="button" onClick={() => setAttendanceMode('scan')} className={`fs-tab-btn ${attendanceMode === 'scan' ? 'active' : ''}`}>Scan QR</button>
-                <button type="button" onClick={() => setAttendanceMode('manual')} className={`fs-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}>Présence manuelle</button>
+              <div className="grid grid-cols-2 gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-800/40">
+                <button 
+                  type="button" 
+                  onClick={() => setAttendanceMode('scan')} 
+                  className={`rounded-xl py-2 text-xs font-bold transition ${attendanceMode === 'scan' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                >
+                  Scan QR
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setAttendanceMode('manual')} 
+                  className={`rounded-xl py-2 text-xs font-bold transition ${attendanceMode === 'manual' ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                >
+                  Présence manuelle
+                </button>
               </div>
+
               {attendanceMode === 'scan' ? (
-                <div className="fs-scanner-space [display:flex] [flex-direction:column] [gap:16px]"><div className="fs-reader-box [overflow:hidden] [border-radius:20px] [border:2px_dashed_rgba(249,_115,_22,_0.4)] [background-color:var(--fs-subbox)] [padding:8px] [box-sizing:border-box]"><div id="reader" /></div></div>
+                <div className="overflow-hidden rounded-2xl border-2 border-dashed border-orange-500/40 bg-zinc-50 p-2 dark:bg-zinc-800/40">
+                  <div id="reader" />
+                </div>
               ) : (
-                <div className="fs-manual-container [display:flex] [flex-direction:column] [gap:12px]">
-                  <div className="fs-manual-scroll [max-height:320px] [overflow-y:auto] [border-radius:16px] [border:1px_solid_var(--fs-border)] [background-color:var(--fs-subbox)]">
-                    {attendanceLoading ? <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Chargement...</p> : pendingLearners.map((learner) => (
-                      <label key={learner.id_apprenant} className="fs-learner-row [display:flex] [cursor:pointer] [align-items:center] [gap:12px] [border-bottom:1px_solid_var(--fs-border)] [padding:12px_16px] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fs-hover)]">
-                        <input type="checkbox" checked={manualSelected.includes(learner.id_apprenant)} onChange={() => setManualSelected((current) => current.includes(learner.id_apprenant) ? current.filter((id) => id !== learner.id_apprenant) : [...current, learner.id_apprenant])} />
-                        <span className="fs-learner-name [min-width:0] [flex:1] [font-size:12px] [font-weight:700] [color:var(--fs-text)]">{learner.prenom} {learner.nom}</span>
-                        <span className="fs-learner-mail [font-size:11px] [color:var(--fs-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis] [max-width:150px]">{learner.email}</span>
+                <div className="space-y-3">
+                  <div className="max-h-80 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/40 divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {attendanceLoading ? (
+                      <p className="p-8 text-center text-xs text-zinc-500">Chargement...</p>
+                    ) : pendingLearners.map((learner) => (
+                      <label key={learner.id_apprenant} className="flex cursor-pointer items-center gap-3 p-3.5 transition hover:bg-zinc-100 dark:hover:bg-zinc-800/60">
+                        <input 
+                          type="checkbox" 
+                          checked={manualSelected.includes(learner.id_apprenant)} 
+                          onChange={() => setManualSelected((current) => current.includes(learner.id_apprenant) ? current.filter((id) => id !== learner.id_apprenant) : [...current, learner.id_apprenant])} 
+                          className="h-4 w-4 rounded border-zinc-300 text-orange-500 focus:ring-orange-500 dark:border-zinc-700"
+                        />
+                        <span className="flex-1 truncate text-xs font-bold text-zinc-900 dark:text-white">{learner.prenom} {learner.nom}</span>
+                        <span className="max-w-[140px] truncate text-[11px] text-zinc-500 dark:text-zinc-400">{learner.email}</span>
                       </label>
                     ))}
-                    {!pendingLearners.length && !attendanceLoading && <p className="fs-manual-loading [padding:32px] [text-align:center] [font-size:12px] [color:var(--fs-muted)]">Tous les apprenants ont été marqués présents.</p>}
+                    {!pendingLearners.length && !attendanceLoading && <p className="p-8 text-center text-xs text-zinc-500">Tous les apprenants ont été marqués présents.</p>}
                   </div>
-                  <button type="button" className="fs-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s]" disabled={!manualSelected.length} onClick={saveManual}>Enregistrer les présences sélectionnées</button>
+                  <button 
+                    type="button" 
+                    className="w-full rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400 disabled:opacity-50" 
+                    disabled={!manualSelected.length} 
+                    onClick={saveManual}
+                  >
+                    Enregistrer les présences sélectionnées
+                  </button>
                 </div>
               )}
-              <button type="button" className="fs-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] fs-close-attendance [margin-top:16px]" disabled={closing} onClick={closeAttendance}>
+
+              <button 
+                type="button" 
+                className="w-full rounded-2xl bg-zinc-900 py-3 text-xs font-black text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700" 
+                disabled={closing} 
+                onClick={closeAttendance}
+              >
                 {closing ? 'Clôture...' : 'Terminer le pointage'}
               </button>
             </>
           )}
 
-          {scanMessage.text && <div className={`fs-scan-alert ${scanMessage.type}`}><div className="fs-alert-content [display:flex] [align-items:center] [gap:10px] [min-width:0]">{scanMessage.type === 'success' ? <CheckCircle2 size={20} /> : scanMessage.type === 'error' ? <XCircle size={20} /> : <AlertCircle size={20} />}<span>{scanMessage.text}</span></div><button className="fs-alert-close [background:none] [border:none] [cursor:pointer] [color:inherit] [opacity:0.7] [padding:4px] [&:hover]:[opacity:1]" onClick={() => setScanMessage({ type: '', text: '' })}><RefreshCw size={15} /></button></div>}
+          {scanMessage.text && (
+            <div className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold ${scanMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20' : scanMessage.type === 'error' ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20' : 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20'}`}>
+              <div className="flex items-center gap-2.5">
+                {scanMessage.type === 'success' ? <CheckCircle2 size={18} /> : scanMessage.type === 'error' ? <XCircle size={18} /> : <AlertCircle size={18} />}
+                <span>{scanMessage.text}</span>
+              </div>
+              <button className="rounded-lg p-1 opacity-70 hover:opacity-100" onClick={() => setScanMessage({ type: '', text: '' })}>
+                <RefreshCw size={14} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

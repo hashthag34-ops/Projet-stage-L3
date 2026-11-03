@@ -1,6 +1,7 @@
 // frontend/src/pages/Formateur/Apprenants.jsx
 import { useEffect, useMemo, useState } from 'react';
-import API from '../../services/api';
+import API from '../../services/api';
+import { Search, ChevronDown, Users, BookOpen, Eye, Mail, X, Plus, GraduationCap } from 'lucide-react';
 
 const formatRate = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`;
 const formatDate = (value) => value ? String(value).slice(0, 10).split('-').reverse().join('/') : '—';
@@ -15,23 +16,26 @@ const getAvatarSrc = (user) => {
   return `${BACKEND_URL}/uploads/avatars/${avatar}`;
 };
 
+const cardClass = 'rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6';
+const inputClass = 'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500';
+
 function UserAvatar({ user, size = "md" }) {
   const avatar = getAvatarSrc(user);
-  const sizeClass = `avatar-${size}`;
+  const sizeClasses = size === 'lg' ? 'h-12 w-12 text-sm' : 'h-10 w-10 text-xs';
 
   if (avatar) {
     return (
       <img
         src={avatar}
         alt={`${user.prenom || ''} ${user.nom || ''}`}
-        className={`user-avatar object-cover ${sizeClass}`}
+        className={`rounded-2xl object-cover shrink-0 ${sizeClasses}`}
       />
     );
   }
 
   const initials = `${user?.prenom?.[0] || ''}${user?.nom?.[0] || ''}`.toUpperCase();
   return (
-    <div className={`user-avatar-initials ${sizeClass}`}>
+    <div className={`flex items-center justify-center rounded-2xl bg-orange-500/10 font-black text-orange-600 dark:text-orange-400 shrink-0 ${sizeClasses}`}>
       {initials || 'U'}
     </div>
   );
@@ -140,132 +144,170 @@ export default function FormateurApprenants() {
   };
 
   return (
-    <div className="apprenants-container [display:flex] [flex-direction:column] [gap:24px] [padding:12px_12px_48px_12px] [max-width:1280px] [margin:0_auto] [font-family:inherit] [color:var(--app-text)] [background-color:var(--app-bg)] [box-sizing:border-box] [min-height:100vh] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-3 py-4 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6 sm:py-6">
       
-      {/* En-tête style Datix */}
-      <div className="apprenants-header-card [display:flex] [flex-direction:column] [gap:16px] [background-color:var(--app-panel)] [padding:20px] [border-radius:24px] [border:1px_solid_var(--app-border)] [box-shadow:0_1px_3px_var(--shadow-color)] [box-sizing:border-box]">
-        <div className="apprenants-header-title-box [display:flex] [align-items:center] [gap:12px]">
-          <div className="apprenants-header-icon [display:flex] [height:40px] [width:40px] [flex-shrink:0] [align-items:center] [justify-content:center] [border-radius:16px] [background-color:var(--orange-bg-light)] [color:var(--orange-primary)]">
-            <i className="bi bi-people text-lg"></i>
+      {/* En-tête */}
+      <header className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-950 p-5 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500/20 text-orange-400">
+            <Users size={24} />
           </div>
           <div>
-            <h1 className="apprenants-title [margin:0] [font-size:18px] [font-weight:800] [letter-spacing:-0.025em] [color:var(--app-text)]">
-              Users Management
-            </h1>
-            <p className="apprenants-subtitle [margin:2px_0_0_0] [font-size:12px] [color:var(--app-muted)]">Consultez les apprenants et gérez les dossiers par formation.</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 sm:text-xs">Formateur</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Gestion des apprenants</h1>
+            <p className="mt-1 text-xs text-zinc-300 sm:text-sm">Consultez les apprenants et gérez les dossiers par formation.</p>
           </div>
         </div>
+      </header>
 
-        {/* Recherche et Filtre */}
-        <div className="apprenants-controls-box [display:flex] [flex-wrap:wrap] [align-items:center] [gap:12px]">
-          <div className="apprenants-search-wrapper [position:relative] [width:100%]">
-            <i className="bi bi-search search-icon [position:absolute] [left:14px] [top:50%] [transform:translateY(-50%)] [color:var(--app-muted)] [font-size:12px]"></i>
+      {/* Recherche et Filtre */}
+      <section className={`${cardClass} space-y-4`}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search Here..."
-              className="apprenants-search-input [width:100%] [border-radius:9999px] [background-color:var(--app-subbox)] [border:1px_solid_var(--app-border)] [padding:10px_14px_10px_36px] [font-size:12px] [color:var(--app-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+              placeholder="Rechercher un apprenant..."
+              className={`${inputClass} pl-10`}
             />
           </div>
 
-          <div className="apprenants-select-wrapper [position:relative] [width:100%]">
+          <div className="relative">
             <select
               value={formationFilter}
               onChange={(event) => setFormationFilter(event.target.value)}
-              className="apprenants-select [appearance:none] [width:100%] [border-radius:9999px] [background-color:var(--app-subbox)] [border:1px_solid_var(--app-border)] [padding:10px_32px_10px_16px] [font-size:12px] [color:var(--app-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+              className={`${inputClass} appearance-none pr-10`}
             >
               <option value="">Toutes les formations</option>
               {formations.map((formation) => (
                 <option key={formation.id} value={formation.id}>{formation.titre}</option>
               ))}
             </select>
-            <i className="bi bi-chevron-down select-chevron [pointer-events:none] [position:absolute] [right:14px] [top:50%] [transform:translateY(-50%)] [color:var(--app-muted)] [font-size:10px]"></i>
+            <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           </div>
         </div>
-      </div>
+      </section>
 
-      <section className="apprenants-attendance-section [border:1px_solid_var(--app-border)] [border-radius:24px] [background:var(--app-panel)] [padding:20px]">
-        <div className="apprenants-attendance-header [display:flex] [flex-direction:column] [gap:14px] [margin-bottom:16px]">
+      {/* Section Taux de présence */}
+      <section className={cardClass}>
+        <div className="flex flex-col gap-4 mb-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2>Taux de présence</h2>
-            <p>Consultez les présences par formation, séance ou apprenant.</p>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Taux de présence</h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Consultez les présences par formation, séance ou apprenant.</p>
           </div>
-          <div className="apprenants-attendance-tabs [display:flex] [flex-wrap:wrap] [gap:8px]">
-            <button type="button" className={attendanceView === 'formation' ? 'active' : ''} onClick={() => setAttendanceView('formation')}>Par formation</button>
-            <button type="button" className={attendanceView === 'seance' ? 'active' : ''} onClick={() => setAttendanceView('seance')}>Par séance</button>
-            <button type="button" className={attendanceView === 'apprenant' ? 'active' : ''} onClick={() => setAttendanceView('apprenant')}>Par apprenant</button>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              ['formation', 'Par formation'],
+              ['seance', 'Par séance'],
+              ['apprenant', 'Par apprenant']
+            ].map(([view, label]) => (
+              <button
+                key={view}
+                type="button"
+                onClick={() => setAttendanceView(view)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${attendanceView === view ? 'bg-orange-500 text-zinc-950 shadow-xs' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
         {attendanceView === 'formation' && (
-          <div className="apprenants-attendance-grid [display:grid] [gap:12px] [grid-template-columns:repeat(auto-fit,_minmax(220px,_1fr))]">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {attendanceStats.formations.map((formation) => (
-              <div className="apprenants-attendance-card [display:flex] [flex-direction:column] [gap:5px] [border-radius:16px] [border:1px_solid_var(--app-border)] [background:var(--app-subbox)] [padding:16px]" key={formation.id_formation}>
-                <strong>{formation.formation_titre}</strong>
-                <span>{formatRate(formation.taux_presence)} présents</span>
-                <small>{formation.presents} présents · {formation.absents} absents</small>
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40" key={formation.id_formation}>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-white truncate">{formation.formation_titre}</h3>
+                <p className="mt-2 text-lg font-black text-orange-600 dark:text-orange-400">{formatRate(formation.taux_presence)} <span className="text-xs font-bold text-zinc-400">présents</span></p>
+                <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">{formation.presents} présents · {formation.absents} absents</p>
               </div>
             ))}
           </div>
         )}
+
         {attendanceView === 'seance' && (
-          <div className="apprenants-attendance-table-wrap [overflow-x:auto]">
-            <table className="apprenants-attendance-table [width:100%] [border-collapse:collapse] [font-size:12px]">
-              <thead><tr><th>Séance</th><th>Formation</th><th>Date</th><th>Présence</th></tr></thead>
-              <tbody>{attendanceStats.seances.map((seance) => (
-                <tr key={seance.id_seance}>
-                  <td>{seance.seance_titre || `Séance #${seance.id_seance}`}</td>
-                  <td>{seance.formation_titre}</td>
-                  <td>{formatDate(seance.date_seance)}</td>
-                  <td><strong>{formatRate(seance.taux_presence)}</strong> <small>({seance.presents}/{seance.total_enregistres})</small></td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-xs">
+              <thead className="border-b border-zinc-100 bg-zinc-50 font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
+                <tr>
+                  <th className="p-3 pl-4">Séance</th>
+                  <th className="p-3">Formation</th>
+                  <th className="p-3">Date</th>
+                  <th className="p-3 pr-4">Présence</th>
                 </tr>
-              ))}</tbody>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {attendanceStats.seances.map((seance) => (
+                  <tr key={seance.id_seance} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
+                    <td className="p-3 pl-4 font-bold text-zinc-900 dark:text-white">{seance.seance_titre || `Séance #${seance.id_seance}`}</td>
+                    <td className="p-3 text-zinc-500 dark:text-zinc-400">{seance.formation_titre}</td>
+                    <td className="p-3 text-zinc-500 dark:text-zinc-400">{formatDate(seance.date_seance)}</td>
+                    <td className="p-3 pr-4">
+                      <span className="font-bold text-orange-600 dark:text-orange-400">{formatRate(seance.taux_presence)}</span>
+                      <span className="ml-1.5 text-zinc-400">({seance.presents}/{seance.total_enregistres})</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
+
         {attendanceView === 'apprenant' && (
-          <div className="apprenants-attendance-table-wrap [overflow-x:auto]">
-            <table className="apprenants-attendance-table [width:100%] [border-collapse:collapse] [font-size:12px]">
-              <thead><tr><th>Apprenant</th><th>Formation</th><th>Présences</th><th>Taux</th></tr></thead>
-              <tbody>{attendanceStats.apprenants.map((student) => (
-                <tr key={`${student.id_apprenant}-${student.id_formation}`}>
-                  <td>{student.prenom} {student.nom}</td>
-                  <td>{student.formation_titre}</td>
-                  <td>{student.presents}/{student.total_seances}</td>
-                  <td><strong>{formatRate(student.taux_presence)}</strong></td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-xs">
+              <thead className="border-b border-zinc-100 bg-zinc-50 font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
+                <tr>
+                  <th className="p-3 pl-4">Apprenant</th>
+                  <th className="p-3">Formation</th>
+                  <th className="p-3">Présences</th>
+                  <th className="p-3 pr-4">Taux</th>
                 </tr>
-              ))}</tbody>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {attendanceStats.apprenants.map((student) => (
+                  <tr key={`${student.id_apprenant}-${student.id_formation}`} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
+                    <td className="p-3 pl-4 font-bold text-zinc-900 dark:text-white">{student.prenom} {student.nom}</td>
+                    <td className="p-3 text-zinc-500 dark:text-zinc-400">{student.formation_titre}</td>
+                    <td className="p-3 text-zinc-500 dark:text-zinc-400">{student.presents} / {student.total_seances}</td>
+                    <td className="p-3 pr-4 font-black text-orange-600 dark:text-orange-400">{formatRate(student.taux_presence)}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
       </section>
 
       {/* LISTE DES APPRENANTS EN MODE CARTES */}
-      <section className="apprenants-section [display:flex] [flex-direction:column] [gap:24px]">
+      <section className="space-y-6">
         {studentsError ? (
-          <p role="alert" className="apprenants-error-alert [border-radius:16px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [background-color:rgba(225,_29,_72,_0.1)] [padding:16px] [font-size:12px] [color:\#e11d48]">{studentsError}</p>
+          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
+            {studentsError}
+          </div>
         ) : loading ? (
-          <p className="apprenants-loading-text [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--app-muted)]">Chargement des apprenants...</p>
+          <div className={`${cardClass} text-center text-xs text-zinc-500 py-12`}>Chargement des apprenants...</div>
         ) : groups.length === 0 ? (
-          <div className="apprenants-empty-box [border-radius:24px] [border:2px_dashed_var(--app-border)] [background-color:var(--app-panel)] [padding:48px_24px] [text-align:center] [font-size:12px] [color:var(--app-muted)]">
+          <div className={`${cardClass} border-dashed p-12 text-center text-xs text-zinc-500`}>
             Aucun apprenant trouvé.
           </div>
         ) : (
-          <div className="apprenants-groups-space [display:flex] [flex-direction:column] [gap:24px]">
+          <div className="space-y-6">
             {groups.map((group) => (
-              <div key={group.id} className="apprenants-group-container [display:flex] [flex-direction:column] [gap:16px]">
-                <div className="apprenants-group-header [display:flex] [align-items:center] [justify-content:space-between] [border-bottom:1px_solid_var(--app-border)] [padding-bottom:8px]">
-                  <div className="apprenants-group-title-row [display:flex] [align-items:center] [gap:8px]">
-                    <i className="bi bi-book text-orange-500 text-sm"></i>
-                    <h3 className="apprenants-group-title [margin:0] [font-size:14px] [font-weight:800] [color:var(--app-text)]">{group.titre}</h3>
+              <div key={group.id} className="space-y-3">
+                <div className="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={16} className="text-orange-500" />
+                    <h3 className="text-sm font-black text-zinc-900 dark:text-white">{group.titre}</h3>
                   </div>
-                  <span className="apprenants-group-badge [border-radius:9999px] [background-color:var(--app-subbox)] [padding:4px_10px] [font-size:10px] [font-weight:700] [color:var(--app-muted)]">
-                    {group.students.length} membres
+                  <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-[10px] font-bold uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    {group.students.length} membre{group.students.length > 1 ? 's' : ''}
                   </span>
                 </div>
 
                 {/* GRILLE DE CARTES */}
-                <div className="apprenants-cards-grid [display:grid] [gap:16px] [grid-template-columns:1fr]">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {group.students.map((student) => {
                     const studentKey = `${student.id_apprenant}-${student.id_formation}`;
                     const isMenuOpen = activeMenu === studentKey;
@@ -273,35 +315,33 @@ export default function FormateurApprenants() {
                     return (
                       <div
                         key={studentKey}
-                        className="apprenant-card [display:flex] [flex-direction:column] [justify-content:space-between] [border-radius:24px] [background-color:var(--app-panel)] [padding:20px] [border:1px_solid_var(--app-border)] [box-shadow:0_1px_3px_var(--shadow-color)] [transition:transform_0.2s,_box-shadow_0.2s] [box-sizing:border-box] [&:hover]:[box-shadow:0_8px_20px_var(--shadow-color)]"
+                        className={`${cardClass} flex flex-col justify-between transition hover:-translate-y-0.5 hover:shadow-md`}
                       >
-                        {/* Ligne du haut : Badge Actif et Menu Contextuel */}
-                        <div className="apprenant-card-top [display:flex] [align-items:center] [justify-content:space-between]">
-                          <span className="apprenant-active-badge [border-radius:9999px] [background-color:rgba(16,_185,_129,_0.1)] [padding:2px_10px] [font-size:10px] [font-weight:700] [color:\#10b981]">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">
                             • Active
                           </span>
                           <div className="relative">
                             <button
                               onClick={() => setActiveMenu(isMenuOpen ? null : studentKey)}
-                              className="apprenant-menu-btn [border-radius:9999px] [padding:4px_8px] [color:var(--app-muted)] [background:none] [border:none] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--app-hover)] [&:hover]:[color:var(--app-text)]"
+                              className="rounded-full p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                             >
-                              <i className="bi bi-three-dots-vertical text-sm"></i>
+                              <span className="text-xs font-bold px-1">•••</span>
                             </button>
 
-                            {/* Menu déroulant */}
                             {isMenuOpen && (
-                              <div className="apprenant-dropdown-menu [position:absolute] [right:0] [top:32px] [z-index:20] [width:140px] [border-radius:16px] [border:1px_solid_var(--app-border)] [background-color:var(--app-panel)] [padding:4px] [box-shadow:0_10px_25px_var(--shadow-color)] [box-sizing:border-box]">
+                              <div className="absolute right-0 top-8 z-20 w-36 rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
                                 <button
                                   onClick={() => openStudent(student)}
-                                  className="dropdown-item [display:flex] [width:100%] [align-items:center] [gap:8px] [border-radius:12px] [padding:8px_12px] [text-align:left] [font-size:12px] [color:var(--app-text)] [background:none] [border:none] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--app-hover)]"
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
                                 >
-                                  <i className="bi bi-eye text-xs"></i> View
+                                  <Eye size={14} /> Voir
                                 </button>
                                 <a
                                   href={`mailto:${student.email}`}
-                                  className="dropdown-item [display:flex] [width:100%] [align-items:center] [gap:8px] [border-radius:12px] [padding:8px_12px] [text-align:left] [font-size:12px] [color:var(--app-text)] [background:none] [border:none] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--app-hover)]"
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
                                 >
-                                  <i className="bi bi-envelope text-xs"></i> Contact
+                                  <Mail size={14} /> Contact
                                 </a>
                               </div>
                             )}
@@ -309,15 +349,15 @@ export default function FormateurApprenants() {
                         </div>
 
                         {/* Infos utilisateur */}
-                        <div className="apprenant-user-info [margin:16px_0] [display:flex] [align-items:center] [gap:12px]">
+                        <div className="my-4 flex items-center gap-3">
                           <UserAvatar user={student} size="md" />
                           <div className="min-w-0 flex-1">
-                            <h4 className="apprenant-name [margin:0] [font-size:13px] [font-weight:800] [color:var(--app-text)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
+                            <h4 className="text-xs font-black text-zinc-900 dark:text-white truncate sm:text-sm">
                               {student.prenom} {student.nom}
                             </h4>
                             <a
                               href={`mailto:${student.email}`}
-                              className="apprenant-email [display:block] [margin-top:2px] [font-size:11px] [color:var(--app-muted)] [text-decoration:none] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis] [transition:color_0.2s] [&:hover]:[color:var(--orange-primary)]"
+                              className="mt-0.5 block text-[11px] font-medium text-zinc-500 hover:text-orange-500 dark:text-zinc-400 truncate"
                               title={student.email}
                             >
                               {student.email}
@@ -326,15 +366,15 @@ export default function FormateurApprenants() {
                         </div>
 
                         {/* Pied de carte */}
-                        <div className="apprenant-card-footer [border-top:1px_solid_var(--app-border)] [padding-top:12px] [display:flex] [align-items:center] [justify-content:space-between]">
-                          <span className="apprenant-formation-label [font-size:10px] [color:var(--app-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis] [max-width:130px]">
+                        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between dark:border-zinc-800">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate max-w-[140px]">
                             {student.formation_titre}
                           </span>
                           <button
                             onClick={() => openStudent(student)}
-                            className="apprenant-details-link [font-size:12px] [font-weight:700] [color:var(--orange-primary)] [background:none] [border:none] [cursor:pointer] [padding:0] [&:hover]:[text-decoration:underline]"
+                            className="text-xs font-black text-orange-600 hover:underline dark:text-orange-400"
                           >
-                            Details
+                            Détails
                           </button>
                         </div>
                       </div>
@@ -350,24 +390,23 @@ export default function FormateurApprenants() {
       {/* MODAL DE DÉTAILS DE L'APPRENANT ET SAISIE DE NOTE */}
       {selectedStudent && (
         <div
-          className="apprenants-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.6)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4"
           onClick={() => setSelectedStudent(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="apprenants-modal-card [max-height:90vh] [width:100%] [max-width:540px] [overflow-y:auto] [border-radius:24px] [background-color:var(--app-panel)] [padding:24px] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.4)] [border:1px_solid_var(--app-border)] [box-sizing:border-box]"
+            className={`${cardClass} max-h-[90vh] w-full max-w-lg overflow-y-auto space-y-5 p-6 shadow-2xl`}
           >
-            {/* Modal Header */}
-            <div className="modal-header [display:flex] [align-items:center] [justify-content:space-between] [border-bottom:1px_solid_var(--app-border)] [padding-bottom:16px]">
-              <div className="modal-user-title [display:flex] [align-items:center] [gap:12px]">
-                <UserAvatar user={selectedStudent} size="md" />
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+              <div className="flex items-center gap-3">
+                <UserAvatar user={selectedStudent} size="lg" />
                 <div>
-                  <h3 className="modal-name [margin:0] [font-size:14px] [font-weight:800] [color:var(--app-text)]">
+                  <h3 className="text-sm font-black text-zinc-900 dark:text-white sm:text-base">
                     {selectedStudent.prenom} {selectedStudent.nom}
                   </h3>
                   <a
                     href={`mailto:${selectedStudent.email}`}
-                    className="modal-mail [font-size:12px] [color:var(--orange-primary)] [text-decoration:none] [&:hover]:[text-decoration:underline]"
+                    className="text-xs font-semibold text-orange-600 hover:underline dark:text-orange-400"
                   >
                     {selectedStudent.email}
                   </a>
@@ -375,51 +414,50 @@ export default function FormateurApprenants() {
               </div>
               <button
                 onClick={() => setSelectedStudent(null)}
-                className="modal-close-btn [border-radius:9999px] [padding:6px_10px] [color:var(--app-muted)] [background:none] [border:none] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--app-hover)] [&:hover]:[color:var(--app-text)]"
+                className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
               >
-                <i className="bi bi-x-lg text-sm"></i>
+                <X size={18} />
               </button>
             </div>
 
-            {/* Modal Body */}
             {detailsLoading ? (
-              <p className="apprenants-loading-text [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--app-muted)]">Chargement du dossier...</p>
+              <div className="py-12 text-center text-xs text-zinc-500">Chargement du dossier...</div>
             ) : detailsError ? (
-              <p className="modal-error-alert [margin:16px_0] [border-radius:12px] [background-color:rgba(225,_29,_72,_0.1)] [padding:12px] [font-size:12px] [color:\#e11d48]">{detailsError}</p>
+              <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
+                {detailsError}
+              </div>
             ) : studentDetails && (
-              <div className="modal-body [margin-top:20px] [display:flex] [flex-direction:column] [gap:20px]">
-                {/* Résumé Stats */}
-                <div className="modal-stats-grid [display:grid] [grid-template-columns:repeat(2,_1fr)] [gap:12px]">
-                  <div className="modal-stat-box [border-radius:16px] [background-color:var(--app-subbox)] [padding:14px] [border:1px_solid_var(--app-border)]">
-                    <span className="modal-stat-title [font-size:10px] [text-transform:uppercase] [color:var(--app-muted)] [font-weight:700]">Moyenne Générale</span>
-                    <p className="modal-stat-value [margin:4px_0_0_0] [font-size:16px] [font-weight:900] [color:var(--app-text)]">
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Moyenne Générale</p>
+                    <p className="mt-1 text-base font-black text-zinc-900 dark:text-white sm:text-lg">
                       {studentDetails.average === null ? 'N/A' : `${Number(studentDetails.average).toFixed(2)} / 20`}
                     </p>
                   </div>
-                  <div className="modal-stat-box [border-radius:16px] [background-color:var(--app-subbox)] [padding:14px] [border:1px_solid_var(--app-border)]">
-                    <span className="modal-stat-title [font-size:10px] [text-transform:uppercase] [color:var(--app-muted)] [font-weight:700]">Taux de Présence</span>
-                    <p className="modal-stat-value [margin:4px_0_0_0] [font-size:16px] [font-weight:900] [color:var(--app-text)] orange">
+                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Taux de Présence</p>
+                    <p className="mt-1 text-base font-black text-orange-600 dark:text-orange-400 sm:text-lg">
                       {studentDetails.attendance.rate === null ? 'N/A' : formatRate(studentDetails.attendance.rate)}
                     </p>
                   </div>
                 </div>
 
-                {/* Liste des Notes */}
-                <div>
-                  <h4 className="modal-subtitle [margin:0_0_8px_0] [font-size:12px] [font-weight:800] [color:var(--app-text)]">Historique des Évaluations</h4>
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Historique des Évaluations</h4>
                   {studentDetails.grades.length === 0 ? (
-                    <div className="modal-empty-grades [border-radius:16px] [border:1px_dashed_var(--app-border)] [padding:16px] [text-align:center] [font-size:12px] [color:var(--app-muted)]">
+                    <div className="rounded-2xl border border-dashed border-zinc-200 p-6 text-center text-xs text-zinc-500 dark:border-zinc-800">
                       Aucune note enregistrée pour le moment.
                     </div>
                   ) : (
-                    <div className="modal-grades-scroll [max-height:150px] [overflow-y:auto] [display:flex] [flex-direction:column] [gap:8px] [padding-right:4px]">
+                    <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
                       {studentDetails.grades.map((item) => (
-                        <div key={`${item.origine}-${item.id_note}`} className="modal-grade-item [display:flex] [align-items:center] [justify-content:space-between] [border-radius:16px] [background-color:var(--app-subbox)] [padding:12px_16px] [border:1px_solid_var(--app-border)]">
+                        <div key={`${item.origine}-${item.id_note}`} className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/40">
                           <div>
-                            <p className="grade-type [margin:0] [font-size:12px] [font-weight:700] [color:var(--app-text)]">{item.type_evaluation}</p>
-                            <p className="grade-date [margin:2px_0_0_0] [font-size:10px] [color:var(--app-muted)]">{formatDate(item.date_evaluation)}</p>
+                            <p className="font-bold text-zinc-900 dark:text-white">{item.type_evaluation}</p>
+                            <p className="text-[10px] text-zinc-400">{formatDate(item.date_evaluation)}</p>
                           </div>
-                          <span className="grade-val [font-size:12px] [font-weight:900] [color:\#10b981]">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400">
                             {Number(item.note)} / 20
                           </span>
                         </div>
@@ -428,18 +466,17 @@ export default function FormateurApprenants() {
                   )}
                 </div>
 
-                {/* Formulaire d'Ajout de Note */}
-                <form onSubmit={saveGrade} className="modal-form-box [border-radius:16px] [background-color:var(--app-subbox)] [padding:16px] [border:1px_solid_var(--app-border)]">
-                  <h4 className="modal-form-title [margin:0_0_12px_0] [display:flex] [align-items:center] [gap:8px] [font-size:12px] [font-weight:800] [color:var(--app-text)]">
-                    <i className="bi bi-plus-circle text-orange-500"></i> Ajouter une Nouvelle Note
+                <form onSubmit={saveGrade} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 space-y-3 dark:border-zinc-800 dark:bg-zinc-800/40">
+                  <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                    <Plus size={15} className="text-orange-500" /> Ajouter une Nouvelle Note
                   </h4>
-                  <div className="modal-form-grid [display:grid] [grid-template-columns:1fr] [gap:12px]">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <input
                       required
                       value={grade.type_evaluation}
                       onChange={(e) => setGrade({ ...grade, type_evaluation: e.target.value })}
                       placeholder="Type (ex: TP, Examen)"
-                      className="apprenants-input [width:100%] [border-radius:12px] [border:1px_solid_var(--app-border)] [background-color:var(--app-panel)] [padding:10px_12px] [font-size:12px] [color:var(--app-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                      className={inputClass}
                     />
                     <input
                       required
@@ -450,7 +487,7 @@ export default function FormateurApprenants() {
                       value={grade.note}
                       onChange={(e) => setGrade({ ...grade, note: e.target.value })}
                       placeholder="Note / 20"
-                      className="apprenants-input [width:100%] [border-radius:12px] [border:1px_solid_var(--app-border)] [background-color:var(--app-panel)] [padding:10px_12px] [font-size:12px] [color:var(--app-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                      className={inputClass}
                     />
                   </div>
                   <textarea
@@ -458,14 +495,14 @@ export default function FormateurApprenants() {
                     value={grade.commentaire}
                     onChange={(e) => setGrade({ ...grade, commentaire: e.target.value })}
                     placeholder="Commentaire facultatif..."
-                    className="apprenants-textarea [width:100%] [border-radius:12px] [border:1px_solid_var(--app-border)] [background-color:var(--app-panel)] [padding:10px_12px] [font-size:12px] [color:var(--app-text)] [outline:none] [resize:none] [box-sizing:border-box] [transition:border-color_0.2s] mt-2"
+                    className={`${inputClass} resize-none`}
                   />
-                  <div className="modal-form-footer [margin-top:12px] [display:flex] [align-items:center] [justify-content:space-between]">
-                    <span className="grade-success-msg [font-size:10px] [font-weight:700] [color:\#10b981]">{gradeMessage}</span>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{gradeMessage}</span>
                     <button
                       disabled={savingGrade}
                       type="submit"
-                      className="apprenants-submit-btn [border-radius:12px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:8px_16px] [font-size:12px] [font-weight:800] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s]"
+                      className="rounded-2xl bg-orange-500 px-5 py-2.5 text-xs font-black text-zinc-950 transition hover:bg-orange-400 disabled:opacity-50 shadow-xs"
                     >
                       {savingGrade ? 'Enregistrement...' : 'Enregistrer'}
                     </button>

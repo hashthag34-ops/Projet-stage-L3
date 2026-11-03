@@ -1,6 +1,6 @@
 // frontend/src/pages/Formateur/Planning.jsx
-import { useEffect, useState } from 'react';
-import API from '../../services/api';
+import { useEffect, useState, useMemo } from 'react';
+import API from '../../services/api';
 
 export default function FormateurPlanning() {
   const [seances, setSeances] = useState([]);
@@ -94,6 +94,8 @@ export default function FormateurPlanning() {
 
   const getWeekDays = (startDate) => {
     const start = new Date(startDate);
+    const dayOfWeek = start.getDay();
+    // Ajuster pour commencer le lundi (optionnel, ici basé sur startDate)
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
@@ -193,6 +195,26 @@ export default function FormateurPlanning() {
   const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   const selectedDateISO = formatDateLocal(currentDate);
 
+  // Génération du mois pour le mini-calendrier Google Calendar de droite
+  const miniCalendarDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    // Ajustement pour commencer la semaine lundi (0 = lundi, 6 = dimanche)
+    const offset = (firstDayIndex === 0 ? 6 : firstDayIndex - 1);
+    
+    for (let i = 0; i < offset; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= totalDays; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  }, [currentDate]);
+
   // Filtrer les séances du jour courant pour la vue mobile
   const currentDaySeances = seances.filter(s => s.date_seance && formatDateLocal(s.date_seance) === selectedDateISO);
   const todayISO = formatDateLocal(new Date());
@@ -200,172 +222,165 @@ export default function FormateurPlanning() {
     formatDateLocal(seance.date_seance) >= todayISO && Number(seance.total_presences || 0) === 0;
 
   return (
-    <div className="fp-container [min-height:100vh] [background-color:var(--fp-bg)] [color:var(--fp-text)] [font-family:inherit] [padding:12px] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease]">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-3 py-4 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6 sm:py-6">
 
-      {/* CONTENEUR PRINCIPAL */}
-      <div className="fp-main-card [background-color:var(--fp-panel)] [border-radius:24px] [border:1px_solid_var(--fp-border)] [box-shadow:0_1px_3px_var(--shadow-color)] [padding:16px] [position:relative] [box-sizing:border-box]">
-        
-        {/* BARRE SUPÉRIEURE DE NAVIGATION */}
-        <div className="fp-topbar [margin-bottom:24px] [display:flex] [flex-direction:column] [gap:16px] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:20px]">
-          
-          <div className="fp-topbar-left [display:flex] [flex-wrap:wrap] [align-items:center] [justify-content:space-between] [gap:12px] [width:100%]">
-            <h1 className="fp-month-title [margin:0] [font-size:20px] [font-weight:900] [letter-spacing:-0.025em] [color:var(--fp-text)] capitalize">
-              {monthName}
-            </h1>
+      {/* BARRE SUPÉRIEURE DE NAVIGATION GLOBALE */}
+      <header className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-950 p-5 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 sm:text-xs">Agenda & Planning</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight capitalize sm:text-3xl">{monthName}</h1>
+          <p className="mt-1 text-xs text-zinc-300 sm:text-sm">Gérez et planifiez vos sessions de formation en temps réel.</p>
+        </div>
 
-            <div className="fp-nav-controls [display:flex] [align-items:center] [gap:8px]">
-              <button 
-                onClick={() => setCurrentDate(new Date())}
-                className="fp-today-btn [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:6px_12px] [font-size:11px] [font-weight:700] [color:var(--fp-text)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--fp-hover)]"
-              >
-                Aujourd'hui
-              </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <select
+            value={selectedFormation}
+            onChange={(e) => setSelectedFormation(e.target.value)}
+            className="rounded-2xl border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs font-semibold text-white outline-none transition focus:border-orange-500"
+          >
+            <option value="">Toutes les formations</option>
+            {formations.map(f => (
+              <option key={f.id_formation} value={f.id_formation}>{f.titre}</option>
+            ))}
+          </select>
 
-              <div className="fp-arrows-group [display:flex] [align-items:center] [gap:4px]">
-                <button
-                  onClick={() => navigateTime(-1)}
-                  className="fp-arrow-btn [display:flex] [height:32px] [width:32px] [align-items:center] [justify-content:center] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [color:var(--fp-muted)] [cursor:pointer] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--fp-hover)] [&:hover]:[color:var(--fp-text)]"
-                  title="Précédent"
-                >
-                  <i className="bi bi-chevron-left text-xs"></i>
-                </button>
-                <button
-                  onClick={() => navigateTime(1)}
-                  className="fp-arrow-btn [display:flex] [height:32px] [width:32px] [align-items:center] [justify-content:center] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [color:var(--fp-muted)] [cursor:pointer] [transition:background-color_0.2s,_color_0.2s] [&:hover]:[background-color:var(--fp-hover)] [&:hover]:[color:var(--fp-text)]"
-                  title="Suivant"
-                >
-                  <i className="bi bi-chevron-right text-xs"></i>
-                </button>
-              </div>
-            </div>
-          </div>
+          <button 
+            onClick={() => setCurrentDate(new Date())}
+            className="rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800"
+          >
+            Aujourd'hui
+          </button>
 
-          <div className="fp-topbar-right [display:flex] [flex-wrap:wrap] [align-items:center] [gap:10px]">
-            <select
-              value={selectedFormation}
-              onChange={(e) => setSelectedFormation(e.target.value)}
-              className="fp-select [width:100%] [border-radius:12px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:8px_12px] [font-size:11px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box]"
-            >
-              <option value="">Toutes les formations</option>
-              {formations.map(f => (
-                <option key={f.id_formation} value={f.id_formation}>{f.titre}</option>
-              ))}
-            </select>
-
+          <div className="flex items-center gap-1 bg-zinc-900 rounded-2xl border border-zinc-700 p-1">
             <button
-              onClick={() => handleOpenCreateForDate(selectedDateISO)}
-              className="fp-create-btn [display:flex] [align-items:center] [gap:8px] [border-radius:12px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:8px_16px] [font-size:11px] [font-weight:800] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [transition:opacity_0.2s] [&:hover]:[opacity:0.9] desktop-only"
+              onClick={() => navigateTime(-1)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+              title="Précédent"
             >
-              <i className="bi bi-plus-lg text-sm"></i>
-              <span>Nouvelle Séance</span>
+              <i className="bi bi-chevron-left text-xs"></i>
+            </button>
+            <button
+              onClick={() => navigateTime(1)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+              title="Suivant"
+            >
+              <i className="bi bi-chevron-right text-xs"></i>
             </button>
           </div>
-        </div>
 
-        {/* ========================================================= */}
-        {/* VUE MOBILE / TABLETTE                                     */}
-        {/* ========================================================= */}
-        <div className="fp-mobile-view [display:block]">
-          
-          {/* Bandeau de jours défilant horizontalement */}
-          <div className="fp-days-strip [display:flex] [align-items:center] [gap:8px] [overflow-x:auto] [padding-bottom:16px] [padding-top:4px] [scrollbar-width:none]">
-            {weekDays.map((day, idx) => {
-              const dateISO = formatDateLocal(day);
-              const isSelected = selectedDateISO === dateISO;
-              const isToday = formatDateLocal(new Date()) === dateISO;
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentDate(day)}
-                  className={`fp-day-pill ${isSelected ? 'selected' : ''}`}
-                >
-                  <span className="fp-day-name [font-size:10px] [font-weight:800] [text-transform:uppercase]">
-                    {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
-                  </span>
-                  <span className={`fp-day-num ${isToday && !isSelected ? 'today' : ''}`}>
-                    {day.getDate()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Liste chronologique des séances du jour */}
-          {loading ? (
-            <div className="fp-loading [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--fp-muted)]">Chargement...</div>
-          ) : currentDaySeances.length === 0 ? (
-            <div className="fp-empty-day [padding:48px_16px] [text-align:center] [font-size:12px] [color:var(--fp-muted)] [border:2px_dashed_var(--fp-border)] [border-radius:16px] [margin:16px_0]">
-              Aucune séance programmée pour cette journée.
-            </div>
-          ) : (
-            <div className="fp-mobile-seances-list [display:flex] [flex-direction:column] [gap:12px] [margin:16px_0]">
-              {currentDaySeances.map((s) => (
-                <div
-                  key={s.id_seance}
-                  onClick={() => setSelectedSeanceDetails(s)}
-                  className="fp-mobile-seance-card [display:flex] [align-items:flex-start] [gap:12px] [padding:16px] [border-radius:16px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:var(--fp-hover)]"
-                >
-                  <div className="fp-mobile-time [text-align:right] [flex-shrink:0] [min-width:48px]">
-                    <p className="fp-time-start [margin:0] [font-size:12px] [font-weight:800] [color:var(--fp-text)]">{s.heure_debut?.substring(0, 5)}</p>
-                    <p className="fp-time-end [margin:2px_0_0_0] [font-size:10px] [font-weight:700] [color:var(--fp-muted)]">{s.heure_fin?.substring(0, 5)}</p>
-                  </div>
-
-                  <div className="fp-mobile-details [flex:1] [min-width:0] [border-left:2px_solid_var(--orange-primary)] [padding-left:12px]">
-                    <span className="fp-mobile-badge [display:inline-block] [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:2px_8px] [font-size:9px] [font-weight:800] [color:var(--orange-primary)] [margin-bottom:4px]">
-                      {s.type_seance || 'Séance'}
-                    </span>
-                    <h4 className="fp-mobile-title [margin:0] [font-size:12px] [font-weight:800] [color:var(--fp-text)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
-                      {s.titre || s.type_seance}
-                    </h4>
-                    {s.formation_titre && (
-                      <p className="fp-mobile-formation [margin:2px_0_0_0] [font-size:11px] [color:var(--fp-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
-                        {s.formation_titre}
-                      </p>
-                    )}
-                    {s.salle && (
-                      <p className="fp-mobile-room [margin:4px_0_0_0] [font-size:10px] [color:var(--fp-muted)] [display:flex] [align-items:center] [gap:4px]">
-                        <i className="bi bi-geo-alt"></i> {s.salle}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Bouton Flottant (FAB) d'ajout sur Mobile */}
           <button
             onClick={() => handleOpenCreateForDate(selectedDateISO)}
-            className="fp-fab-btn [position:fixed] [bottom:24px] [right:24px] [z-index:40] [display:flex] [height:52px] [width:52px] [align-items:center] [justify-content:center] [border-radius:50%] [background-color:var(--orange-primary)] [color:\#18181b] [box-shadow:0_10px_25px_rgba(249,_115,_22,_0.4)] [border:none] [cursor:pointer]"
+            className="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-4 py-2.5 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
           >
-            <i className="bi bi-plus-lg text-lg"></i>
+            <i className="bi bi-plus-lg text-sm"></i>
+            <span>Nouvelle Séance</span>
           </button>
         </div>
+      </header>
 
-        {/* ========================================================= */}
-        {/* VUE DESKTOP (GRILLE SEMAINE)                              */}
-        {/* ========================================================= */}
-        <div className="fp-desktop-view [display:none]">
+      {/* ========================================================= */}
+      {/* VUE MOBILE / TABLETTE (Bandeau + Liste du jour)           */}
+      {/* ========================================================= */}
+      <div className="block lg:hidden space-y-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {weekDays.map((day, idx) => {
+            const dateISO = formatDateLocal(day);
+            const isSelected = selectedDateISO === dateISO;
+            const isToday = formatDateLocal(new Date()) === dateISO;
+
+            return (
+              <button
+                key={idx}
+                onClick={() => setCurrentDate(day)}
+                className={`flex flex-col items-center justify-center rounded-2xl p-3 min-w-[56px] transition ${isSelected ? 'bg-orange-500 text-zinc-950 font-black shadow-md' : 'border border-zinc-200 bg-white text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'}`}
+              >
+                <span className="text-[10px] uppercase font-bold tracking-wider">
+                  {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                </span>
+                <span className={`mt-1 text-sm font-black ${isToday && !isSelected ? 'text-orange-600 dark:text-orange-400' : ''}`}>
+                  {day.getDate()}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <div className="rounded-3xl border border-zinc-200 bg-white p-12 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">Chargement...</div>
+        ) : currentDaySeances.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+            Aucune séance programmée pour cette journée.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {currentDaySeances.map((s) => (
+              <div
+                key={s.id_seance}
+                onClick={() => setSelectedSeanceDetails(s)}
+                className="flex items-start gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-xs cursor-pointer transition hover:border-orange-500 dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <div className="text-right shrink-0 min-w-[50px]">
+                  <p className="text-xs font-black text-zinc-900 dark:text-white">{s.heure_debut?.substring(0, 5)}</p>
+                  <p className="text-[10px] font-bold text-zinc-400">{s.heure_fin?.substring(0, 5)}</p>
+                </div>
+
+                <div className="flex-1 min-w-0 border-l-2 border-orange-500 pl-3">
+                  <span className="inline-block rounded-md bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-orange-600 dark:text-orange-400 mb-1">
+                    {s.type_seance || 'Séance'}
+                  </span>
+                  <h4 className="text-xs font-black text-zinc-900 dark:text-white truncate">
+                    {s.titre || s.type_seance}
+                  </h4>
+                  {s.formation_titre && (
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                      {s.formation_titre}
+                    </p>
+                  )}
+                  {s.salle && (
+                    <p className="text-[10px] font-semibold text-zinc-400 flex items-center gap-1 mt-1">
+                      <i className="bi bi-geo-alt"></i> {s.salle}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => handleOpenCreateForDate(selectedDateISO)}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-zinc-950 shadow-xl border-2 border-white dark:border-zinc-900"
+        >
+          <i className="bi bi-plus-lg text-xl font-black"></i>
+        </button>
+      </div>
+
+      {/* ========================================================= */}
+      {/* VUE DESKTOP : STYLE GOOGLE CALENDAR (Semaine à gauche / Mini-Calendar à droite) */}
+      {/* ========================================================= */}
+      <div className="hidden lg:grid grid-cols-[1fr_300px] gap-6 items-start">
+        
+        {/* COLONNE GAUCHE : GRILLE HEBDOMADAIRE DETAILLEE */}
+        <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 overflow-x-auto">
           {loading ? (
-            <div className="fp-loading [padding:48px_0] [text-align:center] [font-size:12px] [color:var(--fp-muted)] lg">Chargement du planning...</div>
+            <div className="py-24 text-center text-xs font-semibold text-zinc-500">Chargement du planning...</div>
           ) : (
-            <div className="fp-grid-wrapper [min-width:900px]">
+            <div className="min-w-[850px]">
               
               {/* En-tête des jours */}
-              <div className="fp-grid-header-row [display:grid] [grid-template-columns:repeat(8,_minmax(0,_1fr))] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:12px] [text-align:center]">
-                <div className="fp-time-col-header [font-size:11px] [font-weight:800] [color:var(--fp-muted)] [display:flex] [align-items:center] [justify-content:center] [text-transform:uppercase]">
+              <div className="grid grid-cols-[70px_repeat(7,_1fr)] border-b border-zinc-100 pb-3 text-center dark:border-zinc-800">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-center">
                   Heure
                 </div>
                 {weekDays.map((day, idx) => {
                   const dateISO = formatDateLocal(day);
                   const isToday = formatDateLocal(new Date()) === dateISO;
                   return (
-                    <div key={idx} className="fp-day-col-header [display:flex] [flex-direction:column] [align-items:center]">
-                      <span className="fp-header-dayname [font-size:10px] [font-weight:700] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)]">
+                    <div key={idx} className="flex flex-col items-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </span>
-                      <span className={`fp-header-daynum ${isToday ? 'today' : ''}`}>
+                      <span className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${isToday ? 'bg-orange-500 text-zinc-950 shadow-xs' : 'text-zinc-900 dark:text-white'}`}>
                         {day.getDate()}
                       </span>
                     </div>
@@ -374,14 +389,14 @@ export default function FormateurPlanning() {
               </div>
 
               {/* Lignes Heures + Créneaux */}
-              <div className="fp-grid-body [position:relative]">
+              <div className="relative">
                 {hoursList.map((hour, hIdx) => {
                   const currentSlotHour = parseInt(hour.substring(0, 2), 10);
 
                   return (
-                    <div key={hIdx} className="fp-hour-row [display:grid] [grid-template-columns:repeat(8,_minmax(0,_1fr))] [min-height:90px] [border-bottom:1px_solid_var(--fp-border)]">
+                    <div key={hIdx} className="grid grid-cols-[70px_repeat(7,_1fr)] min-h-[90px] border-b border-zinc-100 dark:border-zinc-800/60">
                       
-                      <div className="fp-hour-label [padding-right:12px] [padding-top:6px] [text-align:right] [font-size:11px] [font-weight:700] [color:var(--fp-muted)]">
+                      <div className="pr-3 pt-2 text-right text-xs font-bold text-zinc-400">
                         {hour}
                       </div>
 
@@ -400,7 +415,7 @@ export default function FormateurPlanning() {
                           <div
                             key={dIdx}
                             onClick={() => handleOpenCreateForDate(dateISO)}
-                            className="fp-slot-cell [padding:6px] [border-left:1px_solid_var(--fp-border)] [cursor:pointer] [position:relative] [transition:background-color_0.2s] [box-sizing:border-box] [&:hover]:[background-color:var(--fp-hover)]"
+                            className="p-1.5 border-l border-zinc-100 dark:border-zinc-800/60 cursor-pointer relative transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
                           >
                             {daySeances.map(s => {
                               const startHour = parseInt(s.heure_debut.substring(0, 2), 10);
@@ -416,29 +431,29 @@ export default function FormateurPlanning() {
                                     setSelectedSeanceDetails(s);
                                   }}
                                   style={{ height: computedHeight }}
-                                  className="fp-event-card [position:absolute] [left:6px] [right:6px] [top:6px] [z-index:20] [cursor:pointer] [border-radius:16px] [border:1px_solid_rgba(249,_115,_22,_0.3)] [background-color:var(--fp-panel)] [padding:10px] [display:flex] [flex-direction:column] [justify-content:space-between] [overflow:hidden] [box-shadow:0_4px_12px_var(--shadow-color)] [box-sizing:border-box] [transition:border-color_0.2s] [&:hover]:[border-color:var(--orange-primary)]"
+                                  className="absolute left-1.5 right-1.5 top-1.5 z-20 cursor-pointer rounded-2xl border border-orange-500/30 bg-orange-500/10 p-3 flex flex-col justify-between overflow-hidden shadow-xs transition hover:border-orange-500 hover:bg-orange-500/20"
                                 >
                                   <div>
-                                    <div className="fp-event-top-row [display:flex] [align-items:center] [justify-content:space-between] [font-size:9px] [font-weight:800] [color:var(--orange-primary)] [text-transform:uppercase]">
+                                    <div className="flex items-center justify-between text-[10px] font-black uppercase text-orange-600 dark:text-orange-400">
                                       <span>{s.type_seance || 'Séance'}</span>
-                                      <span className="fp-event-time [color:var(--fp-muted)] [font-weight:600]">
+                                      <span className="font-semibold text-zinc-500 dark:text-zinc-400">
                                         {s.heure_debut?.substring(0, 5)}
                                       </span>
                                     </div>
 
-                                    <h4 className="fp-event-title [margin:4px_0_0_0] [font-size:11px] [font-weight:800] [color:var(--fp-text)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
+                                    <h4 className="mt-1 text-xs font-black text-zinc-900 dark:text-white truncate">
                                       {s.titre || s.type_seance}
                                     </h4>
 
                                     {s.formation_titre && (
-                                      <p className="fp-event-formation [margin:2px_0_0_0] [font-size:9px] [color:var(--fp-muted)] [white-space:nowrap] [overflow:hidden] [text-overflow:ellipsis]">
+                                      <p className="mt-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 truncate">
                                         {s.formation_titre}
                                       </p>
                                     )}
                                   </div>
 
                                   {s.salle && (
-                                    <div className="fp-event-room [font-size:9px] [font-weight:700] [color:var(--fp-muted)] [display:flex] [align-items:center] [gap:4px]">
+                                    <div className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                                       <i className="bi bi-geo-alt"></i> {s.salle}
                                     </div>
                                   )}
@@ -458,38 +473,97 @@ export default function FormateurPlanning() {
           )}
         </div>
 
+        {/* COLONNE DROITE : MINI CALENDRIER TYPE GOOGLE */}
+        <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">
+              {currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+            </h3>
+            <div className="flex items-center gap-1">
+              <button onClick={() => navigateTime(-1)} className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500">
+                <i className="bi bi-chevron-left text-xs"></i>
+              </button>
+              <button onClick={() => navigateTime(1)} className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500">
+                <i className="bi bi-chevron-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 text-center gap-1">
+            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+              <span key={i} className="text-[10px] font-black text-zinc-400 py-1">{d}</span>
+            ))}
+            {miniCalendarDays.map((date, idx) => {
+              if (!date) return <div key={idx} />;
+              const dateISO = formatDateLocal(date);
+              const isSelected = selectedDateISO === dateISO;
+              const isToday = formatDateLocal(new Date()) === dateISO;
+              const hasSeance = seances.some(s => s.date_seance && formatDateLocal(s.date_seance) === dateISO);
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentDate(date)}
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition mx-auto ${isSelected ? 'bg-orange-500 text-zinc-950 font-black shadow-xs' : isToday ? 'border border-orange-500 text-orange-600 dark:text-orange-400' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300'}`}
+                >
+                  {date.getDate()}
+                  {hasSeance && !isSelected && (
+                    <span className="absolute bottom-1 h-1 w-1 rounded-full bg-orange-500"></span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-3">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Séances du jour sélectionné</h4>
+            {currentDaySeances.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic">Aucune séance ce jour.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {currentDaySeances.map(s => (
+                  <div key={s.id_seance} onClick={() => setSelectedSeanceDetails(s)} className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-xs cursor-pointer hover:border-orange-500 dark:border-zinc-800 dark:bg-zinc-800/40">
+                    <p className="font-bold text-zinc-900 dark:text-white truncate">{s.titre || s.type_seance}</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{s.heure_debut?.substring(0, 5)} - {s.heure_fin?.substring(0, 5)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
-      {/* Modal Création de Séance */}
+      {/* Modal Création / Modification de Séance */}
       {showModal && (
-        <div className="fp-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={closeModal}>
-          <div className="fp-modal-card [position:relative] [width:100%] [max-width:440px] [max-height:90vh] [overflow-y:auto] [border-radius:24px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-panel)] [padding:24px] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [box-sizing:border-box]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4" onClick={closeModal}>
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 space-y-5" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
-              className="fp-modal-close [position:absolute] [right:16px] [top:16px] [background:none] [border:none] [cursor:pointer] [color:var(--fp-muted)] [padding:4px] [&:hover]:[color:var(--fp-text)]"
+              className="absolute right-5 top-5 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             >
-              <i className="bi bi-x-lg text-lg"></i>
+              <i className="bi bi-x-lg text-sm"></i>
             </button>
 
-            <h2 className="fp-modal-heading [margin:0_0_16px_0] [font-size:16px] [font-weight:900] [color:var(--fp-text)] [border-bottom:1px_solid_var(--fp-border)] [padding-bottom:12px]">
+            <h2 className="text-base font-black text-zinc-900 dark:text-white border-b border-zinc-100 pb-3 dark:border-zinc-800">
               {editingSeanceId ? 'Modifier la séance' : 'Programmer une Séance'}
             </h2>
 
             {errorMsg && (
-              <div className="fp-error-banner [margin-bottom:16px] [display:flex] [align-items:center] [gap:8px] [border-radius:12px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [background-color:rgba(225,_29,_72,_0.1)] [padding:12px] [font-size:11px] [font-weight:700] [color:\#e11d48]">
-                <i className="bi bi-exclamation-circle shrink-0 text-base"></i>
+              <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                <i className="bi bi-exclamation-circle text-base shrink-0"></i>
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="fp-form-space [display:flex] [flex-direction:column] [gap:16px]">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Formation</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Formation</label>
                 <select
                   required
                   value={formData.id_formation}
                   onChange={handleModalFormationChange}
-                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                 >
                   <option value="">Sélectionner une formation</option>
                   {formations.map(f => (
@@ -498,13 +572,13 @@ export default function FormateurPlanning() {
                 </select>
               </div>
 
-              <div className="fp-modal-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Type de Séance</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Type de Séance</label>
                   <select
                     value={formData.type_seance}
                     onChange={(e) => setFormData({ ...formData, type_seance: e.target.value })}
-                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                   >
                     <option value="Cours Magistral">Cours Magistral</option>
                     <option value="Travaux Pratiques (TP)">Travaux Pratiques (TP)</option>
@@ -515,19 +589,19 @@ export default function FormateurPlanning() {
                 </div>
 
                 <div>
-                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Salle / Lieu</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Salle / Lieu</label>
                   <input
                     type="text"
                     placeholder="Labo 2 / Zoom"
                     value={formData.salle}
                     onChange={(e) => setFormData({ ...formData, salle: e.target.value })}
-                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Date</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Date</label>
                 <input
                   type="date"
                   required
@@ -536,53 +610,57 @@ export default function FormateurPlanning() {
                   max={activeModalFormation?.date_fin ? formatDateLocal(activeModalFormation.date_fin) : ''}
                   value={formData.date_seance}
                   onChange={(e) => setFormData({ ...formData, date_seance: e.target.value })}
-                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                 />
               </div>
 
-              <div className="fp-modal-grid-2 [display:grid] [grid-template-columns:1fr] [gap:12px]">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Heure Début</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Heure Début</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_debut}
                     onChange={(e) => setFormData({ ...formData, heure_debut: e.target.value })}
-                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                   />
                 </div>
                 <div>
-                  <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Heure Fin</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Heure Fin</label>
                   <input
                     type="time"
                     required
                     value={formData.heure_fin}
                     onChange={(e) => setFormData({ ...formData, heure_fin: e.target.value })}
-                    className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s]"
+                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="fp-field-label [display:block] [font-size:10px] [font-weight:800] [text-transform:uppercase] [letter-spacing:0.05em] [color:var(--fp-muted)] [margin-bottom:6px]">Description (Optionnel)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Description (Optionnel)</label>
                 <textarea
                   rows="2"
                   placeholder="Informations complémentaires..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="fp-input [width:100%] [border-radius:14px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:10px_14px] [font-size:12px] [font-weight:600] [color:var(--fp-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s] resize-none"
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500 resize-none"
                 />
               </div>
 
-              <button
-                onClick={() => handleEdit(selectedSeanceDetails)}
-                className="fp-edit-btn"
-              >
-                Modifier cette séance
-              </button>
+              {editingSeanceId && (
+                <button
+                  type="button"
+                  onClick={() => handleEdit(selectedSeanceDetails)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white py-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                >
+                  Modifier cette séance
+                </button>
+              )}
+
               <button
                 type="submit"
-                className="fp-submit-btn [width:100%] [border-radius:14px] [background-color:var(--orange-primary)] [color:\#18181b] [padding:12px] [font-size:12px] [font-weight:900] [border:none] [cursor:pointer] [box-shadow:0_2px_6px_rgba(249,_115,_22,_0.25)] [margin-top:8px] [transition:opacity_0.2s] [&:hover]:[opacity:0.9]"
+                className="w-full rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400 mt-2"
               >
                 {editingSeanceId ? 'Enregistrer les modifications' : 'Valider la Séance'}
               </button>
@@ -593,52 +671,58 @@ export default function FormateurPlanning() {
 
       {/* Modal Détails Séance */}
       {selectedSeanceDetails && (
-        <div className="fp-modal-backdrop [position:fixed] [inset:0] [z-index:50] [display:flex] [align-items:center] [justify-content:center] [background-color:rgba(0,_0,_0,_0.7)] [backdrop-filter:blur(4px)] [padding:16px] [box-sizing:border-box]" onClick={() => setSelectedSeanceDetails(null)}>
-          <div className="fp-modal-card [position:relative] [width:100%] [max-width:440px] [max-height:90vh] [overflow-y:auto] [border-radius:24px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-panel)] [padding:24px] [box-shadow:0_20px_40px_rgba(0,_0,_0,_0.5)] [box-sizing:border-box] max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4" onClick={() => setSelectedSeanceDetails(null)}>
+          <div className="relative w-full max-w-sm rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 space-y-4" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedSeanceDetails(null)}
-              className="fp-modal-close [position:absolute] [right:16px] [top:16px] [background:none] [border:none] [cursor:pointer] [color:var(--fp-muted)] [padding:4px] [&:hover]:[color:var(--fp-text)]"
+              className="absolute right-5 top-5 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             >
-              <i className="bi bi-x-lg text-lg"></i>
+              <i className="bi bi-x-lg text-sm"></i>
             </button>
 
-            <div className="fp-details-badges [display:flex] [flex-wrap:wrap] [gap:8px] [margin-bottom:8px]">
-              <span className="fp-badge [border-radius:6px] [background-color:var(--orange-bg-light)] [padding:4px_10px] [font-size:10px] [font-weight:800] [color:var(--orange-primary)]">
+            <div>
+              <span className="inline-block rounded-md bg-orange-500/10 px-2.5 py-1 text-[10px] font-bold uppercase text-orange-600 dark:text-orange-400 mb-2">
                 {selectedSeanceDetails.type_seance || 'Séance'}
               </span>
+              <h3 className="text-base font-black text-zinc-900 dark:text-white">
+                {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance}
+              </h3>
             </div>
 
-            <h3 className="fp-details-title [margin:0_0_16px_0] [font-size:16px] [font-weight:900] [color:var(--fp-text)]">
-              {selectedSeanceDetails.titre || selectedSeanceDetails.type_seance}
-            </h3>
-
-            <div className="fp-details-box [margin-bottom:20px] [display:flex] [flex-direction:column] [gap:10px] [border-radius:16px] [border:1px_solid_var(--fp-border)] [background-color:var(--fp-subbox)] [padding:16px] [font-size:12px] [color:var(--fp-text)]">
-              <div className="fp-details-row [display:flex] [align-items:center] [gap:10px]">
-                <i className="bi bi-clock shrink-0 text-sm"></i>
+            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 space-y-2 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-300">
+              <div className="flex items-center gap-2.5">
+                <i className="bi bi-clock text-orange-500"></i>
                 <span>
                   {new Date(selectedSeanceDetails.date_seance).toLocaleDateString('fr-FR')} ({selectedSeanceDetails.heure_debut?.substring(0, 5)} - {selectedSeanceDetails.heure_fin?.substring(0, 5)})
                 </span>
               </div>
-              <div className="fp-details-row [display:flex] [align-items:center] [gap:10px]">
-                <i className="bi bi-geo-alt shrink-0 text-sm"></i>
+              <div className="flex items-center gap-2.5">
+                <i className="bi bi-geo-alt text-orange-500"></i>
                 <span>Salle : <strong>{selectedSeanceDetails.salle || 'Non spécifiée'}</strong></span>
               </div>
               {selectedSeanceDetails.description && (
-                <div className="fp-details-desc [padding-top:8px] [border-top:1px_solid_var(--fp-border)] [font-style:italic] [color:var(--fp-muted)]">
+                <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700 italic text-zinc-500">
                   <p>{selectedSeanceDetails.description}</p>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={() => handleDelete(selectedSeanceDetails.id_seance)}
-              disabled={!canDeleteSeance(selectedSeanceDetails)}
-              title={!canDeleteSeance(selectedSeanceDetails) ? "Séance terminée ou contenant des présences" : "Supprimer cette séance"}
-              className="fp-delete-btn [display:flex] [width:100%] [align-items:center] [justify-content:center] [gap:8px] [border-radius:14px] [border:1px_solid_rgba(225,_29,_72,_0.3)] [background-color:rgba(225,_29,_72,_0.1)] [padding:12px] [font-size:12px] [font-weight:800] [color:\#e11d48] [cursor:pointer] [transition:background-color_0.2s] [&:hover]:[background-color:rgba(225,_29,_72,_0.2)]"
-            >
-              <i className="bi bi-trash text-sm"></i>
-              {canDeleteSeance(selectedSeanceDetails) ? 'Supprimer cette séance' : 'Suppression non autorisée'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEdit(selectedSeanceDetails)}
+                className="flex-1 rounded-2xl border border-zinc-200 bg-white py-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              >
+                Modifier
+              </button>
+              <button
+                onClick={() => handleDelete(selectedSeanceDetails.id_seance)}
+                disabled={!canDeleteSeance(selectedSeanceDetails)}
+                title={!canDeleteSeance(selectedSeanceDetails) ? "Séance terminée ou contenant des présences" : "Supprimer cette séance"}
+                className="flex-1 rounded-2xl border border-rose-500/20 bg-rose-500/10 py-3 text-xs font-bold text-rose-700 transition hover:bg-rose-500/20 disabled:opacity-50 dark:text-rose-400"
+              >
+                Supprimer
+              </button>
+            </div>
           </div>
         </div>
       )}

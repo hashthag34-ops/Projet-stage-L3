@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import API from '../../services/api';
+import API from '../../services/api';
 
 const statusLabels = {
   CERTIFIE: 'Certifié',
@@ -45,15 +45,20 @@ const csvCell = (value) => {
   return `"${safeText.replace(/"/g, '""')}"`;
 };
 
+const inputClass = 'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500';
+const cardClass = 'rounded-3xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900';
+
 function SummaryCard({ label, value, icon: Icon, colorClass }) {
   return (
-    <article className="cert-summary-card [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [transition:all_0.2s] [&:hover]:[box-shadow:0_8px_20px_var(--shadow-color)]">
-      <div className="cert-card-content [display:flex] [align-items:center] [justify-content:space-between] [gap:12px]">
+    <article className={`${cardClass} p-5 transition-shadow hover:shadow-md`}>
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="cert-card-label [font-size:13px] [font-weight:600] [color:var(--cert-muted)] [margin:0]">{label}</p>
-          <p className="cert-card-value [margin-top:8px] [font-size:28px] [font-weight:900] [color:var(--cert-text)] [font-variant-numeric:tabular-nums]">{value}</p>
+          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{label}</p>
+          <p className="mt-2 text-2xl font-black tabular-nums text-zinc-900 dark:text-white sm:text-3xl">{value}</p>
         </div>
-        <div className={`cert-card-icon-wrapper ${colorClass}`}><Icon size={22} /></div>
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${colorClass}`}>
+          <Icon size={24} />
+        </div>
       </div>
     </article>
   );
@@ -169,10 +174,10 @@ export default function AdminCertification() {
       <html lang="fr"><head><meta charset="utf-8"><title>Certifications - ${escapeHtml(selectedFormation.titre)}</title>
       <style>
         body{font-family:Arial,sans-serif;color:#18181b;margin:36px}
-        h1{margin-bottom:6px;color:#c2410c}p{color:#52525b;margin:4px 0 24px}
+        h1{margin-bottom:6px;color:#f97316}p{color:#52525b;margin:4px 0 24px}
         table{border-collapse:collapse;width:100%;font-size:12px}
         th,td{border:1px solid #d4d4d8;padding:10px;text-align:left}
-        th{background:#fff7ed;color:#9a3412}
+        th{background:#fff7ed;color:#ea580c}
         @media print{body{margin:12mm}}
       </style></head><body>
       <h1>Suivi des certifications</h1>
@@ -185,14 +190,16 @@ export default function AdminCertification() {
   };
 
   return (
-    <main className="cert-container [margin:0_auto] [width:100%] [max-width:1280px] [display:flex] [flex-direction:column] [gap:24px] [padding:16px_16px_32px_16px] [font-family:inherit] [color:var(--cert-text)] [background-color:var(--cert-bg)] [box-sizing:border-box] [transition:background-color_0.3s_ease,_color_0.3s_ease] [min-height:100vh]">
-      <header className="cert-hero-banner [border-radius:24px] [background:linear-gradient(135deg,_\#f97316_0%,_\#f59e0b_100%)] [padding:24px] [color:\#ffffff] [box-shadow:0_10px_25px_rgba(249,_115,_22,_0.2)] [box-sizing:border-box]">
-        <div className="cert-hero-content [display:flex] [align-items:flex-start] [gap:16px]">
-          <div className="cert-hero-icon [border-radius:16px] [background-color:rgba(255,_255,_255,_0.2)] [padding:12px] [display:flex] [align-items:center] [justify-content:center]"><Award size={28} /></div>
+    <main className="mx-auto min-h-screen max-w-7xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
+      <header className="rounded-3xl bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-zinc-950 shadow-xl shadow-orange-500/10 sm:p-8">
+        <div className="flex items-start gap-4">
+          <div className="flex items-center justify-center rounded-2xl bg-zinc-950/10 p-3 text-zinc-950">
+            <Award size={28} />
+          </div>
           <div>
-            <p className="cert-hero-tag [font-size:11px] [font-weight:700] [text-transform:uppercase] [letter-spacing:0.1em] [color:\#ffedd5] [margin:0]">Espace administrateur</p>
-            <h1 className="cert-hero-title [margin:4px_0_0_0] [font-size:26px] [font-weight:900] [letter-spacing:-0.025em]">Suivi des certifications</h1>
-            <p className="cert-hero-desc [margin:8px_0_0_0] [max-width:650px] [font-size:13px] [color:\#fef3c7] [line-height:1.5]">
+            <p className="text-xs font-bold uppercase tracking-wider text-zinc-950/70">Espace administrateur</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Suivi des certifications</h1>
+            <p className="mt-2 max-w-2xl text-xs font-medium text-zinc-950/80 sm:text-sm">
               Consultez les statistiques de certification et les listes par formation. Cette page est en lecture seule.
             </p>
           </div>
@@ -200,96 +207,107 @@ export default function AdminCertification() {
       </header>
 
       {error && (
-        <div role="alert" className="cert-error-banner [border-radius:16px] [border:1px_solid_rgba(239,_68,_68,_0.3)] [background-color:rgba(239,_68,_68,_0.1)] [padding:12px_16px] [font-size:13px] [font-weight:600] [color:\#ef4444]">
+        <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
 
       {selectedFormation ? (
-        <section>
+        <section className="space-y-4">
           <button
             onClick={() => { setSelectedFormation(null); setLearners([]); setError(''); }}
-            className="cert-back-btn [display:inline-flex] [align-items:center] [gap:8px] [border-radius:12px] [padding:8px_12px] [font-size:13px] [font-weight:700] [color:var(--cert-muted)] [background:none] [border:none] [cursor:pointer] [transition:background-color_0.2s,_color_0.2s] [margin-bottom:16px] [&:hover]:[background-color:var(--cert-hover)] [&:hover]:[color:var(--cert-text)]"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
-            <ArrowLeft size={17} /> Retour aux statistiques
+            <ArrowLeft size={16} /> Retour aux statistiques
           </button>
-          <div className="cert-detail-header-card [display:flex] [flex-direction:column] [justify-content:space-between] [gap:16px] [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)] [margin-bottom:20px]">
+          
+          <div className={`${cardClass} flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:p-6`}>
             <div>
-              <p className="cert-detail-date [font-size:12px] [font-weight:600] [color:var(--orange-primary)] [margin:0]">Clôturée le {formatDate(selectedFormation.date_fin)}</p>
-              <h2 className="cert-detail-title [margin:4px_0_0_0] [font-size:20px] [font-weight:900] [color:var(--cert-text)]">{selectedFormation.titre}</h2>
-              <p className="cert-detail-count [margin:6px_0_0_0] [font-size:12px] [color:var(--cert-muted)]">{filteredLearners.length} apprenant{filteredLearners.length > 1 ? 's' : ''} affiché{filteredLearners.length > 1 ? 's' : ''}</p>
+              <p className="text-xs font-bold text-orange-600 dark:text-orange-400">Clôturée le {formatDate(selectedFormation.date_fin)}</p>
+              <h2 className="mt-1 text-xl font-black text-zinc-900 dark:text-white sm:text-2xl">{selectedFormation.titre}</h2>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{filteredLearners.length} apprenant{filteredLearners.length > 1 ? 's' : ''} affiché{filteredLearners.length > 1 ? 's' : ''}</p>
             </div>
-            <div className="cert-action-buttons [display:flex] [flex-wrap:wrap] [gap:8px]">
-              <button onClick={exportCsv} disabled={learnersLoading} className="cert-action-btn [display:inline-flex] [align-items:center] [gap:8px] [border-radius:12px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:8px_14px] [font-size:13px] [font-weight:700] [color:var(--cert-text)] [cursor:pointer] [transition:background-color_0.2s]">
-                <FileSpreadsheet size={17} /> Exporter Excel
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={exportCsv} 
+                disabled={learnersLoading} 
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+              >
+                <FileSpreadsheet size={16} /> Exporter Excel
               </button>
-              <button onClick={printList} disabled={learnersLoading} className="cert-action-btn [display:inline-flex] [align-items:center] [gap:8px] [border-radius:12px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:8px_14px] [font-size:13px] [font-weight:700] [color:var(--cert-text)] [cursor:pointer] [transition:background-color_0.2s]">
-                <FileText size={17} /> Imprimer / PDF
+              <button 
+                onClick={printList} 
+                disabled={learnersLoading} 
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+              >
+                <FileText size={16} /> Imprimer / PDF
               </button>
             </div>
           </div>
 
-          <div className="cert-filters-bar [display:flex] [flex-direction:column] [gap:12px] [margin-bottom:16px]">
-            <div className="cert-filter-pills [display:flex] [flex-wrap:wrap] [gap:8px]">
-              {[
-                ['TOUS', 'Tous'],
-                ['CERTIFIE', 'Certifiés'],
-                ['NON_CERTIFIE', 'Non certifiés']
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  onClick={() => setFilter(value)}
-                  className={`cert-pill ${filter === value ? 'active' : ''}`}
-                >
-                  {label}
-                </button>
-              ))}
+          <div className={`${cardClass} p-4 sm:p-5`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  ['TOUS', 'Tous'],
+                  ['CERTIFIE', 'Certifiés'],
+                  ['NON_CERTIFIE', 'Non certifiés']
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setFilter(value)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${filter === value ? 'bg-orange-500 text-zinc-950' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={15} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Rechercher un apprenant"
+                  className={`${inputClass} pl-10`}
+                />
+              </div>
             </div>
-            <label className="cert-search-wrapper [position:relative] [display:block] [width:100%]">
-              <Search className="cert-search-icon [position:absolute] [left:12px] [top:50%] [transform:translateY(-50%)] [color:var(--cert-muted)]" size={17} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Rechercher un apprenant"
-                className="cert-search-input [width:100%] [border-radius:12px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-input-bg)] [padding:10px_12px_10px_38px] [font-size:13px] [color:var(--cert-text)] [outline:none] [box-sizing:border-box] [transition:border-color_0.2s,_box-shadow_0.2s]"
-              />
-            </label>
           </div>
 
           {learnersLoading ? (
-            <div className="cert-state-box [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:40px] [text-align:center] [font-size:13px] [font-weight:600] [color:var(--cert-muted)]">Chargement des apprenants…</div>
+            <div className={`${cardClass} p-12 text-center text-xs text-zinc-500`}>Chargement des apprenants…</div>
           ) : filteredLearners.length === 0 ? (
-            <div className="cert-state-box [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:40px] [text-align:center] [font-size:13px] [font-weight:600] [color:var(--cert-muted)] dashed">Aucun apprenant ne correspond à ce filtre.</div>
+            <div className={`${cardClass} border-dashed p-12 text-center text-xs text-zinc-500`}>Aucun apprenant ne correspond à ce filtre.</div>
           ) : (
-            <div className="cert-table-card [overflow:hidden] [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [box-shadow:0_1px_3px_var(--shadow-color)]">
-              <div className="table-responsive [overflow-x:auto]">
-                <table className="cert-table [width:100%] [min-width:640px] [text-align:left] [font-size:13px] [border-collapse:collapse]">
-                  <thead>
+            <div className={`${cardClass} overflow-hidden`}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] text-left text-xs">
+                  <thead className="border-b border-zinc-100 bg-zinc-50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
                     <tr>
-                      <th>Apprenant</th>
-                      <th>E-mail</th>
-                      <th>Statut</th>
-                      <th>Date de certification</th>
+                      <th className="p-4 pl-5">Apprenant</th>
+                      <th className="p-4">E-mail</th>
+                      <th className="p-4">Statut</th>
+                      <th className="p-4 pr-5">Date de certification</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {filteredLearners.map((learner) => {
                       const status = learner.certification_statut;
-                      const statusClass = status === 'CERTIFIE'
-                        ? 'status-certifie'
+                      const statusBadge = status === 'CERTIFIE'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                         : status === 'NON_CERTIFIE'
-                          ? 'status-non-certifie'
-                          : 'status-en-attente';
+                          ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400'
+                          : 'bg-amber-500/10 text-amber-700 dark:text-amber-400';
                       return (
-                        <tr key={learner.id_apprenant} className="cert-tr [border-top:1px_solid_var(--cert-border)] [transition:background-color_0.2s] [&:hover]:[background-color:var(--cert-hover)]">
-                          <td className="cert-td [color:var(--cert-text)] font-bold">{learner.prenom} {learner.nom}</td>
-                          <td className="cert-td [color:var(--cert-text)] text-muted [color:var(--cert-muted)]">{learner.email}</td>
-                          <td className="cert-td [color:var(--cert-text)]">
-                            <span className={`cert-status-badge ${statusClass}`}>
+                        <tr key={learner.id_apprenant} className="transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30">
+                          <td className="p-4 pl-5 font-bold text-zinc-900 dark:text-white">{learner.prenom} {learner.nom}</td>
+                          <td className="p-4 font-medium text-zinc-500 dark:text-zinc-400">{learner.email}</td>
+                          <td className="p-4 whitespace-nowrap">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusBadge}`}>
                               {statusLabels[status] || status}
                             </span>
                           </td>
-                          <td className="cert-td [color:var(--cert-text)] text-muted [color:var(--cert-muted)]">{formatDate(learner.date_certification)}</td>
+                          <td className="p-4 pr-5 font-medium text-zinc-500 dark:text-zinc-400">{formatDate(learner.date_certification)}</td>
                         </tr>
                       );
                     })}
@@ -301,32 +319,32 @@ export default function AdminCertification() {
         </section>
       ) : (
         <>
-          <section className="cert-summary-grid [display:grid] [gap:16px] [grid-template-columns:1fr]">
+          <section className="grid gap-4 sm:grid-cols-2">
             <SummaryCard
               label="Apprenants des formations clôturées"
               value={totalLearners}
               icon={Users}
-              colorClass="icon-blue"
+              colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400"
             />
             <SummaryCard
               label="Certifications accordées"
               value={totalCertified}
               icon={CheckCircle2}
-              colorClass="icon-emerald"
+              colorClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
             />
           </section>
 
-          <section className="cert-chart-card [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:20px] [box-shadow:0_1px_3px_var(--shadow-color)]">
-            <div className="cert-chart-header [margin-bottom:20px]">
-              <h2 className="cert-section-title [font-size:16px] [font-weight:900] [color:var(--cert-text)] [margin:0]">Certifications par formation</h2>
-              <p className="cert-section-desc [margin:4px_0_0_0] [font-size:12px] [color:var(--cert-muted)]">Nombre d’apprenants inscrits comparé au nombre de certifiés.</p>
+          <section className={`${cardClass} p-5 sm:p-6`}>
+            <div className="mb-5">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Certifications par formation</h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Nombre d’apprenants inscrits comparé au nombre de certifiés.</p>
             </div>
             {loading ? (
-              <div className="cert-chart-state [display:flex] [height:288px] [align-items:center] [justify-content:center] [font-size:13px] [font-weight:600] [color:var(--cert-muted)]">Chargement des statistiques…</div>
+              <div className="flex h-72 items-center justify-center text-xs font-medium text-zinc-500">Chargement des statistiques…</div>
             ) : chartData.length === 0 ? (
-              <div className="cert-chart-state [display:flex] [height:288px] [align-items:center] [justify-content:center] [font-size:13px] [font-weight:600] [color:var(--cert-muted)]">Aucune formation terminée à afficher.</div>
+              <div className="flex h-72 items-center justify-center text-xs font-medium text-zinc-500">Aucune formation terminée à afficher.</div>
             ) : (
-              <div className="cert-chart-container [height:320px] [width:100%]">
+              <div className="h-80 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 12, right: 16, left: -16, bottom: 8 }}>
                     <defs>
@@ -335,15 +353,15 @@ export default function AdminCertification() {
                         <stop offset="95%" stopColor="#f97316" stopOpacity={0.02} />
                       </linearGradient>
                       <linearGradient id="learnersGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#64748b" stopOpacity={0.22} />
-                        <stop offset="95%" stopColor="#64748b" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor="#71717a" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="#71717a" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" opacity={0.4} />
-                    <XAxis dataKey="titre_court" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={56} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#71717a" opacity={0.15} />
+                    <XAxis dataKey="titre_court" tick={{ fontSize: 11, fill: '#71717a' }} interval={0} angle={-15} textAnchor="end" height={56} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#71717a' }} />
                     <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.titre || ''} />
-                    <Area type="monotone" dataKey="apprenants_count" name="Apprenants" stroke="#64748b" fill="url(#learnersGradient)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="apprenants_count" name="Apprenants" stroke="#71717a" fill="url(#learnersGradient)" strokeWidth={2} />
                     <Area type="monotone" dataKey="certifies_count" name="Certifiés" stroke="#f97316" fill="url(#certifiedGradient)" strokeWidth={2.5} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -351,38 +369,42 @@ export default function AdminCertification() {
             )}
           </section>
 
-          <section>
-            <div className="cert-grid-title-wrapper [display:flex] [align-items:center] [gap:8px] [margin-bottom:16px]">
-              <h2 className="cert-section-title [font-size:16px] [font-weight:900] [color:var(--cert-text)] [margin:0] large">Détail par formation</h2>
-              <Download size={18} className="text-orange [color:var(--orange-primary)]" />
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Détail par formation</h2>
+              <Download size={18} className="text-orange-500" />
             </div>
             {loading ? null : formations.length === 0 ? (
-              <div className="cert-state-box [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:40px] [text-align:center] [font-size:13px] [font-weight:600] [color:var(--cert-muted)] dashed">Aucune formation clôturée.</div>
+              <div className={`${cardClass} border-dashed p-10 text-center text-xs text-zinc-500`}>Aucune formation clôturée.</div>
             ) : (
-              <div className="cert-formations-grid [display:grid] [gap:16px] [grid-template-columns:1fr]">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {formations.map((item) => (
                   <button
                     key={item.id_formation}
                     onClick={() => openFormation(item)}
-                    className="cert-formation-card [border-radius:24px] [border:1px_solid_var(--cert-border)] [background-color:var(--cert-panel)] [padding:20px] [text-align:left] [box-shadow:0_1px_3px_var(--shadow-color)] [cursor:pointer] [transition:all_0.25s_ease] [box-sizing:border-box] [&:hover]:[transform:translateY(-2px)] [&:hover]:[border-color:var(--orange-primary)] [&:hover]:[box-shadow:0_10px_25px_var(--shadow-color)]"
+                    className={`${cardClass} p-5 text-left transition hover:-translate-y-0.5 hover:border-orange-500 hover:shadow-md dark:hover:border-orange-500`}
                   >
-                    <div className="cert-formation-top [display:flex] [align-items:flex-start] [justify-content:space-between] [gap:12px]">
-                      <div className="cert-formation-icon [display:flex] [height:44px] [width:44px] [align-items:center] [justify-content:center] [border-radius:16px] [background-color:var(--orange-bg-light)] [color:var(--orange-primary)]"><Award size={22} /></div>
-                      <span className="cert-formation-date-badge [border-radius:9999px] [background-color:var(--cert-hover)] [padding:4px_10px] [font-size:10px] [font-weight:700] [color:var(--cert-muted)] [border:1px_solid_var(--cert-border)]">Clôturée le {formatDate(item.date_fin)}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                        <Award size={20} />
+                      </div>
+                      <span className="rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-0.5 text-[10px] font-bold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+                        Clôturée le {formatDate(item.date_fin)}
+                      </span>
                     </div>
-                    <h3 className="cert-formation-name [margin:16px_0_0_0] [font-size:16px] [font-weight:900] [color:var(--cert-text)] [line-height:1.3]">{item.titre}</h3>
-                    <div className="cert-formation-metrics [margin-top:16px] [display:grid] [grid-template-columns:repeat(3,_1fr)] [gap:8px] [border-top:1px_solid_var(--cert-border)] [padding-top:16px]">
+                    <h3 className="mt-4 text-base font-black text-zinc-900 dark:text-white line-clamp-2">{item.titre}</h3>
+                    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
                       <div>
-                        <p className="metric-label [font-size:11px] [color:var(--cert-muted)] [margin:0]">Apprenants</p>
-                        <p className="metric-val [margin-top:4px] [font-size:14px] [font-weight:900] [color:var(--cert-text)]">{item.apprenants_count}</p>
+                        <p className="text-[10px] font-bold uppercase text-zinc-400">Apprenants</p>
+                        <p className="mt-0.5 text-xs font-black text-zinc-900 dark:text-white">{item.apprenants_count}</p>
                       </div>
                       <div>
-                        <p className="metric-label [font-size:11px] [color:var(--cert-muted)] [margin:0]">Certifiés</p>
-                        <p className="metric-val [margin-top:4px] [font-size:14px] [font-weight:900] [color:var(--cert-text)] emerald">{item.certifies_count}</p>
+                        <p className="text-[10px] font-bold uppercase text-zinc-400">Certifiés</p>
+                        <p className="mt-0.5 text-xs font-black text-emerald-600 dark:text-emerald-400">{item.certifies_count}</p>
                       </div>
                       <div>
-                        <p className="metric-label [font-size:11px] [color:var(--cert-muted)] [margin:0]">Non certifiés</p>
-                        <p className="metric-val [margin-top:4px] [font-size:14px] [font-weight:900] [color:var(--cert-text)]">{item.non_certifies_count}</p>
+                        <p className="text-[10px] font-bold uppercase text-zinc-400">Non certifiés</p>
+                        <p className="mt-0.5 text-xs font-black text-zinc-900 dark:text-white">{item.non_certifies_count}</p>
                       </div>
                     </div>
                   </button>
