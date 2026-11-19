@@ -42,8 +42,8 @@ import { getRealtimeSocket } from '../../services/realtime';
 
 const BACKEND_URL = import.meta.env.VITE_URL;
 
-const inputClass = 'w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-xs font-semibold text-zinc-800 outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500';
-const cardClass = 'rounded-3xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900';
+const inputClass = 'w-full rounded-2xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 text-xs font-semibold text-zinc-800 outline-none transition-all placeholder:text-zinc-400 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-800/80 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-orange-500 dark:focus:bg-zinc-900';
+const cardClass = 'rounded-3xl border border-zinc-200/80 bg-white shadow-xs transition-all dark:border-zinc-800/80 dark:bg-zinc-900/70';
 
 const getAvatarSrc = (user) => {
   if (!user) return null;
@@ -55,51 +55,50 @@ const getAvatarSrc = (user) => {
 
 function UserAvatar({ user, large = false }) {
   const avatar = getAvatarSrc(user);
-  const sizeClass = large ? 'h-16 w-16 text-lg' : 'h-9 w-9 text-xs';
+  const sizeClass = large ? 'h-16 w-16 text-lg' : 'h-10 w-10 text-xs';
 
   if (avatar) {
     return (
       <img
         src={avatar}
         alt={`Profil de ${user.prenom || ''} ${user.nom || ''}`}
-        className={`rounded-2xl object-cover ring-1 ring-zinc-200 dark:ring-zinc-700 ${large ? 'h-16 w-16' : 'h-9 w-9'}`}
+        className={`rounded-2xl object-cover ring-2 ring-zinc-100 dark:ring-zinc-800 ${large ? 'h-16 w-16' : 'h-10 w-10'}`}
       />
     );
   }
 
   const initials = `${user?.prenom?.[0] || ''}${user?.nom?.[0] || ''}`.toUpperCase();
   return (
-    <div className={`flex items-center justify-center rounded-2xl bg-zinc-100 font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 ${sizeClass}`}>
+    <div className={`flex items-center justify-center rounded-2xl bg-orange-500/10 font-bold text-orange-600 dark:text-orange-400 ${sizeClass}`}>
       {initials || 'U'}
     </div>
   );
 }
 
+// Rôles : Uniquement déclinaisons de Blanc, Noir et Orange
 const getRoleBadgeClass = (role) => {
   switch (role?.toUpperCase()) {
-    case 'APPRENANT':
-      return 'bg-blue-500/10 text-blue-600 border border-blue-500/20 dark:text-blue-400';
+    case 'RESPONSABLE':
     case 'ADMINISTRATEUR':
     case 'ADMIN':
-      return 'bg-purple-500/10 text-purple-600 border border-purple-500/20 dark:text-purple-400';
-    case 'RESPONSABLE':
-      return 'bg-orange-500/10 text-orange-600 border border-orange-500/20 dark:text-orange-400';
+      return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20';
+    case 'APPRENANT':
     case 'FORMATEUR':
-      return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400';
     default:
-      return 'bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700';
+      return 'bg-zinc-100 text-zinc-800 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700';
   }
 };
 
+// Statuts : Uniquement déclinaisons de Blanc, Noir et Orange
 const getStatusBadgeClass = (status) => {
   switch (status?.toUpperCase()) {
     case 'ACTIF':
-      return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+      return 'bg-orange-500/10 text-orange-600 border border-orange-500/20 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900/50';
     case 'SUSPENDU':
-      return 'bg-amber-500/10 text-amber-700 dark:text-amber-400';
+      return 'bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700';
     case 'DESACTIVE':
     default:
-      return 'bg-rose-500/10 text-rose-700 dark:text-rose-400';
+      return 'bg-zinc-200 text-zinc-900 border border-zinc-400 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-700';
   }
 };
 
@@ -121,7 +120,6 @@ export default function GsUsers() {
   const [monthlyActivity, setMonthlyActivity] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
-  const [mobileIndex, setMobileIndex] = useState(0);
   const presenceByUser = useRef(new Map());
 
   const [formData, setFormData] = useState({
@@ -134,7 +132,6 @@ export default function GsUsers() {
   });
 
   const [isClosing, setIsClosing] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleCloseDrawer = () => {
     setIsClosing(true);
@@ -143,12 +140,6 @@ export default function GsUsers() {
       setIsClosing(false);
     }, 300);
   };
-
-  useEffect(() => {
-    if (selectedUser) {
-      requestAnimationFrame(() => setIsOpen(true));
-    }
-  }, [selectedUser]);
 
   const fetchUsers = async () => {
     try {
@@ -428,18 +419,19 @@ export default function GsUsers() {
           <meta charset="utf-8">
           <title>Liste des utilisateurs</title>
           <style>
-            body { font-family: Arial, sans-serif; color: #18181b; margin: 24px; }
-            h1 { font-size: 20px; margin-bottom: 4px; }
-            p { color: #52525b; font-size: 12px; margin: 0 0 16px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { border: 1px solid #d4d4d8; padding: 8px; text-align: left; }
-            th { background: #f4f4f5; }
-            @media print { body { margin: 12mm; } tr { break-inside: avoid; } }
+            body { font-family: system-ui, -apple-system, sans-serif; color: #09090b; margin: 32px; }
+            h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+            p { color: #71717a; font-size: 13px; margin: 0 0 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            th, td { border: 1px solid #e4e4e7; padding: 10px; text-align: left; }
+            th { background: #18181b; color: #ffffff; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+            tr:nth-child(even) { background: #fafafa; }
+            @media print { body { margin: 15mm; } tr { break-inside: avoid; } }
           </style>
         </head>
         <body>
           <h1>Liste des utilisateurs</h1>
-          <p>${filteredUsers.length} utilisateur(s) — ordre : ${escapeHtml(
+          <p>${filteredUsers.length} utilisateur(s) — tri : ${escapeHtml(
             sort === 'name' ? 'Nom A-Z' : sort === 'role' ? 'Rôle' : 'Récent'
           )}</p>
           <table>
@@ -454,22 +446,23 @@ export default function GsUsers() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl space-y-6 px-3 py-6 pb-28 font-sans text-zinc-900 dark:text-zinc-100 sm:px-6">
+    <div className="mx-auto min-h-screen max-w-7xl space-y-8 px-4 py-8 pb-32 font-sans text-zinc-900 dark:text-zinc-100 sm:px-8">
 
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-            <Sparkles size={13} className="text-orange-500" /> Administration Système
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
+            <Sparkles size={13} strokeWidth={2} /> Administration Système
           </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Gestion des Membres</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Gestion des Membres</h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Gérez les accès utilisateurs, contrôlez les statuts et suivez l'activité du système.</p>
         </div>
 
         <button
           onClick={() => setShowStatsModal(!showStatsModal)}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-800 shadow-xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
-          <BarChart3 size={15} />
+          <BarChart3 size={15} strokeWidth={1.75} />
           <span>{showStatsModal ? 'Masquer Statistiques' : 'Afficher Statistiques'}</span>
           <ChevronDown size={14} className={`transition-transform duration-200 ${showStatsModal ? 'rotate-180' : ''}`} />
         </button>
@@ -477,22 +470,22 @@ export default function GsUsers() {
 
       {/* STATISTIQUES MODAL */}
       {showStatsModal && (
-        <div className={`${cardClass} overflow-hidden p-5 sm:p-6 transition-all duration-300`}>
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Aperçu analytique des utilisateurs</h2>
+        <div className={`${cardClass} overflow-hidden p-6 transition-all duration-300 space-y-6`}>
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Aperçu analytique des utilisateurs</h2>
             <button onClick={() => setShowStatsModal(false)} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
-              <X size={16} />
+              <X size={18} strokeWidth={1.75} />
             </button>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
-              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Comptes et candidatures ces 6 derniers mois</span>
-              <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-5 dark:border-zinc-800/80 dark:bg-zinc-900/50">
+              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Activité des 6 derniers mois</span>
+              <div className="mt-3 flex flex-wrap gap-4 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                 <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-zinc-900 dark:bg-white" />Comptes créés</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-orange-500" />Candidatures envoyées</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-orange-500" />Candidatures reçues</span>
               </div>
-              <div className="mt-4 h-48 w-full">
+              <div className="mt-4 h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyCreationChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <defs>
@@ -506,23 +499,23 @@ export default function GsUsers() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#71717a" opacity={0.15} />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: '1px solid #27272a', color: '#fff', fontSize: '12px' }} />
                     <Area
                       type="monotone"
                       dataKey="comptes"
                       name="Comptes créés"
                       stroke="#f97316"
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       fill="url(#userActivity)"
                     />
                     <Area
                       type="monotone"
                       dataKey="candidatures"
-                      name="Candidatures envoyées"
+                      name="Candidatures reçues"
                       stroke="#71717a"
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       fill="url(#applicationActivity)"
                     />
                   </AreaChart>
@@ -530,16 +523,16 @@ export default function GsUsers() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
-              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Répartition des rôles</span>
-              <div className="mt-4 h-48 w-full">
+            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-5 dark:border-zinc-800/80 dark:bg-zinc-900/50">
+              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Répartition par rôles</span>
+              <div className="mt-6 h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={roleChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#71717a" opacity={0.15} />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
-                    <Bar dataKey="count" fill="#f97316" radius={[6, 6, 0, 0]} barSize={24} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '16px', border: '1px solid #27272a', color: '#fff', fontSize: '12px' }} />
+                    <Bar dataKey="count" fill="#f97316" radius={[8, 8, 0, 0]} barSize={28} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -549,46 +542,46 @@ export default function GsUsers() {
       )}
 
       {/* Recherche et Filtres */}
-      <div className={`${cardClass} p-4 sm:p-5`}>
-        <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto]">
+      <div className={`${cardClass} p-5`}>
+        <div className="grid gap-4 sm:grid-cols-[1fr_220px_auto]">
           <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <Search size={18} strokeWidth={1.75} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search ?? ''}
-              onChange={(e) => { setSearch(e.target.value); setMobileIndex(0); }}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, email ou rôle..."
-              className={`${inputClass} pl-10`}
+              className={`${inputClass} pl-11`}
             />
           </div>
           <div className="relative">
             <select
               value={sort ?? 'recent'}
               onChange={(e) => setSort(e.target.value)}
-              className={`${inputClass} cursor-pointer appearance-none pr-8`}
+              className={`${inputClass} cursor-pointer appearance-none pr-10`}
             >
-              <option value="recent">Tri : Récent</option>
+              <option value="recent">Tri : Plus récents</option>
               <option value="name">Tri : Nom A-Z</option>
               <option value="role">Tri : Rôle</option>
             </select>
-            <ArrowUpDown size={13} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <ArrowUpDown size={15} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400" />
           </div>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handlePrintUsers}
               disabled={loading || filteredUsers.length === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 disabled:opacity-40"
             >
-              <Printer size={14} />
+              <Printer size={16} strokeWidth={1.75} />
               <span className="hidden sm:inline">Imprimer</span>
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
               disabled={loading || filteredUsers.length === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 disabled:opacity-40"
             >
-              <FileSpreadsheet size={14} />
+              <FileSpreadsheet size={16} strokeWidth={1.75} />
               <span className="hidden sm:inline">Exporter</span>
             </button>
           </div>
@@ -597,55 +590,66 @@ export default function GsUsers() {
 
       {/* Tableau des utilisateurs */}
       {loading ? (
-        <div className={`${cardClass} p-12 text-center text-xs text-zinc-500`}>Chargement des membres...</div>
+        <div className="flex h-96 items-center justify-center text-sm font-medium text-zinc-400">
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+            Chargement des membres…
+          </div>
+        </div>
       ) : filteredUsers.length === 0 ? (
-        <div className={`${cardClass} p-12 text-center text-xs text-zinc-500`}>Aucun utilisateur trouvé.</div>
+        <div className={`${cardClass} py-16 text-center text-sm text-zinc-500 dark:text-zinc-400`}>Aucun utilisateur ne correspond à votre recherche.</div>
       ) : (
         <div className={`${cardClass} overflow-hidden`}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-zinc-100 bg-zinc-50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400">
+            <table className="w-full text-left text-xs min-w-[900px]">
+              <thead className="border-b border-zinc-200/80 bg-zinc-50/50 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/50 dark:text-zinc-400">
                 <tr>
-                  <th className="p-4 pl-5">Utilisateur</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Rôle</th>
-                  <th className="p-4">Statut</th>
-                  <th className="p-4">Présence</th>
-                  <th className="p-4 pr-5 text-right">Actions</th>
+                  <th className="px-6 py-4">Utilisateur</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Rôle</th>
+                  <th className="px-6 py-4">Statut</th>
+                  <th className="px-6 py-4">Présence</th>
+                  <th className="px-6 py-4 text-right">Détails</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                 {filteredUsers.map((user) => (
                   <tr
                     key={user.id_utilisateur}
                     onClick={() => setSelectedUser(user)}
-                    className="cursor-pointer transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30"
+                    className="cursor-pointer transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
                   >
-                    <td className="p-4 pl-5">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <UserAvatar user={user} />
                         <div>
-                          <p className="font-bold text-zinc-900 dark:text-white">{user.prenom} {user.nom}</p>
-                          <p className="text-[10px] text-zinc-400">ID #{user.id_utilisateur}</p>
+                          <p className="font-semibold text-zinc-900 dark:text-white">{user.prenom} {user.nom}</p>
+                          <p className="text-[11px] text-zinc-400">ID #{user.id_utilisateur}</p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="p-4 font-medium text-zinc-600 dark:text-zinc-300">
-                      {user.email}
+                    {/* COLONNE EMAIL ADAPTATIVE AVEC TRONCATURE ET TOOLTIP */}
+                    <td className="px-6 py-4 font-medium text-zinc-600 dark:text-zinc-300">
+                      <span 
+                        className="block max-w-[160px] sm:max-w-[200px] md:max-w-[240px] truncate" 
+                        title={user.email}
+                      >
+                        {user.email}
+                      </span>
                     </td>
 
-                    <td className="p-4 whitespace-nowrap">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${getRoleBadgeClass(user.role)}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase ${getRoleBadgeClass(user.role)}`}>
                         {user.role}
                       </span>
                     </td>
 
-                    <td className="p-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={user.statut_compte ?? 'ACTIF'}
                         onChange={(e) => handleStatusChange(user.id_utilisateur, e.target.value)}
-                        className={`rounded-xl px-2.5 py-1 text-xs font-bold outline-none cursor-pointer ${getStatusBadgeClass(user.statut_compte)}`}
+                        className={`rounded-xl px-3 py-1 text-xs font-semibold outline-none cursor-pointer ${getStatusBadgeClass(user.statut_compte)}`}
                       >
                         <option value="ACTIF">ACTIF</option>
                         <option value="DESACTIVE">DÉSACTIVÉ</option>
@@ -653,26 +657,26 @@ export default function GsUsers() {
                       </select>
                     </td>
 
-                    <td className="p-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${user.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'}`} />
-                        <span className={`font-semibold ${user.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'}`}>
+                        <span className={`h-2 w-2 rounded-full ${user.is_online ? 'bg-orange-500 animate-pulse' : 'bg-zinc-400'}`} />
+                        <span className={`font-semibold ${user.is_online ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-500'}`}>
                           {user.is_online ? 'En ligne' : 'Hors ligne'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                      <p className="text-[11px] text-zinc-400 mt-0.5">
                         {user.is_online
                           ? `Connecté depuis ${formatPresenceDate(user.date_derniere_connexion)}`
-                          : `Dernière déconnexion ${formatPresenceDate(user.date_derniere_deconnexion)}`}
+                          : `Déconnexion : ${formatPresenceDate(user.date_derniere_deconnexion)}`}
                       </p>
                     </td>
 
-                    <td className="p-4 pr-5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-6 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setSelectedUser(user)}
                         className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                       >
-                        <Info size={16} />
+                        <Info size={18} strokeWidth={1.75} />
                       </button>
                     </td>
                   </tr>
@@ -683,96 +687,96 @@ export default function GsUsers() {
         </div>
       )}
 
-      {/* BOUTON FLOTTANT CRÉER UN UTILISATEUR (FAB) */}
+      {/* BOUTON FLOTTANT CRÉER UN UTILISATEUR */}
       <button
         onClick={() => setShowCreate(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-zinc-950 shadow-xl shadow-orange-500/30 transition hover:scale-105 active:scale-95"
+        className="fixed bottom-8 right-8 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-105 active:scale-95"
         title="Créer un utilisateur"
       >
-        <UserPlus size={22} />
+        <UserPlus size={22} strokeWidth={2} />
       </button>
 
-      {/* PANNEAU LATÉRAL DE DÉTAILS / ÉDITION */}
+      {/* PANNEAU LATÉRAL DE DÉTAILS AVEC ANIMATION PAR LA DROITE */}
       {selectedUser && (
         <div
-          className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+          className={`fixed inset-0 z-50 flex justify-end bg-zinc-950/60 backdrop-blur-xs transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
           onClick={handleCloseDrawer}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white p-6 shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900 ${isClosing ? 'translate-x-full' : 'translate-x-0'}`}
+            className={`flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white p-6 shadow-2xl transition-transform duration-300 ease-in-out dark:border-zinc-800 dark:bg-zinc-900 ${isClosing ? 'translate-x-full' : 'translate-x-0'}`}
           >
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Détails de l'utilisateur</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Fiche Membre</span>
               <button onClick={handleCloseDrawer} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
-                <X size={18} />
+                <X size={18} strokeWidth={1.75} />
               </button>
             </div>
 
             <div className="my-6 flex items-center gap-4">
               <UserAvatar user={selectedUser} large />
-              <div>
-                <h3 className="text-lg font-black text-zinc-900 dark:text-white">
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-white truncate">
                   {selectedUser.prenom} {selectedUser.nom}
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">{selectedUser.email}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${getRoleBadgeClass(selectedUser.role)}`}>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate" title={selectedUser.email}>{selectedUser.email}</p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <span className={`inline-flex rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase ${getRoleBadgeClass(selectedUser.role)}`}>
                     {selectedUser.role}
                   </span>
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${getStatusBadgeClass(selectedUser.statut_compte)}`}>
+                  <span className={`inline-flex rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase ${getStatusBadgeClass(selectedUser.statut_compte)}`}>
                     {selectedUser.statut_compte}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Informations de contact</span>
+            <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400">Informations détaillées</span>
 
-              <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
+              <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/40">
                 <p className="text-[10px] font-bold uppercase text-zinc-400">Téléphone</p>
-                <p className="mt-0.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                   {selectedUser.telephone || 'Non renseigné'}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-                <p className="text-[10px] font-bold uppercase text-zinc-400">Présence</p>
-                <p className={`mt-0.5 text-xs font-bold ${selectedUser.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'}`}>
-                  {selectedUser.is_online ? 'En ligne' : 'Hors ligne'}
+              <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/40">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">État de présence</p>
+                <p className={`mt-1 text-sm font-semibold ${selectedUser.is_online ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-500'}`}>
+                  {selectedUser.is_online ? 'Actuellement en ligne' : 'Hors ligne'}
                 </p>
-                <p className="mt-1 text-[10px] text-zinc-400">
-                  Dernière connexion : {formatPresenceDate(selectedUser.date_derniere_connexion)}
+                <p className="mt-2 text-xs text-zinc-400">
+                  Connexion : {formatPresenceDate(selectedUser.date_derniere_connexion)}
                 </p>
-                <p className="mt-0.5 text-[10px] text-zinc-400">
-                  Dernière déconnexion : {formatPresenceDate(selectedUser.date_derniere_deconnexion)}
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  Déconnexion : {formatPresenceDate(selectedUser.date_derniere_deconnexion)}
                 </p>
               </div>
 
               {selectedUser.specialite && (
-                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
+                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/40">
                   <p className="text-[10px] font-bold uppercase text-zinc-400">Spécialité</p>
-                  <p className="mt-0.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">{selectedUser.specialite}</p>
+                  <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">{selectedUser.specialite}</p>
                 </div>
               )}
 
               {selectedUser.fonction && (
-                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
+                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/40">
                   <p className="text-[10px] font-bold uppercase text-zinc-400">Fonction</p>
-                  <p className="mt-0.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">{selectedUser.fonction}</p>
+                  <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">{selectedUser.fonction}</p>
                 </div>
               )}
 
               {selectedUser.role === 'APPRENANT' && (
-                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">Candidatures</p>
+                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/40">
+                  <p className="text-[10px] font-bold uppercase text-zinc-400">Candidatures liées</p>
                   {Array.isArray(selectedUser.candidatures) && selectedUser.candidatures.length > 0 ? (
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-3 space-y-2">
                       {selectedUser.candidatures.map((candidature) => (
-                        <div key={candidature.id_inscription} className="rounded-xl border border-zinc-200 bg-white p-2.5 dark:border-zinc-700 dark:bg-zinc-800">
+                        <div key={candidature.id_inscription} className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800">
                           <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{candidature.formation_titre || 'Formation inconnue'}</p>
-                          <p className="mt-0.5 text-[10px] text-zinc-400">
+                          <p className="mt-1 text-[11px] text-zinc-400">
                             {candidature.statut || 'Sans statut'}{candidature.date_inscription
                               ? ` - ${new Date(candidature.date_inscription).toLocaleDateString('fr-FR')}`
                               : ''}
@@ -781,21 +785,21 @@ export default function GsUsers() {
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-0.5 text-xs text-zinc-500">Aucune candidature</p>
+                    <p className="mt-1 text-xs text-zinc-500">Aucune candidature enregistrée</p>
                   )}
                 </div>
               )}
             </div>
 
             <div className="mt-6 border-t border-zinc-100 pt-5 dark:border-zinc-800 space-y-3">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Mettre à jour l'accès</span>
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400">Modifier l'accès</span>
 
-              <div className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/40">
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Statut du Compte</span>
+              <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 dark:border-zinc-800/80 dark:bg-zinc-800/40">
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Statut du Compte</span>
                 <select
                   value={selectedUser.statut_compte ?? 'ACTIF'}
                   onChange={(e) => handleStatusChange(selectedUser.id_utilisateur, e.target.value)}
-                  className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-800 outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                  className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 >
                   <option value="ACTIF">ACTIF</option>
                   <option value="DESACTIVE">DÉSACTIVÉ</option>
@@ -807,15 +811,15 @@ export default function GsUsers() {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={isDeletingUser}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 py-3 text-xs font-bold text-rose-600 transition hover:bg-rose-500/20 dark:text-rose-400"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-zinc-100 py-3 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                <Trash2 size={15} />
+                <Trash2 size={16} strokeWidth={1.75} />
                 {isDeletingUser ? 'Suppression...' : 'Supprimer cet utilisateur'}
               </button>
 
               <button
                 onClick={handleCloseDrawer}
-                className="w-full rounded-2xl bg-zinc-900 py-3 text-xs font-black text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                className="w-full rounded-xl bg-zinc-900 py-3 text-xs font-bold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 Fermer
               </button>
@@ -826,29 +830,29 @@ export default function GsUsers() {
 
       {/* Modal Création de Compte */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className={`${cardClass} w-full max-w-md p-5 sm:p-6`}>
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-              <h3 className="text-base font-black text-zinc-900 dark:text-white">Créer un nouveau membre</h3>
-              <button onClick={() => setShowCreate(false)} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
-                <X size={18} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm">
+          <div className={`${cardClass} w-full max-w-md p-6 sm:p-8 space-y-4`}>
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Créer un membre</h3>
+              <button onClick={() => setShowCreate(false)} className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <X size={18} strokeWidth={1.75} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <input name="nom" placeholder="Nom" required value={formData.nom ?? ''} onChange={handleChange} className={inputClass} />
                 <input name="prenom" placeholder="Prénom" required value={formData.prenom ?? ''} onChange={handleChange} className={inputClass} />
               </div>
 
-              <input type="email" name="email" placeholder="Adresse email" required value={formData.email ?? ''} onChange={handleChange} className={inputClass} />
-              <input name="telephone" placeholder="Téléphone" value={formData.telephone ?? ''} onChange={handleChange} className={inputClass} />
+              <input type="email" name="email" placeholder="Adresse e-mail" required value={formData.email ?? ''} onChange={handleChange} className={inputClass} />
+              <input name="telephone" placeholder="Numéro de téléphone" value={formData.telephone ?? ''} onChange={handleChange} className={inputClass} />
 
               {formData.role === 'ADMINISTRATEUR' && (
                 <input
                   type="password"
                   name="mot_de_passe"
-                  placeholder="Mot de passe (8 caractères minimum)"
+                  placeholder="Mot de passe (8 car. min)"
                   minLength={8}
                   required
                   value={formData.mot_de_passe ?? ''}
@@ -862,17 +866,18 @@ export default function GsUsers() {
                 <option value="RESPONSABLE">Responsable</option>
                 <option value="ADMINISTRATEUR">Administrateur</option>
               </select>
+              
               <p className="text-[11px] text-zinc-500 leading-relaxed">
                 {formData.role === 'ADMINISTRATEUR'
-                  ? 'Le compte administrateur est configuré immédiatement, sans e-mail.'
-                  : 'Un lien sécurisé sera envoyé à cette adresse pour configurer le compte.'}
+                  ? 'Le compte administrateur sera créé immédiatement avec son mot de passe.'
+                  : 'Un e-mail d’invitation sécurisé sera transmis au destinataire.'}
               </p>
 
               <button
                 type="submit"
-                className="mt-2 w-full rounded-2xl bg-orange-500 py-3 text-xs font-black text-zinc-950 shadow-sm transition hover:bg-orange-400"
+                className="w-full rounded-xl bg-orange-500 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-orange-600 mt-2"
               >
-                {formData.role === 'ADMINISTRATEUR' ? 'Créer l’administrateur' : 'Créer et envoyer l’invitation'}
+                {formData.role === 'ADMINISTRATEUR' ? 'Créer l’administrateur' : 'Envoyer l’invitation'}
               </button>
             </form>
           </div>

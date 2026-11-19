@@ -5,47 +5,70 @@ import { getAuthUser, logout as logoutService } from '../services/authService';
 import { connectRealtime } from '../services/realtime';
 import API from '../services/api';
 import sitelogo from '../assets/logo.png';
+import { 
+  Compass, 
+  CalendarDays, 
+  CheckSquare, 
+  History, 
+  MessageSquareText, 
+  LayoutDashboard, 
+  Users, 
+  BadgeCheck, 
+  Database, 
+  Layers, 
+  FileUser, 
+  QrCode, 
+  GraduationCap, 
+  Star, 
+  User, 
+  ChevronDown, 
+  ChevronUp, 
+  Sun, 
+  Moon, 
+  LogOut, 
+  ArrowUpRight 
+} from 'lucide-react';
 
 const API_AVATARS = import.meta.env.VITE_URL;
 
 const NAV_CONFIG = {
   visiteur: [
-    { path: '/catalogue', label: 'Catalogue', icon: 'bi-compass' },
+    { path: '/catalogue', label: 'Catalogue', icon: Compass },
   ],
   apprenant: [
-    { path: '/apprenant/catalogue', label: 'Catalogue', icon: 'bi-compass' },
-    { path: '/apprenant/planning', label: 'Planning', icon: 'bi-calendar-week' },
-    { path: '/apprenant/evaluations', label: 'Évaluations', icon: 'bi-check2-square' },
-    { path: '/apprenant/historique', label: 'Historique', icon: 'bi-clock-history' },
-    { path: '/apprenant/forum', label: 'Forum', icon: 'bi-chat-left-text' },
+    { path: '/apprenant/catalogue', label: 'Catalogue', icon: Compass },
+    { path: '/apprenant/planning', label: 'Planning', icon: CalendarDays },
+    { path: '/apprenant/evaluations', label: 'Évaluations', icon: CheckSquare },
+    { path: '/apprenant/historique', label: 'Historique', icon: History },
+    { path: '/apprenant/forum', label: 'Forum', icon: MessageSquareText },
   ],
   admin: [
-    { path: '/Admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
-    { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
-    { path: '/Admin/certifications', label: 'Certifications', icon: 'bi-patch-check' },
-    { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database' },
+    { path: '/Admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
+    { path: '/Admin/certifications', label: 'Certifications', icon: BadgeCheck },
+    { path: '/Admin/donnees-test', label: 'Données test', icon: Database },
   ],
   administrateur: [
-    { path: '/Admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
-    { path: '/Admin/users', label: 'Utilisateurs', icon: 'bi-people' },
-    { path: '/Admin/certifications', label: 'Certifications', icon: 'bi-patch-check' },
-    { path: '/Admin/donnees-test', label: 'Données test', icon: 'bi-database' },
+    { path: '/Admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/Admin/users', label: 'Utilisateurs', icon: Users },
+    { path: '/Admin/certifications', label: 'Certifications', icon: BadgeCheck },
+    { path: '/Admin/donnees-test', label: 'Données test', icon: Database },
   ],
   responsable: [
-    { path: '/Responsable/GsFormation', label: 'Formations', icon: 'bi-layers' },
-    { path: '/Responsable/Candidature', label: 'Candidatures', icon: 'bi-file-earmark-person' },
-    { path: '/Responsable/Planning', label: 'Planning', icon: 'bi-calendar-week' },
-    { path: '/Responsable/Scan', label: 'Scan', icon: 'bi-qr-code-scan' },
-    { path: '/Responsable/Certification', label: 'Certification', icon: 'bi-patch-check' },
-    { path: '/Responsable/Forum', label: 'Forum', icon: 'bi-chat-left-text' },
-    { path: '/Responsable/Catalogue', label: 'Catalogue', icon: 'bi-compass' },
+    { path: '/Responsable/GsFormation', label: 'Formations', icon: Layers },
+    { path: '/Responsable/Candidature', label: 'Candidatures', icon: FileUser },
+    { path: '/Responsable/Planning', label: 'Planning', icon: CalendarDays },
+    { path: '/Responsable/Scan', label: 'Scan', icon: QrCode },
+    { path: '/Responsable/Certification', label: 'Certification', icon: BadgeCheck },
+    { path: '/Responsable/Forum', label: 'Forum', icon: MessageSquareText },
+    { path: '/Responsable/Catalogue', label: 'Catalogue', icon: Compass },
   ],
   formateur: [
-    { path: '/Formateur', label: 'Dashboard', icon: 'bi-grid-1x2' },
-    { path: '/Formateur/Planning', label: 'Planning', icon: 'bi-calendar-week' },
-    { path: '/Formateur/Apprenants', label: 'Apprenants', icon: 'bi-mortarboard' },
-    { path: '/Formateur/Evaluations', label: 'Évaluations', icon: 'bi-check2-square' },
-    { path: '/Formateur/Forum', label: 'Forum', icon: 'bi-chat-left-text' },
+    { path: '/Formateur', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/Formateur/Planning', label: 'Planning', icon: CalendarDays },
+    { path: '/Formateur/Apprenants', label: 'Apprenants', icon: GraduationCap },
+    { path: '/Formateur/Evaluations', label: 'Évaluations', icon: CheckSquare },
+    { path: '/Formateur/Forum', label: 'Forum', icon: MessageSquareText },
   ]
 };
 
@@ -191,7 +214,7 @@ export default function MainLayout() {
             className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-6 shadow-2xl dark:bg-zinc-900"
           >
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400">
-              <i className="bi bi-star-fill"></i>
+              <Star className="size-5 fill-current" />
             </div>
             <p className="text-[11px] uppercase tracking-wider text-orange-600 dark:text-orange-400">
               Avis obligatoire
@@ -212,9 +235,9 @@ export default function MainLayout() {
                     type="button"
                     onClick={() => setReviewNote(star)}
                     aria-label={`${star} étoile${star > 1 ? 's' : ''}`}
-                    className="text-2xl"
+                    className="text-2xl transition-transform hover:scale-110"
                   >
-                    <i className={`bi ${reviewNote >= star ? 'bi-star-fill text-amber-400' : 'bi-star text-slate-300 dark:text-zinc-700'}`}></i>
+                    <Star className={`size-6 ${reviewNote >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-zinc-700'}`} />
                   </button>
                 ))}
               </div>
@@ -276,6 +299,7 @@ export default function MainLayout() {
             <nav className="flex flex-col gap-1.5">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path;
+                const IconComponent = link.icon;
                 return (
                   <Link
                     key={link.path}
@@ -284,7 +308,7 @@ export default function MainLayout() {
                     className={`relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors ${isExpanded ? '' : 'justify-center'} ${isActive ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'}`}
                   >
                     {isActive && <span className="absolute right-0 h-5 w-1 rounded-l-full bg-orange-500"></span>}
-                    <i className={`${link.icon} text-lg`}></i>
+                    <IconComponent className="size-5 shrink-0" />
                     {isExpanded && <span className="truncate font-medium">{link.label}</span>}
                   </Link>
                 );
@@ -307,7 +331,7 @@ export default function MainLayout() {
                 <img src={getAvatarSrc(user)} alt="Avatar" className="size-9 shrink-0 rounded-full object-cover ring-2 ring-orange-100 dark:ring-orange-500/20" />
               ) : (
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-semibold text-white">
-                  {initials || <i className="bi bi-person" />}
+                  {initials || <User className="size-4" />}
                 </span>
               )}
               {isExpanded && (
@@ -316,7 +340,9 @@ export default function MainLayout() {
                   <span className="block truncate text-[10px] capitalize text-zinc-500 dark:text-zinc-400">{user?.role || 'Utilisateur'}</span>
                 </span>
               )}
-              {isExpanded && <i className={`bi bi-chevron-${isDesktopProfileMenuOpen ? 'down' : 'up'} text-xs text-zinc-400`} />}
+              {isExpanded && (
+                isDesktopProfileMenuOpen ? <ChevronDown className="size-3.5 text-zinc-400" /> : <ChevronUp className="size-3.5 text-zinc-400" />
+              )}
             </button>
 
             {isDesktopProfileMenuOpen && (
@@ -331,9 +357,9 @@ export default function MainLayout() {
                   onClick={() => setIsDesktopProfileMenuOpen(false)}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
-                  <i className="bi bi-person text-base text-zinc-400" />
+                  <User className="size-4 text-zinc-400" />
                   <span className="flex-1">Mon profil</span>
-                  <i className="bi bi-arrow-up-right text-xs text-zinc-400" />
+                  <ArrowUpRight className="size-3.5 text-zinc-400" />
                 </Link>
 
                 <button
@@ -341,7 +367,7 @@ export default function MainLayout() {
                   onClick={toggleDarkMode}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
-                  <i className={`bi ${darkMode ? 'bi-sun' : 'bi-moon-stars'} text-base text-orange-500`} />
+                  {darkMode ? <Sun className="size-4 text-orange-500" /> : <Moon className="size-4 text-orange-500" />}
                   <span className="flex-1">Passer en mode {darkMode ? 'clair' : 'sombre'}</span>
                   <span className="rounded-md bg-orange-50 px-2 py-1 text-[10px] font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">{darkMode ? 'Dark' : 'Light'}</span>
                 </button>
@@ -353,7 +379,7 @@ export default function MainLayout() {
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
-                  <i className="bi bi-box-arrow-right text-base" />
+                  <LogOut className="size-4" />
                   Déconnexion
                 </button>
               </div>
@@ -384,7 +410,7 @@ export default function MainLayout() {
                 onClick={() => setIsProfileMenuOpen(false)}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300"
               >
-                <i className="bi bi-person text-base text-zinc-400"></i> Mon Profil
+                <User className="size-4 text-zinc-400" /> Mon Profil
               </Link>
 
               <button 
@@ -392,7 +418,7 @@ export default function MainLayout() {
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300"
               >
                 <span className="flex items-center gap-3">
-                  <i className={`bi ${darkMode ? 'bi-moon-stars' : 'bi-sun'} text-base text-orange-500`}></i> 
+                  {darkMode ? <Moon className="size-4 text-orange-500" /> : <Sun className="size-4 text-orange-500" />} 
                   Mode {darkMode ? 'Sombre' : 'Clair'}
                 </span>
                 <span className="rounded-md bg-orange-50 px-2 py-1 text-[10px] font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
@@ -406,7 +432,7 @@ export default function MainLayout() {
                 onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }} 
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-600 dark:text-red-400"
               >
-                <i className="bi bi-box-arrow-right text-base"></i> Déconnexion
+                <LogOut className="size-4" /> Déconnexion
               </button>
             </div>
           )}
@@ -414,6 +440,7 @@ export default function MainLayout() {
           <nav className="mx-auto flex h-16 max-w-lg items-center justify-around rounded-2xl border border-zinc-200 bg-white px-1 shadow-[0_8px_30px_rgba(0,0,0,0.16)] dark:border-zinc-700 dark:bg-zinc-900">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
+              const IconComponent = link.icon;
               return (
                 <Link
                   key={link.path}
@@ -421,7 +448,7 @@ export default function MainLayout() {
                   onClick={() => setIsProfileMenuOpen(false)}
                   className={`flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-xl px-2 transition ${isActive ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' : 'text-zinc-400'}`}
                 >
-                  <i className={`${link.icon} text-lg`}></i>
+                  <IconComponent className="size-5 shrink-0" />
                   {isActive && <span className="max-w-14 truncate text-[9px] font-semibold">{link.label}</span>}
                 </Link>
               );
@@ -434,7 +461,7 @@ export default function MainLayout() {
               {getAvatarSrc(user) ? (
                 <img src={getAvatarSrc(user)} alt="Profil" className="size-6 rounded-full object-cover" />
               ) : (
-                <i className="bi bi-person text-lg"></i>
+                <User className="size-5" />
               )}
               {isProfileMenuOpen && <span className="mt-0.5 text-[9px] font-semibold">Profil</span>}
             </button>

@@ -6,15 +6,7 @@ let intervalId;
 let taskRunning = false;
 
 const runExpiryTasks = async () => {
-  const formationResult = await db.query(
-    `UPDATE formation
-     SET statut = 'TERMINEE',
-         date_modification = CURRENT_TIMESTAMP
-     WHERE date_fin < CURRENT_DATE
-       AND statut IN ('OUVERTE', 'EN_COURS')
-     RETURNING id_formation`
-  );
-
+  // 1. On passe d'abord à 'EN_COURS' toutes les formations dont la période inclut aujourd'hui
   const startedFormationResult = await db.query(
     `UPDATE formation
      SET statut = 'EN_COURS',
@@ -22,6 +14,17 @@ const runExpiryTasks = async () => {
      WHERE statut = 'OUVERTE'
        AND date_debut <= CURRENT_DATE
        AND date_fin >= CURRENT_DATE
+     RETURNING id_formation`
+  );
+
+  // 2. On clôture uniquement les formations dont la date de fin est STRICTEMENT inférieure à aujourd'hui
+  // (On s'assure de ne toucher qu'aux EN_COURS ou aux OUVERTE qui ont raté le coche)
+  const formationResult = await db.query(
+    `UPDATE formation
+     SET statut = 'TERMINEE',
+         date_modification = CURRENT_TIMESTAMP
+     WHERE date_fin < CURRENT_DATE
+       AND statut IN ('OUVERTE', 'EN_COURS')
      RETURNING id_formation`
   );
 

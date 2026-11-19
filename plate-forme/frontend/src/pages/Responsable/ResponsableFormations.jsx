@@ -39,6 +39,17 @@ const getStatusBadgeClass = (statut) => {
   }
 };
 
+// Formater proprement une date au format YYYY-MM-DD sans décalage de fuseau horaire
+const formatDateLocal = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return ''; // Sécurité si la date est invalide
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // --- PANNEAU LATÉRAL : DÉTAILS DE LA FORMATION ---
 function FormationDetailsDrawer({ formation, onClose }) {
   const [isClosing, setIsClosing] = useState(false);
@@ -414,9 +425,9 @@ export default function ResponsableFormations() {
       titre: f.titre ?? '',
       description: f.description ?? '',
       image_url: f.image_url ?? '',
-      date_debut: f.date_debut ? f.date_debut.split('T')[0] : '',
-      date_fin: f.date_fin ? f.date_fin.split('T')[0] : '',
-      date_limite_inscription: f.date_limite_inscription ? f.date_limite_inscription.split('T')[0] : '',
+      date_debut: formatDateLocal(f.date_debut),
+      date_fin: formatDateLocal(f.date_fin),
+      date_limite_inscription: formatDateLocal(f.date_limite_inscription),
       capacite_max: f.capacite_max ?? 20,
       statut: f.statut ?? 'BROUILLON'
     });

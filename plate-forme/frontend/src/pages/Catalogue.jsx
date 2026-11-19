@@ -1,3 +1,4 @@
+// frontend/src/pages/Catalogue.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API, { getFormationImageUrl } from '../services/api';
@@ -8,6 +9,7 @@ const STATUT_LABELS = {
   EN_COURS: 'En cours',
   TERMINEE: 'Terminée',
   FERMEE: 'Fermée',
+  ARCHIVEE: 'Archivée',
 };
 
 const STATUT_DOT = {
@@ -15,15 +17,8 @@ const STATUT_DOT = {
   EN_COURS: 'bg-blue-500',
   TERMINEE: 'bg-zinc-400',
   FERMEE: 'bg-zinc-400',
+  ARCHIVEE: 'bg-rose-500',
 };
-
-const FILTER_TABS = [
-  { value: 'TOUT', label: 'Toutes' },
-  { value: 'OUVERTE', label: 'Ouvertes' },
-  { value: 'EN_COURS', label: 'En cours' },
-  { value: 'TERMINEE', label: 'Terminées' },
-  { value: 'FERMEE', label: 'Fermées' },
-];
 
 const formatDate = (value) =>
   new Date(value).toLocaleDateString('fr-FR', {
@@ -40,9 +35,7 @@ function ProgressBar({ value, max }) {
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            isFull
-              ? 'bg-zinc-400'
-              : 'bg-emerald-500'
+            isFull ? 'bg-zinc-400' : 'bg-emerald-500'
           }`}
           style={{ width: `${pct}%` }}
         />
@@ -82,8 +75,6 @@ function SkeletonCard() {
 export default function Catalogue() {
   const navigate = useNavigate();
   const [formations, setFormations] = useState([]);
-  const [selectedFormation, setSelectedFormation] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // État utilisateur pour afficher conditionnellement Se Connecter / Dark Mode
@@ -93,22 +84,14 @@ export default function Catalogue() {
   // Layout View State (Grid vs List)
   const [viewMode, setViewMode] = useState('grid');
 
-  // Filtres & Recherche
+  // Recherche unique (titre et description)
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('TOUT');
 
-  // Avis & Commentaires
-  const [comments, setComments] = useState([]);
-  const [commentsLoading, setCommentsLoading] = useState(false);
-  const [reviewError, setReviewError] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState('');
-  const [newComment, setNewComment] = useState({ note: 5, commentaire: '' });
-  const [submittingComment, setSubmittingComment] = useState(false);
+  // Avis & Commentaires stockés par ID de formation
   const [catalogueReviews, setCatalogueReviews] = useState({});
   const [visibleReviewCounts, setVisibleReviewCounts] = useState({});
 
   useEffect(() => {
-    // Vérification de la session utilisateur
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -118,7 +101,6 @@ export default function Catalogue() {
       }
     }
 
-    // Synchronisation du thème
     const dark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
     setIsDarkMode(dark);
   }, []);
@@ -138,15 +120,21 @@ export default function Catalogue() {
   const fetchFormations = useCallback(async () => {
     try {
       const res = await API.get('/formations/catalogue');
-      setFormations(res.data);
-      const reviewFormations = res.data.filter(
+      const data = Array.isArray(res.data) ? res.data : [];
+      setFormations(data);
+
+      // Récupérer les avis pour chaque formation terminée ou archivée, triés du plus récent au plus ancien
+      const reviewFormations = data.filter(
         (formation) => formation.statut === 'TERMINEE' || formation.statut === 'ARCHIVEE'
       );
       const reviewEntries = await Promise.all(
         reviewFormations.map(async (formation) => {
           try {
             const reviewResponse = await API.get(`/formations/${formation.id_formation}/avis`);
-            return [formation.id_formation, Array.isArray(reviewResponse.data) ? reviewResponse.data : []];
+            const reviewsList = Array.isArray(reviewResponse.data) ? reviewResponse.data : [];
+            // Tri du plus récent au plus daté
+            reviewsList.sort((a, b) => new Date(b.date_creation || b.createdAt || 0) - new Date(a.date_creation || a.createdAt || 0));
+            return [formation.id_formation, reviewsList];
           } catch (error) {
             return [formation.id_formation, []];
           }
@@ -174,29 +162,6 @@ export default function Catalogue() {
     navigate(`/postuler/${formation.id_formation}`);
   };
 
-  const handleOpenDetails = useCallback(async (formation) => {
-    setSelectedFormation(formation);
-    setShowDetailModal(true);
-    setComments([]);
-    setReviewError('');
-    setReviewSuccess('');
-    setCommentsLoading(true);
-    setNewComment({ note: 5, commentaire: '' });
-
-    try {
-      const response = await API.get(`/formations/${formation.id_formation}/avis`);
-      setComments(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      setReviewError('Impossible de charger les avis.');
-    } finally {
-      setCommentsLoading(false);
-    }
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setShowDetailModal(false);
-  }, []);
-
   const isInscriptionOuverte = (formation) => {
     const today = new Date().toISOString().split('T')[0];
     const dateLimite = new Date(formation.date_limite_inscription)
@@ -205,58 +170,25 @@ export default function Catalogue() {
     return formation.statut === 'OUVERTE' && dateLimite >= today;
   };
 
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedFormation || !newComment.commentaire.trim()) return;
-
-    setSubmittingComment(true);
-    setReviewError('');
-    setReviewSuccess('');
-    try {
-      await API.post(
-        `/formations/${selectedFormation.id_formation}/avis`,
-        newComment
-      );
-      const [catalogueResponse, commentsResponse] = await Promise.all([
-        API.get('/formations/catalogue'),
-        API.get(`/formations/${selectedFormation.id_formation}/avis`),
-      ]);
-
-      const updatedFormation = catalogueResponse.data.find(
-        (item) => item.id_formation === selectedFormation.id_formation
-      );
-      if (updatedFormation) {
-        setSelectedFormation(updatedFormation);
-        setFormations(catalogueResponse.data);
-      }
-      setComments(
-        Array.isArray(commentsResponse.data) ? commentsResponse.data : []
-      );
-      setNewComment({ note: 5, commentaire: '' });
-      setReviewSuccess('Votre avis a été publié avec succès !');
-    } catch (error) {
-      setReviewError('Impossible de publier votre avis.');
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
-
+  // Filtrage global par recherche sur le titre ET la description
   const filteredFormations = useMemo(
     () =>
       formations.filter((f) => {
         const term = searchTerm.toLowerCase();
         const matchesSearch =
           f.titre.toLowerCase().includes(term) ||
-          f.description.toLowerCase().includes(term);
-        const matchesStatus =
-          selectedStatus === 'TOUT' || f.statut === selectedStatus;
-        return matchesSearch && matchesStatus;
+          (f.description && f.description.toLowerCase().includes(term));
+        return matchesSearch;
       }),
-    [formations, searchTerm, selectedStatus]
+    [formations, searchTerm]
   );
+
+  // Formations à afficher en haut (Uniquement celles qui ne sont PAS terminées ni archivées)
   const activeFilteredFormations = filteredFormations.filter(
     (formation) => formation.statut !== 'TERMINEE' && formation.statut !== 'ARCHIVEE'
   );
+
+  // Formations terminées ou archivées pour la section des commentaires en bas
   const reviewFilteredFormations = filteredFormations.filter(
     (formation) => formation.statut === 'TERMINEE' || formation.statut === 'ARCHIVEE'
   );
@@ -264,7 +196,7 @@ export default function Catalogue() {
   return (
     <div className="min-h-screen bg-[#F3F2EE] font-sans text-slate-800 transition-colors duration-300 dark:bg-[#0C0C0E] dark:text-zinc-100">
       
-      {/* BARRE DE NAVIGATION SUPÉRIEURE (S'affiche uniquement si non connecté) */}
+      {/* BARRE DE NAVIGATION SUPÉRIEURE */}
       {!currentUser && (
         <header className="w-full border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 backdrop-blur-md px-4 py-3 sm:px-8">
           <div className="mx-auto max-w-7xl flex items-center justify-between">
@@ -276,7 +208,6 @@ export default function Catalogue() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Bouton Dark / Light Mode */}
               <button
                 onClick={toggleDarkMode}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
@@ -285,7 +216,6 @@ export default function Catalogue() {
                 <i className={`bi ${isDarkMode ? 'bi-sun' : 'bi-moon'} text-xs`}></i>
               </button>
 
-              {/* Bouton Se connecter */}
               <Link
                 to="/login"
                 className="flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-xs text-white transition shadow-sm"
@@ -311,7 +241,6 @@ export default function Catalogue() {
             </p>
           </div>
 
-          {/* Commutateur de vue Grille / Liste */}
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-2xl bg-slate-200/70 p-1 dark:bg-zinc-800/80">
               <button
@@ -340,36 +269,16 @@ export default function Catalogue() {
           </div>
         </div>
 
-        {/* Barre de filtres et recherche */}
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          
-          <div className="flex flex-wrap items-center gap-1.5">
-            {FILTER_TABS.map((tab) => {
-              const active = selectedStatus === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setSelectedStatus(tab.value)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs transition ${
-                    active
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'bg-white/80 text-slate-700 hover:bg-white dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="relative w-full md:w-72">
+        {/* Barre de recherche uniquement (Filtres par onglets supprimés) */}
+        <div className="mb-6 flex justify-end">
+          <div className="relative w-full md:w-80">
             <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
             <input
               type="text"
-              placeholder="Rechercher une formation..."
+              placeholder="Rechercher par titre ou description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-full border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 py-2 pl-9 pr-8 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 transition"
+              className="w-full rounded-full border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 py-2.5 pl-9 pr-8 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 transition shadow-sm"
             />
             {searchTerm && (
               <button
@@ -382,24 +291,24 @@ export default function Catalogue() {
           </div>
         </div>
 
-        {/* GRILLE / LISTE DES CARTES (STYLE ENOVA - IMAGE GRANDE, INFOS COMPACTES) */}
+        {/* SECTION 1 : FORMATIONS EN COURS / OUVERTES / NON TERMINÉES */}
         {loading ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
-        ) : activeFilteredFormations.length === 0 && reviewFilteredFormations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/40 py-16 text-xs text-slate-400">
+        ) : activeFilteredFormations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/40 py-16 text-xs text-slate-400 mb-12">
             <i className="bi bi-search text-2xl mb-2 text-slate-400"></i>
-            <p>Aucune formation trouvée.</p>
+            <p>Aucune formation en cours ou ouverte ne correspond à votre recherche.</p>
           </div>
         ) : (
           <div
             className={
               viewMode === 'grid'
-                ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3'
-                : 'flex flex-col gap-4'
+                ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-16'
+                : 'flex flex-col gap-4 mb-16'
             }
           >
             {activeFilteredFormations.map((f) => {
@@ -415,20 +324,10 @@ export default function Catalogue() {
               return (
                 <article
                   key={f.id_formation}
-                  onClick={() => handleOpenDetails(f)}
-                  onKeyDown={(event) => {
-                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-                      event.preventDefault();
-                      handleOpenDetails(f);
-                    }
-                  }}
-                  tabIndex={0}
-                  aria-label={`Consulter les informations et les avis de la formation ${f.titre}`}
-                  className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition duration-300 ${
+                  className={`group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition duration-300 ${
                     viewMode === 'list' ? 'sm:flex-row sm:items-center' : ''
                   }`}
                 >
-                  {/* IMAGE MISE EN VALEUR (PLUS GRANDE) */}
                   <div
                     className={`relative w-full overflow-hidden rounded-t-3xl bg-slate-100 dark:bg-zinc-800 ${
                       viewMode === 'list' ? 'h-48 sm:h-36 sm:w-56 shrink-0' : 'h-60 sm:h-64'
@@ -453,116 +352,29 @@ export default function Catalogue() {
                       </div>
                     )}
 
-                    {reviewFilteredFormations.length > 0 && (
-                      <section className="mt-10 border-t border-slate-200 pt-8 dark:border-zinc-800">
-                        <div className="mb-5">
-                          <h2 className="text-xl text-slate-900 dark:text-white">Formations terminées & avis</h2>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-                            Découvrez les retours des apprenants sur les formations terminées ou archivées.
-                          </p>
-                        </div>
-
-                        <div className="space-y-4">
-                          {reviewFilteredFormations.map((formation) => {
-                            const formationReviews = catalogueReviews[formation.id_formation] || [];
-                            const visibleCount = visibleReviewCounts[formation.id_formation] || 3;
-                            const visibleReviews = formationReviews.slice(0, visibleCount);
-
-                            return (
-                              <article
-                                key={formation.id_formation}
-                                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-                              >
-                                <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between dark:border-zinc-800">
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <h3 className="text-base text-slate-900 dark:text-white">{formation.titre}</h3>
-                                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                        {formation.statut === 'ARCHIVEE' ? 'Archivée' : 'Terminée'}
-                                      </span>
-                                    </div>
-                                    <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
-                                      {formation.description}
-                                    </p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenDetails(formation)}
-                                    className="shrink-0 text-xs text-orange-600 hover:underline dark:text-orange-400"
-                                  >
-                                    Voir la formation
-                                  </button>
-                                </div>
-
-                                <div className="divide-y divide-slate-100 dark:divide-zinc-800">
-                                  {visibleReviews.length ? visibleReviews.map((review) => (
-                                    <div key={review.id_avis} className="py-4">
-                                      <div className="flex items-center justify-between gap-3">
-                                        <span className="text-xs text-slate-800 dark:text-zinc-200">
-                                          {review.auteur || 'Anonyme'}
-                                        </span>
-                                        <Stars note={review.note} />
-                                      </div>
-                                      <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-zinc-400">
-                                        {review.commentaire}
-                                      </p>
-                                    </div>
-                                  )) : (
-                                    <p className="py-6 text-center text-xs text-slate-400">
-                                      Aucun avis publié pour cette formation.
-                                    </p>
-                                  )}
-                                </div>
-
-                                {visibleCount < formationReviews.length && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setVisibleReviewCounts((current) => ({
-                                      ...current,
-                                      [formation.id_formation]: (current[formation.id_formation] || 3) + 3,
-                                    }))}
-                                    className="mt-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                                  >
-                                    Afficher plus
-                                    <i className="bi bi-chevron-down text-[10px]"></i>
-                                  </button>
-                                )}
-                              </article>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    )}
-
-                    {/* Badge Statut flottant haut gauche */}
                     <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-slate-900/80 dark:bg-black/80 px-2.5 py-1 text-[10px] text-white backdrop-blur-md">
                       <span className={`h-1.5 w-1.5 rounded-full ${STATUT_DOT[badgeKey] || STATUT_DOT.FERMEE}`} />
                       {badgeLabel}
                     </div>
 
-                    {/* Badge Note flottant haut droite */}
                     <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 dark:bg-zinc-900/90 px-2 py-0.5 text-[10px] text-slate-800 dark:text-zinc-100 backdrop-blur-md shadow-sm">
                       <i className="bi bi-star-fill text-amber-400 text-[10px]"></i>
                       {Number(f.note_moyenne || 0).toFixed(1)}
                     </div>
                   </div>
 
-                  {/* SECTION INFORMATION COMPACTE (REDUITE EN HAUTEUR) */}
                   <div className="flex flex-1 flex-col p-3.5 justify-between">
                     <div>
-                      {/* Titre & Dates */}
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-1 group-hover:text-orange-500 transition">
                           {f.titre}
                         </h3>
                       </div>
 
-                      {/* Description courte */}
                       <p className="mt-1 line-clamp-1 text-[11px] text-slate-500 dark:text-zinc-400">
                         {f.description}
                       </p>
 
-                      {/* Micro-données */}
                       <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500">
                         <span><i className="bi bi-calendar3 me-1"></i>{formatDate(f.date_debut)}</span>
                         <span><i className="bi bi-clock me-1"></i>Limite: {formatDate(f.date_limite_inscription)}</span>
@@ -573,24 +385,15 @@ export default function Catalogue() {
                       </div>
                     </div>
 
-                    {/* Pied de carte compact avec action */}
                     <div className="mt-3 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800/80 pt-2.5">
                       <span className="text-[10px] text-slate-400">
                         {f.inscrits_count || 0} inscrits
                       </span>
 
-                      {/* Boutons d'action */}
                       {estApprenant ? (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOpenDetails(f);
-                          }}
-                          className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
-                        >
-                          {f.statut === 'TERMINEE' ? 'Consulter les avis' : 'Déjà inscrit'}
-                          <i className="bi bi-arrow-up-right text-[10px]"></i>
-                        </button>
+                        <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                          Déjà inscrit
+                        </span>
                       ) : statutCandidature === 'EN_ATTENTE' ? (
                         <span className="text-xs text-amber-600 dark:text-amber-400">
                           En attente
@@ -601,165 +404,149 @@ export default function Catalogue() {
                         </span>
                       ) : ouverte ? (
                         <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handlePostuler(f);
-                          }}
-                          className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
+                          onClick={() => handlePostuler(f)}
+                          className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium"
                         >
                           Postuler
                           <i className="bi bi-arrow-right text-[10px]"></i>
                         </button>
                       ) : (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOpenDetails(f);
-                          }}
-                          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white"
-                        >
-                          Infos
-                          <i className="bi bi-info-circle text-[10px]"></i>
-                        </button>
+                        <span className="text-xs text-slate-400">
+                          Fermée
+                        </span>
                       )}
                     </div>
-
                   </div>
                 </article>
               );
             })}
           </div>
         )}
-      </main>
 
-      {/* Modal Détails & Avis */}
-      {showDetailModal && selectedFormation && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={handleCloseModal}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[90vh] w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl text-slate-800 dark:text-zinc-100"
-          >
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            >
-              <i className="bi bi-x-lg text-sm"></i>
-            </button>
+        {/* SECTION 2 : FORMATIONS TERMINÉES OU ARCHIVÉES & LEURS COMMENTAIRES (STYLE GOOGLE PLAY) */}
+        {reviewFilteredFormations.length > 0 && (
+          <section className="mt-12 border-t border-slate-200 pt-10 dark:border-zinc-800">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                Avis et commentaires sur les formations terminées et archivées
+              </h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                Consultez les retours d'expérience classés du plus récent au plus ancien.
+              </p>
+            </div>
 
-            <div className="max-h-[calc(90vh-4rem)] overflow-y-auto space-y-4 pr-1">
-              <h3 className="text-lg text-slate-900 dark:text-white">
-                {selectedFormation.titre}
-              </h3>
+            <div className="space-y-6">
+              {reviewFilteredFormations.map((formation) => {
+                const formationReviews = catalogueReviews[formation.id_formation] || [];
+                const visibleCount = visibleReviewCounts[formation.id_formation] || 3;
+                const visibleReviews = formationReviews.slice(0, visibleCount);
 
-              <div className="flex items-center gap-4 text-xs text-slate-400">
-                <span className="flex items-center gap-1">
-                  <i className="bi bi-star-fill text-amber-400"></i>
-                  {Number(selectedFormation.note_moyenne || 0).toFixed(1)} / 5 ({selectedFormation.avis_count || 0} avis)
-                </span>
-                <span>
-                  <i className="bi bi-people me-1"></i>{selectedFormation.inscrits_count || 0} inscrits
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs text-slate-600 dark:text-zinc-300">
-                <div>
-                  <h4 className="text-[11px] uppercase tracking-wider text-slate-400">Présentation</h4>
-                  <p className="mt-1 leading-relaxed text-slate-800 dark:text-zinc-200">
-                    {selectedFormation.description}
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <h4 className="text-[11px] uppercase tracking-wider text-slate-400 mb-2">Avis des apprenants</h4>
-
-                  {reviewError && (
-                    <p className="mb-2 rounded-xl bg-orange-500/10 p-2 text-xs text-orange-600">{reviewError}</p>
-                  )}
-                  {reviewSuccess && (
-                    <p className="mb-2 rounded-xl bg-emerald-500/10 p-2 text-xs text-emerald-600">{reviewSuccess}</p>
-                  )}
-
-                  <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-                    {commentsLoading ? (
-                      <p className="text-center text-xs text-slate-400">Chargement des avis...</p>
-                    ) : comments.length ? (
-                      comments.map((comment) => (
-                        <div
-                          key={comment.id_avis}
-                          className="rounded-2xl bg-slate-50 dark:bg-zinc-950 p-3 border border-slate-200 dark:border-zinc-800"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-800 dark:text-zinc-200">
-                              {comment.auteur || 'Anonyme'}
-                            </span>
-                            <Stars note={comment.note} />
-                          </div>
-                          <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400">
-                            {comment.commentaire}
-                          </p>
+                return (
+                  <article
+                    key={formation.id_formation}
+                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    {/* En-tête de la formation archivée / terminée */}
+                    <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-slate-100 dark:bg-zinc-800">
+                          {formation.image_url ? (
+                            <img
+                              src={getFormationImageUrl(formation.image_url)}
+                              alt={formation.titre}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-slate-400">
+                              <i className="bi bi-journal-bookmark"></i>
+                            </div>
+                          )}
                         </div>
-                      ))
-                    ) : (
-                      <p className="py-4 text-center text-xs text-slate-400">
-                        Aucun avis publié pour le moment.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Formulaire de dépôts d'avis */}
-                {selectedFormation.statut === 'TERMINEE' &&
-                  selectedFormation.est_apprenant &&
-                  !selectedFormation.avis_deja_depose && (
-                    <form onSubmit={handleCommentSubmit} className="mt-4 space-y-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-900 dark:text-white">Déposer un avis</span>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setNewComment((prev) => ({ ...prev, note: star }))}
-                              className="text-sm"
-                            >
-                              <i className={`bi ${newComment.note >= star ? 'bi-star-fill text-amber-400' : 'bi-star text-slate-300 dark:text-zinc-700'}`}></i>
-                            </button>
-                          ))}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                              {formation.titre}
+                            </h3>
+                            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white ${formation.statut === 'ARCHIVEE' ? 'bg-rose-500' : 'bg-zinc-500'}`}>
+                              {formation.statut === 'ARCHIVEE' ? 'Archivée' : 'Terminée'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">
+                            {formation.description}
+                          </p>
                         </div>
                       </div>
 
-                      <textarea
-                        rows={2}
-                        required
-                        placeholder="Rédigez votre retour sur la formation..."
-                        value={newComment.commentaire}
-                        onChange={(e) =>
-                          setNewComment((prev) => ({
-                            ...prev,
-                            commentaire: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 text-xs text-slate-800 dark:text-zinc-100 outline-none focus:border-orange-500 resize-none"
-                      />
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span className="flex items-center gap-1 font-medium text-amber-500">
+                          <i className="bi bi-star-fill"></i>
+                          {Number(formation.note_moyenne || 0).toFixed(1)} / 5
+                        </span>
+                        <span>({formationReviews.length} avis)</span>
+                      </div>
+                    </div>
 
-                      <button
-                        type="submit"
-                        disabled={submittingComment}
-                        className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 py-2 text-xs text-white transition disabled:opacity-50"
-                      >
-                        {submittingComment ? 'Envoi...' : 'Publier mon avis'}
-                      </button>
-                    </form>
-                  )}
-              </div>
+                    {/* Liste des commentaires style Google Play */}
+                    <div className="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                      {visibleReviews.length ? (
+                        visibleReviews.map((review) => (
+                          <div key={review.id_avis || review.id} className="py-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500/10 text-xs font-bold text-orange-600 dark:text-orange-400">
+                                  {(review.auteur || 'A')[0].toUpperCase()}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                                  {review.auteur || 'Anonyme'}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-400">
+                                {review.date_creation || review.createdAt ? formatDate(review.date_creation || review.createdAt) : ''}
+                              </span>
+                            </div>
+
+                            <div className="mt-2 flex items-center gap-2">
+                              <Stars note={review.note} />
+                            </div>
+
+                            <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
+                              {review.commentaire}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="py-6 text-center text-xs text-slate-400 italic">
+                          Aucun commentaire publié pour cette formation.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Bouton Afficher plus */}
+                    {visibleCount < formationReviews.length && (
+                      <div className="mt-4 pt-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVisibleReviewCounts((current) => ({
+                              ...current,
+                              [formation.id_formation]: (current[formation.id_formation] || 3) + 3,
+                            }))
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 px-5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition shadow-sm"
+                        >
+                          Afficher plus
+                          <i className="bi bi-chevron-down text-[10px]"></i>
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
+
+      </main>
     </div>
   );
 }
